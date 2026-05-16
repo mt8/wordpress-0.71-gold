@@ -29,6 +29,16 @@ case 'promote':
 	// JA: CSRF チェック -- ユーザーレベル変更の GET リクエストの偽造を拒否する。
 	b2_csrf_check('promote-user');
 
+	// EN: Minimum-level gate -- the promote/demote links are only shown to
+	//     level >= 2 users in the UI; enforce the same here so a low-level
+	//     user cannot bypass it by crafting the URL directly.
+	// JA: 最低レベルゲート -- 昇格/降格リンクは UI 上 level >= 2 のユーザー
+	//     にのみ表示される。URL を直接組み立てる回避を防ぐため同条件を
+	//     ここでも強制する。
+	if ($user_level < 2) {
+		die('You are not allowed to change user levels.');
+	}
+
 	if (empty($_GET["prom"])) {
 		header('Location: b2team.php');
 	}
@@ -64,6 +74,16 @@ case 'delete':
 	// EN: CSRF check -- reject a forged GET request to delete a user.
 	// JA: CSRF チェック -- ユーザー削除の GET リクエストの偽造を拒否する。
 	b2_csrf_check('delete-user');
+
+	// EN: Minimum-level gate -- the delete link is only shown to level > 3
+	//     users in the UI; enforce the same here so a low-level user cannot
+	//     bypass it by crafting the URL directly.
+	// JA: 最低レベルゲート -- 削除リンクは UI 上 level > 3 のユーザーにのみ
+	//     表示される。URL を直接組み立てる回避を防ぐため同条件を
+	//     ここでも強制する。
+	if ($user_level <= 3) {
+		die('You are not allowed to delete users.');
+	}
 
 	// EN: Cast the user id to int -- it is used unquoted in SQL
 	//     (WHERE ID = $id / WHERE post_author = $id).
