@@ -76,3 +76,22 @@ if (!function_exists('ereg')) {
 		return ($result === null) ? (string) $string : $result;
 	}
 }
+
+if (!function_exists('each')) {
+	// EN: each() was removed in PHP 8.0. It returned the key/value pair at the
+	//     array's internal pointer (as [0/'key', 1/'value']) and advanced the
+	//     pointer, or false at the end. Reimplemented with key()/current()/
+	//     next(), which still exist.
+	// JA: each() は PHP 8.0 で廃止された。配列の内部ポインタ位置のキー/値の組を
+	//     ([0/'key', 1/'value'] の形で)返してポインタを進め、末尾では false を
+	//     返す関数。現存する key()/current()/next() で再実装する。
+	function each(&$array) {
+		$key = key($array);
+		if ($key === null) {
+			return false;
+		}
+		$value = current($array);
+		next($array);
+		return array(1 => $value, 'value' => $value, 0 => $key, 'key' => $key);
+	}
+}
