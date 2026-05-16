@@ -1,7 +1,13 @@
 <?php
 
 # fix for mozBlog and other cases where '<?xml' isn't on the very first line
-$HTTP_RAW_POST_DATA = trim($HTTP_RAW_POST_DATA);
+// EN: $HTTP_RAW_POST_DATA was auto-populated by PHP before it was removed in
+//     PHP 7.0; read the raw request body from php://input instead. The
+//     variable itself is still used as a global by xmlrpcs.inc.
+// JA: $HTTP_RAW_POST_DATA は PHP 7.0 で廃止されるまで PHP が自動設定していた。
+//     代わりに php://input から生のリクエストボディを読む。変数自体は
+//     xmlrpcs.inc がグローバルとして引き続き使用する。
+$HTTP_RAW_POST_DATA = trim(file_get_contents('php://input'));
 
 include('b2config.php');
 
