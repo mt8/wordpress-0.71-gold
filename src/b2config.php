@@ -143,6 +143,20 @@ $rss_use_excerpt = 1;
 $use_weblogsping = 0;
 
 
+// ** Cafelog.com ping **
+
+// EN: Cafelog ping settings. WordPress 0.71 references these (b2edit.php,
+//     xmlrpc.php, b2mail.php) but the original b2config.php never shipped
+//     them, so $cafelogID was an undefined variable. Defined here (disabled);
+//     Cafelog is long gone, so leave $use_cafelogping at 0.
+// JA: Cafelog ping 設定。WordPress 0.71 は b2edit.php / xmlrpc.php /
+//     b2mail.php で参照するが、元の b2config.php には無く $cafelogID が
+//     未定義変数だった。ここで定義する(無効)。Cafelog は既に消滅して
+//     いるため $use_cafelogping は 0 のままにする。
+$use_cafelogping = 0;
+$cafelogID = '';
+
+
 // ** Blo.gs ping **
 
 // set this to 1 if you want your site to be listed on http://blo.gs when you add a new post
