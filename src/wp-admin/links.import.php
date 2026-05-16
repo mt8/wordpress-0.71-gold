@@ -96,11 +96,11 @@ switch ( $step ) {
 	<h3>Importing...</h3>
 		<?php
 				$cat_id = $_GET['cat_id'];
-		if ( ( $cat_id == '' ) || ( $cat_id == 0 ) ) {
+		if ( ( '' == $cat_id ) || ( 0 == $cat_id ) ) {
 			$cat_id = 1;
 		}
 				$opml_url = $_GET['opml_url'];
-		if ( $opml_url == '' ) {
+		if ( '' == $opml_url ) {
 			echo "<p>You need to supply your OPML url. Press back on your browser and try again</p>\n";
 		} else {
 			$opml = implode( '', file( $opml_url ) );

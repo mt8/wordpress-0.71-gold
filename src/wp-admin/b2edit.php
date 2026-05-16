@@ -64,7 +64,7 @@ switch ( $action ) {
 		$ping_status    = $_POST['ping_status'];
 		$post_password  = addslashes( $_POST['post_password'] );
 
-		if ( $user_level == 0 ) {
+		if ( 0 == $user_level ) {
 			die( "Cheatin' uh ?" );
 		}
 
@@ -164,7 +164,7 @@ switch ( $action ) {
 		// JA: CSRF チェック -- 投稿編集リクエストの偽造を拒否する。
 		b2_csrf_check( 'editpost' );
 
-		if ( $user_level == 0 ) {
+		if ( 0 == $user_level ) {
 			die( "Cheatin' uh ?" );
 		}
 
@@ -237,7 +237,7 @@ switch ( $action ) {
 		// JA: CSRF チェック -- 投稿削除の GET リクエストの偽造を拒否する。
 		b2_csrf_check( 'delete-post' );
 
-		if ( $user_level == 0 ) {
+		if ( 0 == $user_level ) {
 			die( "Cheatin' uh ?" );
 		}
 

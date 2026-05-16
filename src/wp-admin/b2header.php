@@ -62,7 +62,7 @@ for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	}
 }
 
-if ( $standalone == 0 ) {
+if ( 0 == $standalone ) {
 
 	?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -72,7 +72,7 @@ if ( $standalone == 0 ) {
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 
 	<?php
-	if ( $redirect == 1 ) {
+	if ( 1 == $redirect ) {
 		?>
 <script language="javascript" type="text/javascript">
 <!--
@@ -103,7 +103,7 @@ setTimeout("redirect();", 600);
 <body>
 
 	<?php
-	if ( $profile == 0 ) {
+	if ( 0 == $profile ) {
 		include 'b2menutop.php';
 	}
 	?>

@@ -14,7 +14,7 @@ $is_winIE = ( ( preg_match( '/MSIE/', $HTTP_USER_AGENT ) ) && ( preg_match( '/Wi
 $is_macIE = ( ( preg_match( '/MSIE/', $HTTP_USER_AGENT ) ) && ( preg_match( '/Mac/', $HTTP_USER_AGENT ) ) );
 $is_IE    = ( ( $is_macIE ) || ( $is_winIE ) );
 
-if ( $user_level == 0 ) {
+if ( 0 == $user_level ) {
 	die( "Cheatin' uh ?" );
 }
 
@@ -24,7 +24,7 @@ while ( $row = mysqli_fetch_object( $result ) ) {
 	$time_difference = $row->time_difference;
 }
 
-if ( $a == 'b' ) {
+if ( 'b' == $a ) {
 
 	?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">

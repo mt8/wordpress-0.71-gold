@@ -136,7 +136,7 @@ switch ( $action ) {
 
 		// if we are in an auto toggle category and this one is visible then we
 		// need to make the others invisible before we add this new one.
-		if ( ( $auto_toggle == 'Y' ) && ( $link_visible == 'Y' ) ) {
+		if ( ( 'Y' == $auto_toggle ) && ( 'Y' == $link_visible ) ) {
 			$sql        = "UPDATE $tablelinks set link_visible = 'N' WHERE link_category = $link_category";
 			$sql_result = mysqli_query( $wpdb->dbh, $sql ) or linkmanager_db_error( $wpdb->dbh, $sql );
 		}
@@ -194,7 +194,7 @@ switch ( $action ) {
 
 			// if we are in an auto toggle category and this one is visible then we
 			// need to make the others invisible before we update this one.
-			if ( ( $auto_toggle == 'Y' ) && ( $link_visible == 'Y' ) ) {
+			if ( ( 'Y' == $auto_toggle ) && ( 'Y' == $link_visible ) ) {
 				$sql        = "UPDATE $tablelinks set link_visible = 'N' WHERE link_category = $link_category";
 				$sql_result = mysqli_query( $wpdb->dbh, $sql ) or linkmanager_db_error( $wpdb->dbh, $sql );
 			}
@@ -234,12 +234,12 @@ switch ( $action ) {
 		$sql        = "DELETE FROM $tablelinks WHERE link_id = '$link_id'";
 		$sql_result = mysqli_query( $wpdb->dbh, $sql ) or linkmanager_db_error( $wpdb->dbh, $sql );
 
-		if ( isset( $links_show_cat_id ) && ( $links_show_cat_id != '' ) ) {
+		if ( isset( $links_show_cat_id ) && ( '' != $links_show_cat_id ) ) {
 			$cat_id = $links_show_cat_id;
 		}
 
-		if ( ! isset( $cat_id ) || ( $cat_id == '' ) ) {
-			if ( ! isset( $links_show_cat_id ) || ( $links_show_cat_id == '' ) ) {
+		if ( ! isset( $cat_id ) || ( '' == $cat_id ) ) {
+			if ( ! isset( $links_show_cat_id ) || ( '' == $links_show_cat_id ) ) {
 				$cat_id = 'All';
 			}
 		}
@@ -365,7 +365,7 @@ switch ( $action ) {
 					echo ' selected';
 				}
 				echo '>' . $row->cat_id . ': ' . $row->cat_name;
-				if ( $row->auto_toggle == 'Y' ) {
+				if ( 'Y' == $row->auto_toggle ) {
 					echo ' (auto toggle)';
 				}
 				echo "</option>\n";
@@ -441,7 +441,7 @@ switch ( $action ) {
 				break;
 		}
 
-		if ( $action != 'popup' ) {
+		if ( 'popup' != $action ) {
 			?>
 
 <div class="wrap">
@@ -463,7 +463,7 @@ switch ( $action ) {
 			$result = mysqli_query( $wpdb->dbh, $query ) or linkmanager_db_error( $wpdb->dbh, $query );
 			echo "        <select name=\"cat_id\">\n";
 			echo '          <option value="All"';
-			if ( $cat_id == 'All' ) {
+			if ( 'All' == $cat_id ) {
 				echo ' selected';
 			}
 			echo "> All</option>\n";
@@ -473,7 +473,7 @@ switch ( $action ) {
 					echo ' selected';
 				}
 				echo '>' . $row->cat_id . ': ' . $row->cat_name;
-				if ( $row->auto_toggle == 'Y' ) {
+				if ( 'Y' == $row->auto_toggle ) {
 					echo ' (auto toggle)';
 				}
 				echo "</option>\n";
@@ -485,37 +485,37 @@ switch ( $action ) {
 			<select name="order_by">
 			<option value="order_id"     
 			<?php
-			if ( $order_by == 'order_id' ) {
+			if ( 'order_id' == $order_by ) {
 				echo ' selected';}
 			?>
 			>Id</option>
 			<option value="order_name"   
 			<?php
-			if ( $order_by == 'order_name' ) {
+			if ( 'order_name' == $order_by ) {
 				echo ' selected';}
 			?>
 			>Name</option>
 			<option value="order_url"    
 			<?php
-			if ( $order_by == 'order_url' ) {
+			if ( 'order_url' == $order_by ) {
 				echo ' selected';}
 			?>
 			>URL</option>
 			<option value="order_desc"   
 			<?php
-			if ( $order_by == 'order_desc' ) {
+			if ( 'order_desc' == $order_by ) {
 				echo ' selected';}
 			?>
 			>Description</option>
 			<option value="order_owner"  
 			<?php
-			if ( $order_by == 'order_owner' ) {
+			if ( 'order_owner' == $order_by ) {
 				echo ' selected';}
 			?>
 			>Owner</option>
 			<option value="order_rating" 
 			<?php
-			if ( $order_by == 'order_rating' ) {
+			if ( 'order_rating' == $order_by ) {
 				echo ' selected';}
 			?>
 			>Rating</option>
@@ -558,14 +558,14 @@ switch ( $action ) {
 			<?php
 			$sql = "SELECT link_url, link_name, link_image, link_description, link_visible, link_category AS cat_id, cat_name AS category, $tableusers.user_login, link_id, link_rating, link_rel FROM $tablelinks LEFT JOIN $tablelinkcategories ON $tablelinks.link_category = $tablelinkcategories.cat_id LEFT JOIN $tableusers on $tableusers.ID = $tablelinks.link_owner ";
 			// have we got a where clause?
-			if ( ( $use_adminlevels ) || ( isset( $cat_id ) && ( $cat_id != 'All' ) ) ) {
+			if ( ( $use_adminlevels ) || ( isset( $cat_id ) && ( 'All' != $cat_id ) ) ) {
 				$sql .= ' WHERE ';
 			}
 			if ( $use_adminlevels ) {
 				$sql .= " ($tableusers.user_level <= $user_level"
 						. "   OR $tableusers.ID = $user_ID)";
 			}
-			if ( isset( $cat_id ) && ( $cat_id != 'All' ) ) {
+			if ( isset( $cat_id ) && ( 'All' != $cat_id ) ) {
 				// have we already started the where clause?
 				if ( $use_adminlevels ) {
 					$sql .= ' AND ';
@@ -590,8 +590,8 @@ switch ( $action ) {
 					$link->link_name = stripslashes( $link->link_name );
 					$link->category  = stripslashes( $link->category );
 					$link->link_rel  = stripslashes( $link->link_rel );
-					$image           = ( $link->link_image != null ) ? 'Yes' : 'No';
-					$visible         = ( $link->link_visible == 'Y' ) ? 'Yes' : 'No';
+					$image           = ( null != $link->link_image ) ? 'Yes' : 'No';
+					$visible         = ( 'Y' == $link->link_visible ) ? 'Yes' : 'No';
 					++$i;
 					$style = ( $i % 2 ) ? ' class="alternate"' : '';
 					echo <<<LINKS
@@ -690,7 +690,7 @@ LINKS;
 				echo ' selected';
 			}
 			echo '>' . $row->cat_id . ': ' . $row->cat_name;
-			if ( $row->auto_toggle == 'Y' ) {
+			if ( 'Y' == $row->auto_toggle ) {
 				echo ' (auto toggle)';
 			}
 			echo "</option>\n";

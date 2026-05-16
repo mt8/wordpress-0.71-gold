@@ -334,11 +334,11 @@ function antispambot( $emailaddy, $mailto = 0 ) {
 	srand( (float) microtime() * 1000000 );
 	for ( $i = 0; $i < strlen( $emailaddy ); $i = $i + 1 ) {
 		$j = floor( rand( 0, 1 + $mailto ) );
-		if ( $j == 0 ) {
+		if ( 0 == $j ) {
 			$emailNOSPAMaddy .= '&#' . ord( substr( $emailaddy, $i, 1 ) ) . ';';
-		} elseif ( $j == 1 ) {
+		} elseif ( 1 == $j ) {
 			$emailNOSPAMaddy .= substr( $emailaddy, $i, 1 );
-		} elseif ( $j == 2 ) {
+		} elseif ( 2 == $j ) {
 			$emailNOSPAMaddy .= '%' . zeroise( dechex( ord( substr( $emailaddy, $i, 1 ) ) ), 2 );
 		}
 	}
@@ -396,7 +396,7 @@ function get_lastpostdate() {
 	global $tableposts, $cache_lastpostdate, $use_cache, $time_difference, $pagenow;
 	if ( ( ! isset( $cache_lastpostdate ) ) or ( ! $use_cache ) ) {
 		$now = date( 'Y-m-d H:i:s', ( time() + ( $time_difference * 3600 ) ) );
-		if ( $pagenow != 'b2edit.php' ) {
+		if ( 'b2edit.php' != $pagenow ) {
 			$showcatzero = 'post_category > 0 AND';
 		} else {
 			$showcatzero = '';
@@ -589,7 +589,7 @@ function dropdown_categories( $blog_ID = 1 ) {
 	$query  = "SELECT * FROM $tablecategories";
 	$result = mysqli_query( $wpdb->dbh, $query );
 	++$querycount;
-	$width = ( $mode == 'sidebar' ) ? '100%' : '170px';
+	$width = ( 'sidebar' == $mode ) ? '100%' : '170px';
 	echo '<select name="post_category" style="width:' . $width . ';" tabindex="2" id="category">';
 	while ( $post = mysqli_fetch_object( $result ) ) {
 		echo '<option value="' . $post->cat_ID . '"';
@@ -782,7 +782,7 @@ Balances Tags of string using a modified stack.
 
 function balanceTags( $text, $is_comment = 0 ) {
 	global $use_balanceTags;
-	if ( $use_balanceTags == 0 ) {
+	if ( 0 == $use_balanceTags ) {
 		return $text;
 	}
 
@@ -838,7 +838,7 @@ function balanceTags( $text, $is_comment = 0 ) {
 			// Tag Cleaning
 
 			// Push if not img or br or hr
-			if ( $tag != 'br' && $tag != 'img' && $tag != 'hr' ) {
+			if ( 'br' != $tag && 'img' != $tag && 'hr' != $tag ) {
 				$stacksize = array_push( $tagstack, $tag );
 			}
 
@@ -921,7 +921,7 @@ function b2_csrf_field( $action = 'global' ) {
 // JA: 送信されたトークンを検証する。欠落または不一致ならリクエストを中止する。
 function b2_csrf_check( $action = 'global' ) {
 	$given = isset( $_REQUEST['_b2csrf'] ) ? $_REQUEST['_b2csrf'] : '';
-	if ( $given === '' || $given !== b2_csrf_token( $action ) ) {
+	if ( '' === $given || b2_csrf_token( $action ) !== $given ) {
 		die( 'Security check failed (possible CSRF). <a href="javascript:history.back()">Go back</a>.' );
 	}
 }

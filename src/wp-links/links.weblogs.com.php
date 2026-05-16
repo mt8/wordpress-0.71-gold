@@ -83,11 +83,11 @@ function get_weblogs_updatedfile() {
  **/
 function startElement( $parser, $tagName, $attrs ) {
 	global $updated_timestamp, $all_links;
-	if ( $tagName == 'WEBLOGUPDATES' ) {
+	if ( 'WEBLOGUPDATES' == $tagName ) {
 		//convert 'updated' into php date variable
 		$updated_timestamp = strtotime( $attrs['UPDATED'] );
 		//echo('got timestamp of ' . gmdate('F j, Y, H:i:s', $updated_timestamp) . "\n");
-	} elseif ( $tagName == 'WEBLOG' ) {
+	} elseif ( 'WEBLOG' == $tagName ) {
 		// is this url in our links?
 		//echo("wblogs.com link " .$attrs['URL']);
 		$link_url = str_replace( 'www.', '', $attrs['URL'] );

@@ -14,7 +14,7 @@ function veriflog() {
 		return false;
 	}
 
-	if ( ! ( $user_login != '' ) ) {
+	if ( ! ( '' != $user_login ) ) {
 		return false;
 	}
 	if ( ! $user_pass_md5 ) {

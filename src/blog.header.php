@@ -71,7 +71,7 @@ $where       = '';
 $limits      = '';
 $distinct    = '';
 
-if ( $pagenow != 'b2edit.php' ) {
+if ( 'b2edit.php' != $pagenow ) {
 	timer_start(); }
 
 if ( ! empty( $showposts ) ) {
@@ -79,7 +79,7 @@ if ( ! empty( $showposts ) ) {
 	$posts_per_page = $showposts;
 }
 // if a month is specified in the querystring, load that month
-if ( $m != '' ) {
+if ( '' != $m ) {
 	$m      = '' . intval( $m );
 	$where .= ' AND YEAR(post_date)=' . substr( $m, 0, 4 );
 	if ( strlen( $m ) > 5 ) {
@@ -99,13 +99,13 @@ if ( $m != '' ) {
 	}
 }
 
-if ( $w != '' ) {
+if ( '' != $w ) {
 	$w      = '' . intval( $w );
 	$where .= ' AND WEEK(post_date,1)=' . $w;
 }
 
 // if a post number is specified, load that post
-if ( ( $p != '' ) && ( $p != 'all' ) ) {
+if ( ( '' != $p ) && ( 'all' != $p ) ) {
 	$p     = intval( $p );
 	$where = ' AND ID = ' . $p;
 }
@@ -138,7 +138,7 @@ if ( ! empty( $s ) ) {
 }
 
 // category stuff
-if ( ( empty( $cat ) ) || ( $cat == 'all' ) || ( $cat == '0' ) ) {
+if ( ( empty( $cat ) ) || ( 'all' == $cat ) || ( '0' == $cat ) ) {
 	$whichcat = '';
 } else {
 	$cat = '' . urldecode( $cat ) . '';
@@ -160,7 +160,7 @@ if ( ( empty( $cat ) ) || ( $cat == 'all' ) || ( $cat == '0' ) ) {
 	$whichcat .= ')';
 }
 // author stuff
-if ( ( empty( $author ) ) || ( $author == 'all' ) || ( $cat == '0' ) ) {
+if ( ( empty( $author ) ) || ( 'all' == $author ) || ( '0' == $cat ) ) {
 	$whichauthor = '';
 } elseif ( intval( $author ) ) {
 	$author = intval( $author );
@@ -202,9 +202,9 @@ if ( empty( $orderby ) ) {
 }
 
 if ( ( ! $whichcat ) && ( ! $m ) && ( ! $p ) && ( ! $w ) && ( ! $s ) && empty( $poststart ) && empty( $postend ) ) {
-	if ( $what_to_show == 'posts' ) {
+	if ( 'posts' == $what_to_show ) {
 		$limits = ' LIMIT ' . $posts_per_page;
-	} elseif ( $what_to_show == 'days' ) {
+	} elseif ( 'days' == $what_to_show ) {
 		$lastpostdate = get_lastpostdate();
 		$lastpostdate = mysql2date( 'Y-m-d 00:00:00', $lastpostdate );
 		$lastpostdate = mysql2date( 'U', $lastpostdate );
@@ -214,12 +214,12 @@ if ( ( ! $whichcat ) && ( ! $m ) && ( ! $p ) && ( ! $w ) && ( ! $s ) && empty( $
 }
 
 if ( ! empty( $postend ) && ( $postend > $poststart ) && ( ! $m ) && ( ! $w ) && ( ! $whichcat ) && ( ! $s ) && ( ! $p ) ) {
-	if ( $what_to_show == 'posts' || ( $what_to_show == 'paged' && ( ! $paged ) ) ) {
+	if ( 'posts' == $what_to_show || ( 'paged' == $what_to_show && ( ! $paged ) ) ) {
 		$poststart = intval( $poststart );
 		$postend   = intval( $postend );
 		$limposts  = $postend - $poststart;
 		$limits    = ' LIMIT ' . $poststart . ',' . $limposts;
-	} elseif ( $what_to_show == 'days' ) {
+	} elseif ( 'days' == $what_to_show ) {
 		$poststart    = intval( $poststart );
 		$postend      = intval( $postend );
 		$limposts     = $postend - $poststart;
@@ -231,8 +231,8 @@ if ( ! empty( $postend ) && ( $postend > $poststart ) && ( ! $m ) && ( ! $w ) &&
 		$where       .= ' AND post_date > \'' . $otherdate . '\' AND post_date < \'' . $startdate . '\'';
 	}
 } else {
-	if ( ( $what_to_show == 'paged' ) && ( ! $p ) && ( ! $more ) ) {
-		if ( $pagenow != 'b2edit.php' ) {
+	if ( ( 'paged' == $what_to_show ) && ( ! $p ) && ( ! $more ) ) {
+		if ( 'b2edit.php' != $pagenow ) {
 			$pgstrt = '';
 			if ( $paged ) {
 				$pgstrt = ( intval( $paged ) - 1 ) * $posts_per_page . ', ';
@@ -254,13 +254,13 @@ if ( ! empty( $postend ) && ( $postend > $poststart ) && ( ! $m ) && ( ! $w ) &&
 	}
 }
 
-if ( $p == 'all' ) {
+if ( 'all' == $p ) {
 	$where = '';
 }
 
 $now = date( 'Y-m-d H:i:s', ( time() + ( $time_difference * 3600 ) ) );
 
-if ( $pagenow != 'b2edit.php' ) {
+if ( 'b2edit.php' != $pagenow ) {
 	if ( ( empty( $poststart ) ) || ( empty( $postend ) ) || ! ( $postend > $poststart ) ) {
 		$where .= ' AND post_date <= \'' . $now . '\'';
 	}

@@ -312,7 +312,7 @@ switch ( $action ) {
 
 		$m = mail( $user_email, "Your weblog's login/password", $message );
 
-		if ( $m == false ) {
+		if ( false == $m ) {
 			echo "<p>The email could not be sent.<br />\n";
 			echo 'Possible reason: your host may have disabled the mail() function...</p>';
 			die();
@@ -336,7 +336,7 @@ switch ( $action ) {
 
 			$userdata = get_userdatabylogin( $user_login );
 
-			if ( ! $userdata || $user_pass_md5 != md5( $userdata->user_pass ) ) {
+			if ( ! $userdata || md5( $userdata->user_pass ) != $user_pass_md5 ) {
 				return false;
 			} else {
 				return true;
@@ -381,7 +381,7 @@ switch ( $action ) {
 		?>
 
 <form name="" action="<?php echo $path; ?>/b2login.php" method="post">
-		<?php if ( $mode == 'bookmarklet' ) { ?>
+		<?php if ( 'bookmarklet' == $mode ) { ?>
 <input type="hidden" name="mode" value="<?php echo $mode; ?>" />
 <input type="hidden" name="text" value="<?php echo $text; ?>" />
 <input type="hidden" name="popupurl" value="<?php echo $popupurl; ?>" />

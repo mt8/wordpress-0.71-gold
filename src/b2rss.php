@@ -7,7 +7,7 @@ if ( ! isset( $rss_language ) ) {
 	$rss_language = 'en'; }
 if ( ! isset( $rss_encoded_html ) ) {
 	$rss_encoded_html = 0; }
-if ( ! isset( $rss_excerpt_length ) || ( $rss_encoded_html == 1 ) ) {
+if ( ! isset( $rss_excerpt_length ) || ( 1 == $rss_encoded_html ) ) {
 	$rss_excerpt_length = 0; }
 ?>
 <?php echo '<?xml version="1.0"?' . '>'; ?>

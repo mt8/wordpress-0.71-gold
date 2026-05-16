@@ -125,7 +125,7 @@ function get_links(
 
 	$direction      = ' ASC';
 	$category_query = '';
-	if ( $category != -1 ) {
+	if ( -1 != $category ) {
 		$category_query = " AND link_category = $category ";
 	}
 	if ( $show_updated ) {
@@ -137,7 +137,7 @@ function get_links(
             FROM $tablelinks 
             WHERE link_visible = 'Y' " .
 			$category_query;
-	if ( $orderby == '' ) {
+	if ( '' == $orderby ) {
 		$orderby = 'id';
 	}
 	if ( substr( $orderby, 0, 1 ) == '_' ) {
@@ -152,7 +152,7 @@ function get_links(
 	$sql .= ' ORDER BY ' . $orderby;
 	$sql .= $direction;
 	/* The next 2 lines implement LIMIT TO processing */
-	if ( $limit != -1 ) {
+	if ( -1 != $limit ) {
 		$sql .= " LIMIT $limit";
 	}
 
@@ -160,11 +160,11 @@ function get_links(
 	foreach ( $results as $row ) {
 		echo( $before );
 		$the_link = '#';
-		if ( ( $row->link_url != null ) && ( $row->link_url != '' ) ) {
+		if ( ( null != $row->link_url ) && ( '' != $row->link_url ) ) {
 			$the_link = htmlspecialchars( stripslashes( $row->link_url ) );
 		}
 		$rel = stripslashes( $row->link_rel );
-		if ( $rel != '' ) {
+		if ( '' != $rel ) {
 			$rel = " rel='$rel'";
 		}
 		$desc = htmlspecialchars( stripslashes( $row->link_description ), ENT_QUOTES );
@@ -185,7 +185,7 @@ function get_links(
 		echo( "<a href='$the_link'" );
 		echo( $rel . $desc . $target );
 		echo( '>' );
-		if ( ( $row->link_image != null ) && $show_images ) {
+		if ( ( null != $row->link_image ) && $show_images ) {
 			echo( "<img src=\"$row->link_image\" border=\"0\" alt=\"" .
 				stripslashes( $row->link_name ) . '" title="' .
 				stripslashes( $row->link_description ) . '" />' );
@@ -201,22 +201,22 @@ function get_links(
 		// now do the rating
 		if ( $show_rating ) {
 			echo( $between );
-			if ( $links_rating_type == 'number' ) {
-				if ( ( $row->link_rating != 0 ) || ( $links_rating_ignore_zero != 1 ) ) {
+			if ( 'number' == $links_rating_type ) {
+				if ( ( 0 != $row->link_rating ) || ( 1 != $links_rating_ignore_zero ) ) {
 					echo( " $row->link_rating\n" );
 				}
-			} elseif ( $links_rating_type == 'char' ) {
+			} elseif ( 'char' == $links_rating_type ) {
 				for ( $r = $row->link_rating; $r > 0; $r-- ) {
 					echo( $links_rating_char );
 				}
-			} elseif ( $links_rating_type == 'image' ) {
+			} elseif ( 'image' == $links_rating_type ) {
 				if ( $links_rating_single_image ) {
 					for ( $r = $row->link_rating; $r > 0; $r-- ) {
 						echo( ' <img src="' . $links_rating_image[0] . '" alt="' .
 							$row->link_rating . '" />' . "\n" );
 					}
 				} else {
-					if ( ( $row->link_rating != 0 ) || ( $links_rating_ignore_zero != 1 ) ) {
+					if ( ( 0 != $row->link_rating ) || ( 1 != $links_rating_ignore_zero ) ) {
 						echo( ' <img src="' .
 							$links_rating_image[ $row->link_rating ] . '" alt="' .
 							$row->link_rating . '" />' . "\n" );
@@ -373,7 +373,7 @@ function links_popup_script(
 ) {
 	global $wpdb;
 	global $tablelinks;
-	if ( $count == true ) {
+	if ( true == $count ) {
 		$counts = $wpdb->get_var( "SELECT count(*) FROM $tablelinks" );
 	}
 
@@ -383,7 +383,7 @@ function links_popup_script(
 				' return false">';
 	$javascript .= $text;
 
-	if ( $count == true ) {
+	if ( true == $count ) {
 		$javascript .= " ($counts)";
 	}
 

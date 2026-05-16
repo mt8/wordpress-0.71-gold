@@ -253,12 +253,12 @@ function textile( $text ) {
 			if ( preg_match( '/<\/(code|pre|kbd|notextile)>/i', $line ) ) {
 				$codepre = false; }
 
-			if ( ! preg_match( '/<.*>/', $line ) && $codepre == false ) {
+			if ( ! preg_match( '/<.*>/', $line ) && false == $codepre ) {
 				$line = preg_replace( $glyph_search, $glyph_replace, $line );
 			}
 
 			# convert htmlspecial if between <code>
-			if ( $codepre == true ) {
+			if ( true == $codepre ) {
 				$line = htmlspecialchars( $line, ENT_NOQUOTES, 'UTF-8' );
 				$line = str_replace( '&lt;pre&gt;', '<pre>', $line );
 				$line = str_replace( '&lt;code&gt;', '<code>', $line );
@@ -323,12 +323,12 @@ function textile( $text ) {
 				$pre = true; }
 
 			# deal with block replacements first, then see if we're in a list
-			if ( $pre == false ) {
+			if ( false == $pre ) {
 				$line = preg_replace( $block_find, $block_replace, $line );
 			}
 
 			# kill any br tags that slipped in earlier
-			if ( $pre == true ) {
+			if ( true == $pre ) {
 				$line = str_replace( '<br />', "\n", $line );
 			}
 
@@ -338,21 +338,21 @@ function textile( $text ) {
 
 			# on entry to a list, $list switches to a value
 			# two tabs means unordered list
-			if ( $list == '' && preg_match( '/^\t\t<li>/', $line ) ) {
+			if ( '' == $list && preg_match( '/^\t\t<li>/', $line ) ) {
 					$list = 'ul';
 				$line     = preg_replace( '/^(\t\t<li>.*)/', "\t<ul>\n$1", $line );
 
-			} elseif ( $list == '' && preg_match( '/^\t\t\t<li>/', $line ) ) {
+			} elseif ( '' == $list && preg_match( '/^\t\t\t<li>/', $line ) ) {
 				$list = 'ol';
 				$line = preg_replace( '/^\t(\t\t<li>.*)/', "\t<ol>\n$1", $line );
 
 				# at the end of a ul
-			} elseif ( $list == 'ul' && ! preg_match( '/^\t\t<li>/', $line ) ) {
+			} elseif ( 'ul' == $list && ! preg_match( '/^\t\t<li>/', $line ) ) {
 				$list = '';
 				$line = preg_replace( '/^(.*)$/', "\t</ul>\n$1", $line );
 
 				# at the end of a ol
-			} elseif ( $list == 'ol' && ! preg_match( '/^\t\t\t<li>/', $line ) ) {
+			} elseif ( 'ol' == $list && ! preg_match( '/^\t\t\t<li>/', $line ) ) {
 					$list = '';
 				$line     = preg_replace( '/^(.*)$/', "\t</ol>\n$1", $line );
 			}
@@ -382,7 +382,7 @@ function textile( $text ) {
 function callback_url( $text, $title = '', $url = '' ) {
 
 	$out  = 'a href="' . $url . '"';
-	$out .= ( $title != '' ) ? ' title="' . $title . '"' : '';
+	$out .= ( '' != $title ) ? ' title="' . $title . '"' : '';
 	$out .= '>$text</a>';
 	return $out;
 }
@@ -689,7 +689,7 @@ function cmap() {
 function linkit( $text, $title, $url ) {
 	$url = preg_replace( '/&(?!amp;)/', '&amp;', $url );
 	$out = '<a href="' . $url;
-	if ( $title != '' ) {
+	if ( '' != $title ) {
 		$title = trim( $title );
 		$out  .= ' title="' . $title;
 	}

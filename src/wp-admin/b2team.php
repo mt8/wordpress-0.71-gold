@@ -157,7 +157,7 @@ switch ( $action ) {
 			echo "<td $bg1>" . $user_data->user_firstname . '&nbsp;' . $user_data->user_lastname . "</td>\n";
 			echo "<td $bg2>&nbsp;<a href=\"mailto:$email\" title=\"e-mail: $email\"><img src='../b2-img/email.gif' border=\"0\" alt=\"e-mail: $email\" /></a>&nbsp;</td>";
 			echo "<td $bg1>&nbsp;";
-			if ( ( $user_data->user_url != 'http://' ) and ( $user_data->user_url != '' ) ) {
+			if ( ( 'http://' != $user_data->user_url ) and ( '' != $user_data->user_url ) ) {
 				echo "<a href=\"$url\" target=\"_blank\" title=\"website: $url\"><img src=\"../b2-img/url.gif\" border=\"0\" alt=\"website: $url\" /></a>&nbsp;";
 			}
 			echo "</td>\n";
@@ -214,7 +214,7 @@ switch ( $action ) {
 				echo "<td $bg1>" . $user_data->user_firstname . '&nbsp;' . $user_data->user_lastname . "</td>\n";
 				echo "<td $bg1>&nbsp;<a href=\"mailto:" . antispambot( $email ) . '" title="e-mail: ' . antispambot( $email ) . '"><img src="../b2-img/email.gif" border="0" alt="e-mail: ' . antispambot( $email ) . '" /></a>&nbsp;</td>';
 				echo "<td $bg2>&nbsp;";
-				if ( ( $user_data->user_url != 'http://' ) and ( $user_data->user_url != '' ) ) {
+				if ( ( 'http://' != $user_data->user_url ) and ( '' != $user_data->user_url ) ) {
 					echo "<a href=\"$url\" target=\"_blank\" title=\"website: $url\"><img src=\"../b2-img/url.gif\" border=\"0\" alt=\"website: $url\" /></a>&nbsp;";
 				}
 				echo "</td>\n";

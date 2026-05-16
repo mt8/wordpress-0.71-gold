@@ -179,7 +179,7 @@ class wpdb {
 				$this->rows_affected = mysqli_affected_rows( $this->dbh );
 
 				// This gets the insert ID
-				if ( $word == 'insert' || $word == 'replace' ) {
+				if ( 'insert' == $word || 'replace' == $word ) {
 					$this->insert_id = mysqli_insert_id( $this->dbh );
 				}
 
@@ -276,20 +276,17 @@ class wpdb {
 			$this->query( $query );
 		}
 
-		// If the output is an object then return object using the row offset..
-		if ( $output == OBJECT ) {
+		if ( OBJECT == $output ) {
+			// If the output is an object then return object using the row offset..
 			return isset( $this->last_result[ $y ] ) ? $this->last_result[ $y ] : null;
-		}
-		// If the output is an associative array then return row as such..
-		elseif ( $output == ARRAY_A ) {
+		} elseif ( ARRAY_A == $output ) {
+			// If the output is an associative array then return row as such..
 			return isset( $this->last_result[ $y ] ) ? get_object_vars( $this->last_result[ $y ] ) : null;
-		}
-		// If the output is an numerical array then return row as such..
-		elseif ( $output == ARRAY_N ) {
+		} elseif ( ARRAY_N == $output ) {
+			// If the output is an numerical array then return row as such..
 			return isset( $this->last_result[ $y ] ) ? array_values( get_object_vars( $this->last_result[ $y ] ) ) : null;
-		}
-		// If invalid output type was specified..
-		else {
+		} else {
+			// If invalid output type was specified..
 			$this->print_error( ' $db->get_row(string query, output type, int offset) -- Output type must be one of: OBJECT, ARRAY_A, ARRAY_N' );
 		}
 	}
@@ -327,16 +324,16 @@ class wpdb {
 		}
 
 		// Send back array of objects. Each row is an object
-		if ( $output == OBJECT ) {
+		if ( OBJECT == $output ) {
 			return $this->last_result;
-		} elseif ( $output == ARRAY_A || $output == ARRAY_N ) {
+		} elseif ( ARRAY_A == $output || ARRAY_N == $output ) {
 			if ( $this->last_result ) {
 				$i = 0;
 				foreach ( $this->last_result as $row ) {
 
 					$new_array[ $i ] = get_object_vars( $row );
 
-					if ( $output == ARRAY_N ) {
+					if ( ARRAY_N == $output ) {
 						$new_array[ $i ] = array_values( $new_array[ $i ] );
 					}
 

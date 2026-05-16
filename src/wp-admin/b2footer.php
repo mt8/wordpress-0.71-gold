@@ -1,6 +1,6 @@
 </div>
 <?php
-if ( $debug == '1' ) {
+if ( '1' == $debug ) {
 	echo "<p>$querycount queries - " . number_format( timer_stop(), 3 ) . ' seconds';
 }
 ?>

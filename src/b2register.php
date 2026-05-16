@@ -66,12 +66,12 @@ switch ( $action ) {
 		#   global $user_login,$pass1,$pass2,$user_firstname,$user_nickname,$user_icq,$user_email,$user_url;
 
 		/* checking login has been typed */
-		if ( $user_login == '' ) {
+		if ( '' == $user_login ) {
 			die( '<b>ERROR</b>: please enter a Login' );
 		}
 
 		/* checking the password has been typed twice */
-		if ( $pass1 == '' || $pass2 == '' ) {
+		if ( '' == $pass1 || '' == $pass2 ) {
 			die( '<b>ERROR</b>: please enter your password twice' );
 		}
 
@@ -82,14 +82,14 @@ switch ( $action ) {
 		$user_nickname = $user_login;
 
 		/* checking e-mail address */
-		if ( $user_email == '' ) {
+		if ( '' == $user_email ) {
 			die( '<b>ERROR</b>: please type your e-mail address' );
 		} elseif ( ! is_email( $user_email ) ) {
 			die( "<b>ERROR</b>: the email address isn't correct" );
 		}
 
 		$id = mysqli_connect( $server, $loginsql, $passsql );
-		if ( $id == false ) {
+		if ( false == $id ) {
 			die( "<b>OOPS</b>: can't connect to the server !" . mysqli_connect_error() );
 		}
 
@@ -122,7 +122,7 @@ switch ( $action ) {
 
 	$query  = "INSERT INTO $tableusers (user_login, user_pass, user_nickname, user_email, user_ip, user_domain, user_browser, dateYMDhour, user_level, user_idmode) VALUES ('$user_login','$user_pass_hash','$user_nickname','$user_email','$user_ip','$user_domain','$user_browser',NOW(),'$new_users_can_blog','nickname')";
 	$result = mysqli_query( $id, $query );
-	if ( $result == false ) {
+	if ( false == $result ) {
 		die( "<b>ERROR</b>: couldn't register you... please contact the <a href=\"mailto:$admin_email\">webmaster</a> !" . mysqli_error( $id ) );
 	}
 

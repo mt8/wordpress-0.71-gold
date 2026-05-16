@@ -83,13 +83,13 @@ switch ( $action ) {
 			return false;
 		}
 
-		if ( $_POST['pass1'] == '' ) {
-			if ( $_POST['pass2'] != '' ) {
+		if ( '' == $_POST['pass1'] ) {
+			if ( '' != $_POST['pass2'] ) {
 				die( '<strong>ERROR</strong>: you typed your new password only once. Go back to type it twice.' );
 			}
 			$updatepassword = '';
 		} else {
-			if ( $_POST['pass2'] == '' ) {
+			if ( '' == $_POST['pass2'] ) {
 				die( '<strong>ERROR</strong>: you typed your new password only once. Go back to type it twice.' );
 			}
 			if ( $_POST['pass1'] != $_POST['pass2'] ) {
@@ -345,42 +345,42 @@ switch ( $action ) {
 	<select name="newuser_idmode">
 		<option value="nickname"
 		<?php
-		if ( $profiledata->user_idmode == 'nickname' ) {
+		if ( 'nickname' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
 		><?php echo $profiledata->user_nickname; ?></option>
 		<option value="login"
 		<?php
-		if ( $profiledata->user_idmode == 'login' ) {
+		if ( 'login' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
 		><?php echo $profiledata->user_login; ?></option>
 		<option value="firstname"
 		<?php
-		if ( $profiledata->user_idmode == 'firstname' ) {
+		if ( 'firstname' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
 		><?php echo $profiledata->user_firstname; ?></option>
 		<option value="lastname"
 		<?php
-		if ( $profiledata->user_idmode == 'lastname' ) {
+		if ( 'lastname' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
 		><?php echo $profiledata->user_lastname; ?></option>
 		<option value="namefl"
 		<?php
-		if ( $profiledata->user_idmode == 'namefl' ) {
+		if ( 'namefl' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
 		><?php echo $profiledata->user_firstname . ' ' . $profiledata->user_lastname; ?></option>
 		<option value="namelf"
 		<?php
-		if ( $profiledata->user_idmode == 'namelf' ) {
+		if ( 'namelf' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>

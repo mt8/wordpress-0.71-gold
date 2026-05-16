@@ -69,7 +69,7 @@ switch ( $action ) {
 
 		$cat_name    = addslashes( $_POST['cat_name'] );
 		$auto_toggle = $_POST['auto_toggle'];
-		if ( $auto_toggle != 'Y' ) {
+		if ( 'Y' != $auto_toggle ) {
 			$auto_toggle = 'N';
 		}
 
@@ -87,7 +87,7 @@ switch ( $action ) {
 		$cat_name = get_linkcatname( $cat_id );
 		$cat_name = addslashes( $cat_name );
 
-		if ( $cat_id == '1' ) {
+		if ( '1' == $cat_id ) {
 			die( "Can't delete the <b>$cat_name</b> link category: this is the default one" );
 		}
 
@@ -163,19 +163,19 @@ switch ( $action ) {
 		$query  = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
 		$result = mysqli_query( $wpdb->dbh, $query ) or die( "Couldn't execute query. " . mysqli_error( $wpdb->dbh ) );
 		echo "        <select name=\"cat_id\">\n";
-		while ( $row = mysqli_fetch_object( $result ) ) {
-			echo '          <option value="' . $row->cat_id . '"';
-			if ( isset( $cat_id ) && $row->cat_id == $cat_id ) {
-				echo ' selected';
-			}
-			echo '>' . $row->cat_id . ': ' . $row->cat_name;
-			if ( $row->auto_toggle == 'Y' ) {
-				echo ' (auto toggle)';
-			}
-			echo "</option>\n";
+	while ( $row = mysqli_fetch_object( $result ) ) {
+		echo '          <option value="' . $row->cat_id . '"';
+		if ( isset( $cat_id ) && $row->cat_id == $cat_id ) {
+			echo ' selected';
 		}
+		echo '>' . $row->cat_id . ': ' . $row->cat_name;
+		if ( 'Y' == $row->auto_toggle ) {
+			echo ' (auto toggle)';
+		}
+		echo "</option>\n";
+	}
 		echo "        </select>\n";
-		?>
+	?>
 			<br /><br />
 			<input type="submit" name="action" value="Delete" class="search" />
 			<input type="submit" name="action" value="Edit" class="search" />

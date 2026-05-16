@@ -95,7 +95,7 @@ switch ( $step ) {
 					' PRIMARY KEY (cat_id) ' .
 					') ';
 			$result = mysqli_query( $wpdb->dbh, $sql ) or print ( "Can't create the table '$tablelinkcategories' in the database.<br />" . $sql . '<br />' . mysqli_error( $wpdb->dbh ) );
-			if ( $result != false ) {
+			if ( false != $result ) {
 				echo "<p>Table '$tablelinkcategories' created OK</p>\n";
 				$got_cats = true;
 			}
@@ -128,7 +128,7 @@ switch ( $step ) {
 
 
 
-			if ( $result != false ) {
+			if ( false != $result ) {
 				echo "<p>Table '$tablelinks' created OK</p>\n";
 				$got_links = true;
 			}

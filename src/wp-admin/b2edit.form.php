@@ -126,7 +126,7 @@ if ( $use_quicktags ) {
 // if the level is 5+, allow user to edit the timestamp - not on 'new post' screen though
 // if (($user_level > 4) && ($action != "post"))
 if ( $user_level > 4 ) {
-	touch_time( ( $action == 'edit' ) );
+	touch_time( ( 'edit' == $action ) );
 }
 // EN: Append the CSRF token to the delete link (verified by b2edit.php).
 // JA: 削除リンクに CSRF トークンを付与する(b2edit.php で検証)。

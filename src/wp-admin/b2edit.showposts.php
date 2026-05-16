@@ -77,7 +77,7 @@ if ( ! isset( $order ) ) {
 }
 $besp_selected = '';
 $i             = $order;
-if ( $i == 'DESC' ) {
+if ( 'DESC' == $i ) {
 	$besp_selected = "selected='selected'";
 }
 ?>
@@ -85,7 +85,7 @@ if ( $i == 'DESC' ) {
 			<option value="DESC" <?php echo $besp_selected; ?>>last posts</option>
 <?php
 $besp_selected = '';
-if ( $i == 'ASC' ) {
+if ( 'ASC' == $i ) {
 	$besp_selected = "selected='selected'";
 }
 ?>
@@ -101,14 +101,14 @@ if ( $i == 'ASC' ) {
 <?php
 $besp_selected = '';
 $i             = $order;
-if ( $i == 'DESC' ) {
+if ( 'DESC' == $i ) {
 	$besp_selected = "selected='selected'";
 }
 ?>
 			<option value="DESC" "<?php echo $besp_selected; ?>">from the end</option>
 <?php
 $besp_selected = '';
-if ( $i == 'ASC' ) {
+if ( 'ASC' == $i ) {
 	$besp_selected = "selected='selected'";
 }
 ?>
@@ -137,7 +137,7 @@ if ( $i == 'ASC' ) {
 		<?php
 		$categories = $wpdb->get_results( "SELECT * FROM $tablecategories" );
 		++$querycount;
-		$width = ( $mode == 'sidebar' ) ? '100%' : '170px';
+		$width = ( 'sidebar' == $mode ) ? '100%' : '170px';
 		foreach ( $categories as $category ) {
 			echo '<option value="' . $category->cat_ID . '"';
 			if ( isset( $postdata['Category'] ) && $category->cat_ID == $postdata['Category'] ) {
@@ -154,7 +154,7 @@ if ( $i == 'ASC' ) {
 <form name="viewarc" action="b2edit.php" method="get">
 	<?php
 
-	if ( $archive_mode == 'monthly' ) {
+	if ( 'monthly' == $archive_mode ) {
 		echo '<select name="m" style="width:120px;">';
 		$arc_sql = "SELECT DISTINCT YEAR(post_date), MONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
 		++$querycount;
@@ -176,7 +176,7 @@ if ( $i == 'ASC' ) {
 			echo $month[ zeroise( $arc_month, 2 ) ] . " $arc_year";
 			echo "</option>\n";
 		}
-	} elseif ( $archive_mode == 'daily' ) {
+	} elseif ( 'daily' == $archive_mode ) {
 		echo '<select name="d" style="width:120px;">';
 		$archive_day_date_format = 'Y/m/d';
 		$arc_sql                 = "SELECT DISTINCT YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
@@ -200,7 +200,7 @@ if ( $i == 'ASC' ) {
 			echo mysql2date( $archive_day_date_format, $arc_year . zeroise( $arc_month, 2 ) . zeroise( $arc_dayofmonth, 2 ) . ' 00:00:00' );
 			echo "</option>\n";
 		}
-	} elseif ( $archive_mode == 'weekly' ) {
+	} elseif ( 'weekly' == $archive_mode ) {
 		echo '<select name="w" style="width:120px;">';
 		if ( ! isset( $start_of_week ) ) {
 			$start_of_week = 1;
@@ -236,14 +236,14 @@ if ( $i == 'ASC' ) {
 				echo "</option>\n";
 			}
 		}
-	} elseif ( $archive_mode == 'postbypost' ) {
+	} elseif ( 'postbypost' == $archive_mode ) {
 		echo '<input type="hidden" name="more" value="1" />';
 		echo '<select name="p" style="width:120px;">';
 		$requestarc = " SELECT ID,post_date,post_title FROM $tableposts ORDER BY post_date DESC";
 		++$querycount;
 		$resultarc = mysqli_query( $wpdb->dbh, $requestarc );
 		while ( $row = mysqli_fetch_object( $resultarc ) ) {
-			if ( $row->post_date != '0000-00-00 00:00:00' ) {
+			if ( '0000-00-00 00:00:00' != $row->post_date ) {
 				echo '<option value="' . $row->ID . '">';
 				if ( strip_tags( $row->post_title ) ) {
 					echo strip_tags( stripslashes( $row->post_title ) );
@@ -343,14 +343,14 @@ if ( $i == 'ASC' ) {
 		<select name="order">&nbsp;<option value="DESC" 
 		<?php
 		$i = $order;
-		if ( $i == 'DESC' ) {
+		if ( 'DESC' == $i ) {
 			echo ' selected';
 		}
 		?>
 		>last posts</option>
 <option value="ASC" 
 <?php
-if ( $i == 'ASC' ) {
+if ( 'ASC' == $i ) {
 	echo ' selected';
 }
 ?>
@@ -364,14 +364,14 @@ if ( $i == 'ASC' ) {
 			<option value="DESC" 
 			<?php
 			$i = $order;
-			if ( $i == 'DESC' ) {
+			if ( 'DESC' == $i ) {
 				echo ' selected';
 			}
 			?>
 			>from the end</option>
 <option value="ASC" 
 <?php
-if ( $i == 'ASC' ) {
+if ( 'ASC' == $i ) {
 	echo ' selected';
 }
 ?>

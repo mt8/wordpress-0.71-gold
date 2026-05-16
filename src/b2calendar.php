@@ -56,11 +56,11 @@ require_once $abspath . $b2inc . '/b2template.functions.php';
 require_once $abspath . $b2inc . '/b2functions.php';
 require_once $abspath . $b2inc . '/b2vars.php';
 
-if ( isset( $calendar ) && ( $calendar != '' ) ) {
+if ( isset( $calendar ) && ( '' != $calendar ) ) {
 	$thisyear  = substr( $calendar, 0, 4 );
 	$thismonth = substr( $calendar, 4, 2 );
 } else {
-	if ( isset( $m ) && ( $m != '' ) ) {
+	if ( isset( $m ) && ( '' != $m ) ) {
 		$calendar = substr( $m, 0, 6 );
 		$thisyear = substr( $m, 0, 4 );
 		if ( strlen( $m ) < 6 ) {
@@ -81,11 +81,11 @@ $ak_previous_year  = $thisyear;
 $ak_next_year      = $thisyear;
 $ak_previous_month = $thismonth - 1;
 $ak_next_month     = $thismonth + 1;
-if ( $ak_previous_month == 0 ) {
+if ( 0 == $ak_previous_month ) {
 	$ak_previous_month = 12;
 	--$ak_previous_year;
 }
-if ( $ak_next_month == 13 ) {
+if ( 13 == $ak_next_month ) {
 	$ak_next_month = 1;
 	++$ak_next_year;
 }
@@ -96,7 +96,7 @@ $ak_previous_month_dim    = '<span>&laquo;</span>&nbsp;&nbsp;';
 $ak_previous_month_active = '<a href="' . $archive_link_m . $ak_previous_year . zeroise( $ak_previous_month, 2 ) . '" style="text-decoration: none;">&laquo;</a>&nbsp;&nbsp;';
 $ak_next_month_dim        = '&nbsp;&nbsp;<span>&raquo;</span>';
 $ak_next_month_active     = '&nbsp;&nbsp;<a href="' . $archive_link_m . $ak_next_year . zeroise( $ak_next_month, 2 ) . '" style="text-decoration: none;">&raquo;</a>';
-if ( $ak_use_arrows == 1 ) {
+if ( 1 == $ak_use_arrows ) {
 	if ( mktime( 0, 0, 0, $ak_previous_month, 1, $ak_previous_year ) < mktime( 0, 0, 0, $ak_first_post->min_month, 1, $ak_first_post->min_year ) ) {
 		$ak_previous_month_link = $ak_previous_month_dim;
 	} else {
@@ -119,7 +119,7 @@ if ( $ak_use_arrows == 1 ) {
 $end_of_week = ( ( $start_of_week + 7 ) % 7 );
 
 $calendarmonthwithpost = 0;
-while ( $calendarmonthwithpost == 0 ) {
+while ( 0 == $calendarmonthwithpost ) {
 	$arc_sql = "SELECT DISTINCT YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) AS dom FROM $tableposts WHERE MONTH(post_date) = '$thismonth' AND YEAR(post_date) = '$thisyear' ORDER BY post_date DESC";
 	++$querycount;
 	$arc_results = $wpdb->get_results( $arc_sql );
@@ -129,12 +129,12 @@ while ( $calendarmonthwithpost == 0 ) {
 			$daysinmonthwithposts .= $arc_row->dom . '-';
 		}
 		$calendarmonthwithpost = 1;
-	} elseif ( $calendar != '' ) {
+	} elseif ( '' != $calendar ) {
 		$daysinmonthwithposts  = '';
 		$calendarmonthwithpost = 1;
 	} else {
 		$thismonth = zeroise( intval( $thismonth ) - 1, 2 );
-		if ( $thismonth == '00' ) {
+		if ( '00' == $thismonth ) {
 			$thismonth = '12';
 			$thisyear  = '' . ( intval( $thisyear ) - 1 );
 		}
@@ -200,7 +200,7 @@ $j      = 0;
 $k      = 1;
 
 // original tooltip hack by Alex King
-if ( $ak_use_tooltip_titles == 1 ) {
+if ( 1 == $ak_use_tooltip_titles ) {
 	$ak_days_result = $wpdb->get_results( "SELECT post_title, post_date FROM $tableposts WHERE YEAR(post_date) = '$thisyear' AND MONTH(post_date) = '$thismonth' AND post_status = 'publish'" );
 
 	$ak_day_title_array = array();
@@ -218,7 +218,7 @@ if ( $ak_use_tooltip_titles == 1 ) {
 
 
 for ( $i = $calendarfirst; $i < ( $calendarlast + 86400 ); $i = $i + 86400 ) {
-	if ( $newrow == 1 ) {
+	if ( 1 == $newrow ) {
 		if ( $k > $daysinmonth ) {
 			break;
 		}
@@ -241,7 +241,7 @@ for ( $i = $calendarfirst; $i < ( $calendarlast + 86400 ); $i = $i + 86400 ) {
 
 		if ( $calendarthereisapost ) {
 			// original tooltip hack by Alex King
-			if ( $ak_use_tooltip_titles == 1 ) { // check to see if we want to show the tooltip titles
+			if ( 1 == $ak_use_tooltip_titles ) { // check to see if we want to show the tooltip titles
 				$ak_day_titles = '';
 				foreach ( $ak_day_title_array as $post ) {
 					if ( substr( $post->post_date, 8, 2 ) == date( 'd', $i ) ) {
@@ -267,7 +267,7 @@ for ( $i = $calendarfirst; $i < ( $calendarlast + 86400 ); $i = $i + 86400 ) {
 		echo $calendarcellend . "\n";
 	}
 	$j = $j + 1;
-	if ( $j == 7 ) {
+	if ( 7 == $j ) {
 		$j      = 0;
 		$newrow = 1;
 	}

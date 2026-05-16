@@ -4,7 +4,7 @@
 $standalone = '1';
 require_once './b2header.php';
 
-if ( $user_level == 0 ) { //Checks to see if user has logged in
+if ( 0 == $user_level ) { //Checks to see if user has logged in
 	die( "Cheatin' uh ?" );
 }
 
@@ -165,7 +165,7 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	$img1_name = preg_replace( '~[^A-Za-z0-9._-]~', '_', $img1_name );
 	$img1_name = preg_replace( '~\.+~', '.', $img1_name ); // collapse repeated dots
 	$img1_name = trim( $img1_name, '.' );                  // no leading/trailing dot
-	if ( $img1_name === '' || $img1_name === null ) {
+	if ( '' === $img1_name || null === $img1_name ) {
 		die( 'Invalid file name.' );
 	}
 	// EN: Keep $imgalt (the alternate-name path) in sync with the sanitised
@@ -188,7 +188,7 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	$imgtype = explode( '.', $img1_name );
 	$ext     = ( count( $imgtype ) > 1 ) ? strtolower( end( $imgtype ) ) : '';
 	$allowed = array_filter( array_map( 'trim', explode( ' ', strtolower( $fileupload_allowedtypes ) ) ), 'strlen' );
-	if ( $ext === '' || ! in_array( $ext, $allowed, true ) ) {
+	if ( '' === $ext || ! in_array( $ext, $allowed, true ) ) {
 		die( "File $img1_name of type ." . htmlspecialchars( $ext ) . ' is not allowed.' );
 	}
 	// EN: $imgtype is reused below as the duplicate-rename suffix; keep it as
@@ -213,7 +213,7 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	//     完全に一致することを確認する。一致しなければ中止する。
 	$dest_dir = realpath( dirname( $pathtofile ) );
 	$base_dir = realpath( $fileupload_realpath );
-	if ( $dest_dir === false || $base_dir === false || $dest_dir !== $base_dir ) {
+	if ( false === $dest_dir || false === $base_dir || $dest_dir !== $base_dir ) {
 		die( 'Invalid upload destination.' );
 	}
 

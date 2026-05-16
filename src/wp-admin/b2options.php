@@ -63,7 +63,7 @@ switch ( $action ) {
 
 		$query  = "UPDATE $tablesettings SET posts_per_page=$newposts_per_page, what_to_show='$newwhat_to_show', archive_mode='$newarchive_mode', time_difference=$newtime_difference, AutoBR=$newautobr, time_format='$newtime_format', date_format='$newdate_format' WHERE ID = 1";
 		$result = mysqli_query( $wpdb->dbh, $query );
-		if ( $result == false ) {
+		if ( false == $result ) {
 			$oops = "<b>ERROR</b>: couldn't update the options... please contact the <a href=\"mailto:$admin_email\">webmaster</a> !<br />$query<br />" . mysqli_errno( $wpdb->dbh ) . ': ' . mysqli_error( $wpdb->dbh );
 			die( $oops );
 		}
@@ -98,21 +98,21 @@ switch ( $action ) {
 			<option value="days" 
 			<?php
 				$i = $what_to_show;
-			if ( $i == 'days' ) {
+			if ( 'days' == $i ) {
 				echo ' selected';
 			}
 			?>
 				>days</option>
 			<option value="posts" 
 			<?php
-			if ( $i == 'posts' ) {
+			if ( 'posts' == $i ) {
 				echo ' selected';
 			}
 			?>
 				>posts</option>
 			<option value="paged" 
 			<?php
-			if ( $i == 'paged' ) {
+			if ( 'paged' == $i ) {
 				echo ' selected';
 			}
 			?>
@@ -125,28 +125,28 @@ switch ( $action ) {
 				<?php $i = $archive_mode; ?>
 			<option value="daily"
 			<?php
-			if ( $i == 'daily' ) {
+			if ( 'daily' == $i ) {
 				echo ' selected';
 			}
 			?>
 				>daily</option>
 			<option value="weekly"
 			<?php
-			if ( $i == 'weekly' ) {
+			if ( 'weekly' == $i ) {
 				echo ' selected';
 			}
 			?>
 				>weekly</option>
 			<option value="monthly"
 			<?php
-			if ( $i == 'monthly' ) {
+			if ( 'monthly' == $i ) {
 				echo ' selected';
 			}
 			?>
 				>monthly</option>
 			<option value="postbypost"
 			<?php
-			if ( $i == 'postbypost' ) {
+			if ( 'postbypost' == $i ) {
 				echo ' selected';
 			}
 			?>

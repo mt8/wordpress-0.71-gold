@@ -106,7 +106,7 @@ switch ( $step ) {
 					' PRIMARY KEY (cat_id) ' .
 					') ';
 			$result = mysqli_query( $wpdb->dbh, $sql ) or print ( "Can't create the table '$tablelinkcategories' in the database.<br />" . $sql . '<br />' . mysqli_error( $wpdb->dbh ) );
-			if ( $result != false ) {
+			if ( false != $result ) {
 				echo "<p>Table '$tablelinkcategories' created OK</p>\n";
 				$got_cats = true;
 			}
@@ -137,7 +137,7 @@ switch ( $step ) {
 			$links  = mysqli_query( $wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://photomatt.net', 'Matt', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');" );
 			$links  = mysqli_query( $wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://zed1.com/b2/', 'Mike', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');" );
 
-			if ( $result != false ) {
+			if ( false != $result ) {
 				echo "<p>Table '$tablelinks' created OK</p>\n";
 				$got_links = true;
 			}

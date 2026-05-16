@@ -191,7 +191,7 @@ function get_archives( $type = '', $limit = '' ) {
 		++$querycount;
 		$arcresults = $wpdb->get_results( "SELECT ID, post_date, post_title FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit );
 		foreach ( $arcresults as $arcresult ) {
-			if ( $arcresult->post_date != '0000-00-00 00:00:00' ) {
+			if ( '0000-00-00 00:00:00' != $arcresult->post_date ) {
 				echo "<li><a href=\"$archive_link_p" . $arcresult->ID . '">';
 				$arc_title = stripslashes( $arcresult->post_title );
 				if ( $arc_title ) {
@@ -216,7 +216,7 @@ function the_date( $d = '', $before = '', $after = '', $echo = true ) {
 	$the_date = '';
 	if ( $day != $previousday ) {
 		$the_date .= $before;
-		if ( $d == '' ) {
+		if ( '' == $d ) {
 			$the_date .= mysql2date( $dateformat, $post->post_date );
 		} else {
 			$the_date .= mysql2date( $d, $post->post_date );
@@ -234,7 +234,7 @@ function the_date( $d = '', $before = '', $after = '', $echo = true ) {
 
 function the_time( $d = '', $echo = true ) {
 	global $id, $post, $timeformat;
-	if ( $d == '' ) {
+	if ( '' == $d ) {
 		$the_time = mysql2date( $timeformat, $post->post_date );
 	} else {
 		$the_time = mysql2date( $d, $post->post_date );
@@ -277,22 +277,22 @@ function the_weekday_date( $before = '', $after = '' ) {
 function the_author() {
 	global $id, $authordata;
 	$i = $authordata->user_idmode;
-	if ( $i == 'nickname' ) {
+	if ( 'nickname' == $i ) {
 		echo $authordata->user_nickname;
 	}
-	if ( $i == 'login' ) {
+	if ( 'login' == $i ) {
 		echo $authordata->user_login;
 	}
-	if ( $i == 'firstname' ) {
+	if ( 'firstname' == $i ) {
 		echo $authordata->user_firstname;
 	}
-	if ( $i == 'lastname' ) {
+	if ( 'lastname' == $i ) {
 		echo $authordata->user_lastname;
 	}
-	if ( $i == 'namefl' ) {
+	if ( 'namefl' == $i ) {
 		echo $authordata->user_firstname . ' ' . $authordata->user_lastname;
 	}
-	if ( $i == 'namelf' ) {
+	if ( 'namelf' == $i ) {
 		echo $authordata->user_lastname . ' ' . $authordata->user_firstname;
 	}
 	if ( ! $i ) {
@@ -427,12 +427,12 @@ function the_content_rss( $more_link_text = '(more...)', $stripteaser = 0, $more
 	if ( $cut && ! $encode_html ) {
 		$encode_html = 2;
 	}
-	if ( $encode_html == 1 ) {
+	if ( 1 == $encode_html ) {
 		$content = htmlspecialchars( $content );
 		$cut     = 0;
-	} elseif ( $encode_html == 0 ) {
+	} elseif ( 0 == $encode_html ) {
 		$content = make_url_footnote( $content );
-	} elseif ( $encode_html == 2 ) {
+	} elseif ( 2 == $encode_html ) {
 		$content = strip_tags( $content );
 	}
 	if ( $cut ) {
@@ -470,14 +470,14 @@ function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more
 	global $querystring_start, $querystring_equal, $querystring_separator;
 	global $pagenow;
 	$output = '';
-	if ( $more_file != '' ) {
+	if ( '' != $more_file ) {
 		$file = $more_file;
 	} else {
 		$file = $pagenow; //$_SERVER['PHP_SELF'];
 	}
 	$content = $pages[ $page - 1 ];
 	$content = explode( '<!--more-->', $content );
-	if ( ( preg_match( '/<!--noteaser-->/', $post->post_content ) && ( ( ! $multipage ) || ( $page == 1 ) ) ) ) {
+	if ( ( preg_match( '/<!--noteaser-->/', $post->post_content ) && ( ( ! $multipage ) || ( 1 == $page ) ) ) ) {
 		$stripteaser = 1;
 	}
 	$teaser = $content[0];
@@ -522,12 +522,12 @@ function the_excerpt_rss( $cut = 0, $encode_html = 0 ) {
 	if ( $cut && ! $encode_html ) {
 		$encode_html = 2;
 	}
-	if ( $encode_html == 1 ) {
+	if ( 1 == $encode_html ) {
 		$output = htmlspecialchars( $output );
 		$cut    = 0;
-	} elseif ( $encode_html == 0 ) {
+	} elseif ( 0 == $encode_html ) {
 		$output = make_url_footnote( $output );
-	} elseif ( $encode_html == 2 ) {
+	} elseif ( 2 == $encode_html ) {
 		$output = strip_tags( $output );
 	}
 	if ( $cut ) {
@@ -565,7 +565,7 @@ function get_the_excerpt( $fakeit = false ) {
 	$output = '';
 	$output = $post->post_excerpt;
 	//if we haven't got an excerpt, make one in the style of the rss ones
-	if ( ( $output == '' ) && $fakeit ) {
+	if ( ( '' == $output ) && $fakeit ) {
 		$output         = get_the_content();
 		$output         = strip_tags( $output );
 		$blah           = explode( ' ', $output );
@@ -601,24 +601,24 @@ function link_pages( $before = '<br />', $after = '<br />', $next_or_number = 'n
 	global $id, $page, $numpages, $multipage, $more;
 	global $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ( $more_file != '' ) {
+	if ( '' != $more_file ) {
 		$file = $more_file;
 	} else {
 		$file = $pagenow;
 	}
 	if ( ( $multipage ) ) { // && ($more)) {
-		if ( $next_or_number == 'number' ) {
+		if ( 'number' == $next_or_number ) {
 			echo $before;
 			for ( $i = 1; $i < ( $numpages + 1 ); $i = $i + 1 ) {
 				$j = str_replace( '%', "$i", $pagelink );
 				echo ' ';
-				if ( ( $i != $page ) || ( ( ! $more ) && ( $page == 1 ) ) ) {
+				if ( ( $i != $page ) || ( ( ! $more ) && ( 1 == $page ) ) ) {
 					echo '<a href="' . $file . $querystring_start . 'p' . $querystring_equal . $id .
 					$querystring_separator . 'more' . $querystring_equal . '1' .
 					$querystring_separator . 'page' . $querystring_equal . $i . '">';
 				}
 				echo $j;
-				if ( ( $i != $page ) || ( ( ! $more ) && ( $page == 1 ) ) ) {
+				if ( ( $i != $page ) || ( ( ! $more ) && ( 1 == $page ) ) ) {
 					echo '</a>';
 				}
 			}
@@ -652,13 +652,13 @@ function previous_post( $format = '%', $previous = 'previous post: ', $title = '
 	global $p, $posts, $posts_per_page, $s;
 	global $querystring_start, $querystring_equal, $querystring_separator;
 
-	if ( ( $p ) || ( $posts_per_page == 1 ) ) {
+	if ( ( $p ) || ( 1 == $posts_per_page ) ) {
 
 		$current_post_date = $post->post_date;
 		$current_category  = $post->post_category;
 
 		$sqlcat = '';
-		if ( $in_same_cat != 'no' ) {
+		if ( 'no' != $in_same_cat ) {
 			$sqlcat = " AND post_category = '$current_category' ";
 		}
 
@@ -689,13 +689,13 @@ function next_post( $format = '%', $next = 'next post: ', $title = 'yes', $in_sa
 	global $tableposts, $p, $posts, $id, $post, $siteurl, $blogfilename, $querycount;
 	global $time_difference;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ( ( $p ) || ( $posts == 1 ) ) {
+	if ( ( $p ) || ( 1 == $posts ) ) {
 
 		$current_post_date = $post->post_date;
 		$current_category  = $post->post_category;
 
 		$sqlcat = '';
-		if ( $in_same_cat != 'no' ) {
+		if ( 'no' != $in_same_cat ) {
 			$sqlcat = " AND post_category='$current_category' ";
 		}
 
@@ -716,7 +716,7 @@ function next_post( $format = '%', $next = 'next post: ', $title = 'yes', $in_sa
 		++$querycount;
 		if ( $nextpost ) {
 			$string = '<a href="' . $blogfilename . $querystring_start . 'p' . $querystring_equal . $nextpost->ID . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1">' . $next;
-			if ( $title == 'yes' ) {
+			if ( 'yes' == $title ) {
 				$string .= wptexturize( stripslashes( $nextpost->post_title ) );
 			}
 			$string .= '</a>';
@@ -758,7 +758,7 @@ function next_posts( $max_page = 0 ) {
 		$nextpage = intval( $paged ) + 1;
 		if ( ! $max_page || $max_page >= $nextpage ) {
 			echo $pagenow . $querystring_start .
-				( $qstr == '' ? '' : $qstr . $querystring_separator ) .
+				( '' == $qstr ? '' : $qstr . $querystring_separator ) .
 				'paged' . $querystring_equal . $nextpage;
 		}
 	}
@@ -818,14 +818,14 @@ function previous_posts() {
 			$nextpage = 1;
 		}
 		echo $pagenow . $querystring_start .
-			( $qstr == '' ? '' : $qstr . $querystring_separator ) .
+			( '' == $qstr ? '' : $qstr . $querystring_separator ) .
 			'paged' . $querystring_equal . $nextpage;
 	}
 }
 
 function previous_posts_link( $label = '<< Previous Page' ) {
 	global $p, $paged, $what_to_show;
-	if ( empty( $p ) && ( $paged > 1 ) && ( $what_to_show == 'paged' ) ) {
+	if ( empty( $p ) && ( $paged > 1 ) && ( 'paged' == $what_to_show ) ) {
 		echo '<a href="';
 		echo previous_posts();
 		echo '">' . htmlspecialchars( $label ) . '</a>';
@@ -942,7 +942,7 @@ function list_cats( $optionall = 1, $all = 'All', $sort_column = 'ID', $sort_ord
 	global $tablecategories, $querycount, $wpdb;
 	global $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	$file        = ( $file == 'blah' ) ? $pagenow : $file;
+	$file        = ( 'blah' == $file ) ? $pagenow : $file;
 	$sort_column = 'cat_' . $sort_column;
 	$categories  = $wpdb->get_results( "SELECT * FROM $tablecategories WHERE cat_ID > 0 ORDER BY $sort_column $sort_order" );
 	++$querycount;
@@ -998,7 +998,7 @@ function permalink_anchor( $mode = 'id' ) {
 function permalink_link( $file = '', $mode = 'id' ) {
 	global $id, $post, $pagenow, $cacheweekly, $wpdb, $querycount;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	$file = ( $file == '' ) ? $pagenow : $file;
+	$file = ( '' == $file ) ? $pagenow : $file;
 	switch ( strtolower( $mode ) ) {
 		case 'title':
 			$title  = preg_replace( '/[^a-zA-Z0-9_\.-]/', '_', $post->post_title );
@@ -1033,7 +1033,7 @@ function permalink_link( $file = '', $mode = 'id' ) {
 function permalink_single( $file = '' ) {
 	global $id, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ( $file == '' ) {
+	if ( '' == $file ) {
 		$file = $pagenow;
 	}
 	echo $file . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1';
