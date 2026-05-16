@@ -113,7 +113,14 @@ switch($action) {
         if ($user_level > 0) {
             $postdata = get_postdata($post) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
             $authordata = get_userdata($postdata["Author_ID"]);
-            if ($user_level < $authordata->user_level)
+            // EN: Ownership check -- a user may edit a post only if they are
+            //     its author, or their level is strictly higher than the
+            //     author's. The post's real author comes from the loaded
+            //     post row, never from a request value.
+            // JA: 所有者チェック -- 投稿を編集できるのはその投稿の作者本人、
+            //     または作者よりレベルが厳密に高いユーザーのみ。投稿の真の
+            //     作者は読み込んだ投稿行から取得し、リクエスト値は使わない。
+            if (($postdata["Author_ID"] != $user_ID) && ($user_level <= $authordata->user_level))
                 die ('You don&#8217;t have the right to edit <strong>'.$authordata[1].'</strong>&#8217;s posts.');
 
             $content = $postdata['Content'];
@@ -157,6 +164,20 @@ switch($action) {
         // EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $post_ID).
         // JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $post_ID)で使われる。
         $post_ID = (int) $_POST["post_ID"];
+
+        // EN: Ownership check -- load the real post row and verify the user
+        //     may edit it: they must be its author, or their level strictly
+        //     higher than the author's. The author comes from the stored
+        //     post, never from a request value.
+        // JA: 所有者チェック -- 実際の投稿行を読み込み、編集権限を検証する。
+        //     その投稿の作者本人、または作者よりレベルが厳密に高いユーザー
+        //     であること。作者は保存済み投稿から取得し、リクエスト値は
+        //     使わない。
+        $postdata = get_postdata($post_ID) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
+        $authordata = get_userdata($postdata["Author_ID"]);
+        if (($postdata["Author_ID"] != $user_ID) && ($user_level <= $authordata->user_level))
+            die ('You don&#8217;t have the right to edit <strong>'.$authordata[1].'</strong>&#8217;s posts.');
+
         $post_category = intval($_POST["post_category"]);
         $post_autobr = intval($_POST["post_autobr"]);
         $content = balanceTags($_POST["content"]);
@@ -215,7 +236,14 @@ switch($action) {
         $postdata=get_postdata($post) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
         $authordata = get_userdata($postdata["Author_ID"]);
 
-        if ($user_level < $authordata->user_level)
+        // EN: Ownership check -- a user may delete a post only if they are
+        //     its author, or their level is strictly higher than the
+        //     author's. The post's real author comes from the loaded post
+        //     row, never from a request value.
+        // JA: 所有者チェック -- 投稿を削除できるのはその投稿の作者本人、
+        //     または作者よりレベルが厳密に高いユーザーのみ。投稿の真の
+        //     作者は読み込んだ投稿行から取得し、リクエスト値は使わない。
+        if (($postdata["Author_ID"] != $user_ID) && ($user_level <= $authordata->user_level))
             die ("You don't have the right to delete <b>".$authordata[1]."</b>'s posts.");
 
         $query = "DELETE FROM $tableposts WHERE ID=$post";
