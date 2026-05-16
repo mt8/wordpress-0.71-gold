@@ -186,14 +186,15 @@ export function Editor( { config } ) {
 					<span className="be-badge">WordPress 0.71</span>
 					<Button
 						size="compact"
+						icon="menu"
+						label="Document Overview"
+						showTooltip
 						variant={ showOverview ? 'primary' : 'secondary' }
 						onClick={ () =>
 							setShowOverview( ( prev ) => ! prev )
 						}
 						aria-pressed={ showOverview }
-					>
-						Document Overview
-					</Button>
+					/>
 				</div>
 				<div className="be-toolbar-right">
 					<a
