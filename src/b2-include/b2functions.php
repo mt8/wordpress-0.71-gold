@@ -331,7 +331,11 @@ function convert_smilies( $content ) {
 
 function antispambot( $emailaddy, $mailto = 0 ) {
 	$emailNOSPAMaddy = '';
-	srand( (float) microtime() * 1000000 );
+	// EN: cast the seed to int; an implicit float-to-int conversion is a
+	//     deprecation in PHP 8.1+ ("loses precision").
+	// JA: シードを int にキャストする。暗黙の float→int 変換は PHP 8.1 以降
+	//     非推奨(「精度が失われる」)。
+	srand( (int) ( (float) microtime() * 1000000 ) );
 	for ( $i = 0; $i < strlen( $emailaddy ); $i = $i + 1 ) {
 		$j = floor( rand( 0, 1 + $mailto ) );
 		if ( 0 == $j ) {
