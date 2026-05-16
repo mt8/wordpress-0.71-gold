@@ -102,7 +102,11 @@ function single_month_title($prefix = '', $display = true ) {
 	global $m, $month;
 	if(!empty($m)) {
 		$my_year = substr($m,0,4);
-		$my_month = $month[substr($m,4,2)];
+		// EN: a year-only archive ($m = 'YYYY') has no month part, so
+		//     substr() yields '' and $month[''] misses; default to ''.
+		// JA: 年のみの archive($m='YYYY')は月が無く substr() が '' を返し
+		//     $month[''] が外れるため、'' を既定値にする。
+		$my_month = $month[substr($m,4,2)] ?? '';
 		if ($display)
 			echo $prefix.$my_month.$prefix.$my_year;
 		else
@@ -822,7 +826,11 @@ function get_the_category() {
 
 function get_the_category_by_ID($cat_ID) {
 	global $tablecategories, $querycount, $cache_categories, $use_cache, $wpdb;
-	if ((!$cache_categories[$cat_ID]) OR (!$use_cache)) {
+	// EN: use empty() so an uninitialised $cache_categories cache does not
+	//     warn (matches the sibling get_the_category()).
+	// JA: $cache_categories キャッシュ未初期化時に警告が出ないよう empty()
+	//     を使う(姉妹関数 get_the_category() に合わせる)。
+	if ((empty($cache_categories[$cat_ID])) OR (!$use_cache)) {
 		$cat_name = $wpdb->get_var("SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'");
 		++$querycount;
 		$cache_categories[$cat_ID] = &$cat_name;

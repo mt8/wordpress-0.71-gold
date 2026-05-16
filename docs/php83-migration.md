@@ -782,3 +782,50 @@ legacy warnings (`b2template.functions.php` lines 825 and 105); they exist on
 JA: ブログ本体の category / archive ページには既存のレガシー警告が 2 件残る
 (`b2template.functions.php` の 825 行・105 行)。`main` にも存在し、フロント
 エンドの実行時警告の別 Issue で扱う。
+
+---
+
+## Issue #26: Fix the two front-end runtime warnings / フロントエンドの実行時警告 2 件を修正
+
+EN: Follow-up to Issue #24. A sweep of the blog front end (home, category,
+archive, single post, search, author, weekly, feeds) found exactly two PHP 8
+runtime warnings; both are fixed.
+
+JA: Issue #24 の続き。ブログ本体(home・category・archive・単一投稿・検索・
+著者・週・フィード)を巡回し、PHP 8 実行時警告がちょうど 2 件見つかった。
+両方とも修正した。
+
+### Changes / 変更内容
+
+EN:
+1. `b2template.functions.php` `single_month_title()` (line 105): a year-only
+   archive (`$m = 'YYYY'`) has no month part, so `substr($m,4,2)` is `''` and
+   `$month['']` raised `Undefined array key ""`. Default to `''` with `?? ''`.
+2. `b2template.functions.php` `get_the_category_by_ID()` (line 825): the
+   `$cache_categories` cache is read before it exists, so
+   `!$cache_categories[$cat_ID]` raised `Trying to access array offset on
+   null`. Use `empty()` instead -- the same form the sibling
+   `get_the_category()` already uses.
+
+JA:
+1. `b2template.functions.php` の `single_month_title()`(105 行): 年のみの
+   archive(`$m='YYYY'`)は月が無いため `substr($m,4,2)` が `''` となり
+   `$month['']` が `Undefined array key ""` を出していた。`?? ''` で既定値
+   `''` にする。
+2. `b2template.functions.php` の `get_the_category_by_ID()`(825 行):
+   `$cache_categories` キャッシュが存在する前に読まれ、
+   `!$cache_categories[$cat_ID]` が `Trying to access array offset on null`
+   を出していた。姉妹関数 `get_the_category()` と同じ `empty()` を使う。
+
+### Verification / 検証
+
+EN: Every front-end page -- home, `?cat=`, `?m=` (year and year+month),
+`?p=`, `?s=`, `?author=`, `?w=`, and the three feeds -- loads with **0 PHP
+warnings**. Category and archive titles still render correctly; the admin
+screens and the static analysis tools (phpcs 0, PHPStan level 0) are
+unchanged.
+
+JA: フロントエンドの全ページ -- home・`?cat=`・`?m=`(年と年月)・`?p=`・
+`?s=`・`?author=`・`?w=`、および 3 つのフィード -- が **PHP 警告 0** で
+表示される。category / archive のタイトルも正しく描画され、管理画面と
+静的解析(phpcs 0、PHPStan level 0)は不変。
