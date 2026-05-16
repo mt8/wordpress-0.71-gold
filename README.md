@@ -1,68 +1,48 @@
-# WordPress 0.71-gold on PHP 8.3 / WordPress 0.71-gold を PHP 8.3 で動かす
+# WordPress 0.71-gold on PHP 8.3
 
-EN: An experimental project that takes the **oldest WordPress release —
+An experimental project that takes the **oldest WordPress release —
 0.71-gold (2003)** — and modifies it to run on **PHP 8.3 + MySQL 8**.
 
-JA: **最古の WordPress リリース 0.71-gold(2003 年)** を改修し、
-**PHP 8.3 + MySQL 8** で動作させる実験プロジェクト。
-
-> ⚠️ **EN: This is purely an experimental / study project — it is NOT intended
+> ⚠️ **This is purely an experimental / study project — it is NOT intended
 > for production use.** WordPress 0.71-gold is 2003-era b2/cafelog code; even
 > with the changes in this repository it remains an obsolete platform and must
 > not be used to run a real website or handle real data. The purpose is to
 > explore running historical code on a current PHP/MySQL stack — it is
 > modernised just enough to run, not rewritten.
->
-> ⚠️ **JA: これはあくまでも実験・学習目的のプロジェクトであり、本番利用は
-> 想定していません。** WordPress 0.71-gold は 2003 年当時の b2/cafelog コード
-> で、本リポジトリの変更を加えても旧式のプラットフォームであることに変わりは
-> なく、実運用のサイトや実データに使用してはいけません。目的は歴史的なコードを
-> 現行の PHP/MySQL 環境で動かす検証であり、動作する範囲で近代化しているのみ、
-> 全面的な書き直しはしていない。
 
-## Requirements / 必要環境
+## Requirements
 
-- Docker (with Docker Compose v2) / Docker(Docker Compose v2)
+- Docker (with Docker Compose v2)
 
-## Quick start / クイックスタート
+## Quick start
 
 ```sh
 docker compose up -d --build
 ```
 
-EN: Then open the installer at
+Then open the installer at
 <http://localhost:8080/wp-admin/wp-install.php> and follow it. Afterwards:
 
 - Blog front end: <http://localhost:8080/>
 - Admin screen: <http://localhost:8080/wp-admin/b2edit.php>
 
-JA: 起動後、<http://localhost:8080/wp-admin/wp-install.php> のインストーラを
-開いて進める。完了後:
-
-- ブログ本体: <http://localhost:8080/>
-- 管理画面: <http://localhost:8080/wp-admin/b2edit.php>
-
 ```sh
-docker compose down       # stop / 停止
-docker compose down -v    # stop and drop the database volume / 停止し DB ボリュームも削除
+docker compose down       # stop
+docker compose down -v    # stop and drop the database volume
 ```
 
-## Environment / 環境
+## Environment
 
-| Service | Image / イメージ | Role / 役割 |
-|---------|------------------|-------------|
+| Service | Image | Role |
+|---------|-------|------|
 | `web`   | `php:8.3-apache` + `mysqli` (built from `Dockerfile`) | Apache + PHP 8.3, serves `./src` |
-| `db`    | `mysql:8.0` (official / 公式) | MySQL 8 database `b2` (user `user` / `pass`) |
+| `db`    | `mysql:8.0` (official) | MySQL 8 database `b2` (user `user` / `pass`) |
 
-EN: Both base images are official; the only customization is the `Dockerfile`
+Both base images are official; the only customization is the `Dockerfile`
 adding the `mysqli` extension. Database credentials live in `src/b2config.php`
 and match `docker-compose.yml`, so no configuration is needed for local use.
 
-JA: ベースイメージはいずれも公式。カスタマイズは `Dockerfile` で `mysqli`
-拡張を追加する 1 点のみ。DB の認証情報は `src/b2config.php` にあり
-`docker-compose.yml` と一致しているため、ローカル利用では設定不要。
-
-## Static analysis / 静的解析
+## Static analysis
 
 ```sh
 composer install
@@ -70,23 +50,18 @@ composer phpcs     # WordPress-Core coding standard (WPCS)
 composer phpstan   # PHPStan (level 0)
 ```
 
-EN: Both currently report **0**. phpcs runs the curated `WordPress-Core`
+Both currently report **0**. phpcs runs the curated `WordPress-Core`
 standard; PHPStan runs at level 0. A husky `pre-commit` hook runs `lint-staged`
 (phpcs / phpstan on staged changes) so regressions are caught before they land.
 See `docs/static-analysis.md`.
 
-JA: いずれも現在 **0 件**。phpcs は精選した `WordPress-Core` 標準、PHPStan は
-level 0 で実行する。husky の `pre-commit` フックが `lint-staged`(staged 変更
-への phpcs / phpstan)を実行し、退行をマージ前に捕捉する。詳細は
-`docs/static-analysis.md`。
-
-## Tests / テスト
+## Tests
 
 ```sh
 composer test      # PHPUnit
 ```
 
-EN: A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
+A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
 2003-era code in `tests/`:
 
 - **Pure helpers** — text formatting, escaping, date/URL/number helpers in
@@ -98,7 +73,154 @@ EN: A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
   unit-testable without a live MySQL server.
 - **The CSRF helpers** added in Issue #33.
 
-JA: PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのうち単体テスト
+## E2E tests
+
+```sh
+# 1. Start the local Docker blog
+docker compose up -d
+docker compose ps          # confirm web + db are Up
+
+# 2. Install the Node tooling (first run only)
+npm install
+npx playwright install chromium
+
+# 3. Run the suite
+npm run test:e2e
+```
+
+A Playwright end-to-end suite (in `e2e/`) drives the real admin and
+front-end pages of the running Docker blog. It covers the admin flows
+(log in; create / edit / delete a post; add / delete a category) and the
+front end (home page, single post `?p=`, category `?cat=`, monthly archive
+`?m=`, and the RSS .92 / RDF 1.0 / RSS 2.0 feeds), and asserts that no PHP
+`Fatal error` / `Warning` / `Deprecated` text appears on any page. Test data
+is seeded and cleaned up by helpers in `e2e/helpers/`; every seeded row carries
+an `E2E:` title/name prefix and only those rows are removed, so your existing
+content is never touched and the suite is safe to re-run. The Docker blog must
+be running first. See `docs/php83-migration.md` (Issue #60) for details.
+
+## Publishing safely (static export)
+
+```sh
+composer static-export     # or: php bin/static-export.php
+```
+
+WordPress 0.71 must never be exposed to the public internet as a running
+PHP application. The intended workflow is: write posts in the **local**
+environment, export the site to **static HTML** with `bin/static-export.php`,
+and upload only the static files to a public server — which then runs no PHP
+and no database, so the 2003 codebase is never exposed. See
+`docs/static-export.md`.
+
+## Project layout
+
+| Path | Contents |
+|------|----------|
+| `src/` | The WordPress 0.71-gold source — the actual modified codebase. |
+| `tests/` | PHPUnit unit tests. |
+| `e2e/` | Playwright E2E specs and test-data helpers. |
+| `docs/` | Documentation. |
+| `bin/` | Tooling scripts — the static-export script. |
+| `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. |
+| `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. |
+| `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). |
+| `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node tooling — Playwright E2E and the husky/lint-staged pre-commit hook. |
+
+## What was done
+
+- **PHP 8.3 migration** — `ext/mysql` → `mysqli`, POSIX `ereg*` → PCRE,
+  removed/changed PHP functions and superglobals, PHP4-style constructors, etc.
+- **MySQL 8 compatibility** — strict `sql_mode`, reserved words, etc.
+- **Security hardening** — SQL injection, XSS, CSRF, authentication & session,
+  access control, file upload, information disclosure.
+- **Removed unused features** — XML-RPC, comments, trackback and pingback.
+- **Static analysis** — phpcs (WordPress-Core / WPCS) and PHPStan, both at 0.
+
+Every change is recorded, per GitHub Issue, in `docs/php83-migration.md`.
+
+## Documentation
+
+| File | Contents |
+|------|----------|
+| `docs/php83-migration.md` | Per-Issue migration log. |
+| `docs/security-audit.md` | Security audit summary. |
+| `docs/static-export.md` | Static export & safe publishing. |
+| `docs/static-analysis.md` | phpcs / PHPStan tooling. |
+| `docs/docker-environment.md` | Docker environment details. |
+| `docs/gutenberg-investigation.md` | Gutenberg port feasibility investigation. |
+| `docs/block-editor-media-and-layout.md` | Block editor: image upload & layout-block consistency. |
+
+## License
+
+GPL-2.0-or-later. WordPress is released under the GNU General Public
+License; this derivative work follows the same license.
+
+---
+
+# WordPress 0.71-gold を PHP 8.3 で動かす
+
+**最古の WordPress リリース 0.71-gold(2003 年)** を改修し、
+**PHP 8.3 + MySQL 8** で動作させる実験プロジェクト。
+
+> ⚠️ **これはあくまでも実験・学習目的のプロジェクトであり、本番利用は
+> 想定していません。** WordPress 0.71-gold は 2003 年当時の b2/cafelog コード
+> で、本リポジトリの変更を加えても旧式のプラットフォームであることに変わりは
+> なく、実運用のサイトや実データに使用してはいけません。目的は歴史的なコードを
+> 現行の PHP/MySQL 環境で動かす検証であり、動作する範囲で近代化しているのみ、
+> 全面的な書き直しはしていない。
+
+## 必要環境
+
+- Docker(Docker Compose v2)
+
+## クイックスタート
+
+```sh
+docker compose up -d --build
+```
+
+起動後、<http://localhost:8080/wp-admin/wp-install.php> のインストーラを
+開いて進める。完了後:
+
+- ブログ本体: <http://localhost:8080/>
+- 管理画面: <http://localhost:8080/wp-admin/b2edit.php>
+
+```sh
+docker compose down       # 停止
+docker compose down -v    # 停止し DB ボリュームも削除
+```
+
+## 環境
+
+| サービス | イメージ | 役割 |
+|---------|---------|------|
+| `web`   | `php:8.3-apache` + `mysqli`(`Dockerfile` からビルド) | Apache + PHP 8.3、`./src` を配信 |
+| `db`    | `mysql:8.0`(公式) | MySQL 8 データベース `b2`(ユーザー `user` / `pass`) |
+
+ベースイメージはいずれも公式。カスタマイズは `Dockerfile` で `mysqli`
+拡張を追加する 1 点のみ。DB の認証情報は `src/b2config.php` にあり
+`docker-compose.yml` と一致しているため、ローカル利用では設定不要。
+
+## 静的解析
+
+```sh
+composer install
+composer phpcs     # WordPress-Core coding standard (WPCS)
+composer phpstan   # PHPStan (level 0)
+```
+
+いずれも現在 **0 件**。phpcs は精選した `WordPress-Core` 標準、PHPStan は
+level 0 で実行する。husky の `pre-commit` フックが `lint-staged`(staged 変更
+への phpcs / phpstan)を実行し、退行をマージ前に捕捉する。詳細は
+`docs/static-analysis.md`。
+
+## テスト
+
+```sh
+composer test      # PHPUnit
+```
+
+PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのうち単体テスト
 可能な部分を `tests/` で網羅する:
 
 - **純粋なヘルパー** — `b2functions.php` と `b2template.functions.php` の
@@ -110,33 +232,22 @@ JA: PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのう
   サーバー無しで単体テスト可能にする。
 - **CSRF ヘルパー** — Issue #33 で追加。
 
-## E2E tests / E2E テスト
+## E2E テスト
 
 ```sh
-# 1. Start the local Docker blog / ローカル Docker ブログを起動
+# 1. ローカル Docker ブログを起動
 docker compose up -d
-docker compose ps          # confirm web + db are Up / web と db が Up か確認
+docker compose ps          # web と db が Up か確認
 
-# 2. Install the Node tooling (first run only) / Node ツールを導入 (初回のみ)
+# 2. Node ツールを導入 (初回のみ)
 npm install
 npx playwright install chromium
 
-# 3. Run the suite / スイートを実行
+# 3. スイートを実行
 npm run test:e2e
 ```
 
-EN: A Playwright end-to-end suite (in `e2e/`) drives the real admin and
-front-end pages of the running Docker blog. It covers the admin flows
-(log in; create / edit / delete a post; add / delete a category) and the
-front end (home page, single post `?p=`, category `?cat=`, monthly archive
-`?m=`, and the RSS .92 / RDF 1.0 / RSS 2.0 feeds), and asserts that no PHP
-`Fatal error` / `Warning` / `Deprecated` text appears on any page. Test data
-is seeded and cleaned up by helpers in `e2e/helpers/`; every seeded row carries
-an `E2E:` title/name prefix and only those rows are removed, so your existing
-content is never touched and the suite is safe to re-run. The Docker blog must
-be running first. See `docs/php83-migration.md` (Issue #60) for details.
-
-JA: Playwright の E2E スイート(`e2e/`)が、稼働中の Docker ブログの実際の
+Playwright の E2E スイート(`e2e/`)が、稼働中の Docker ブログの実際の
 管理画面・フロントエンドのページを操作する。管理画面フロー(ログイン、投稿の
 作成/編集/削除、カテゴリの追加/削除)とフロントエンド(トップ、単一投稿
 `?p=`、カテゴリ `?cat=`、月別アーカイブ `?m=`、RSS .92 / RDF 1.0 / RSS 2.0
@@ -147,51 +258,34 @@ JA: Playwright の E2E スイート(`e2e/`)が、稼働中の Docker ブログ�
 である。先に Docker ブログを起動しておくこと。詳細は `docs/php83-migration.md`
 (Issue #60)を参照。
 
-## Publishing safely (static export) / 安全な公開（静的書き出し）
+## 安全な公開（静的書き出し）
 
 ```sh
 composer static-export     # or: php bin/static-export.php
 ```
 
-EN: WordPress 0.71 must never be exposed to the public internet as a running
-PHP application. The intended workflow is: write posts in the **local**
-environment, export the site to **static HTML** with `bin/static-export.php`,
-and upload only the static files to a public server — which then runs no PHP
-and no database, so the 2003 codebase is never exposed. See
-`docs/static-export.md`.
-
-JA: WordPress 0.71 を、稼働中の PHP アプリケーションとして公開インターネット
+WordPress 0.71 を、稼働中の PHP アプリケーションとして公開インターネット
 へ晒してはならない。想定するワークフローは: **ローカル**環境で投稿を書き、
 `bin/static-export.php` でサイトを**静的 HTML** へ書き出し、静的ファイルだけを
 公開サーバーへアップロードする — 公開サーバーは PHP も DB も動かさないため、
 2003 年のコードベースが晒されることはない。詳細は `docs/static-export.md`。
 
-## Project layout / 構成
+## 構成
 
-| Path | Contents / 内容 |
-|------|-----------------|
-| `src/` | The WordPress 0.71-gold source — the actual modified codebase. / WordPress 0.71-gold のソース(改修対象の本体)。 |
-| `tests/` | PHPUnit unit tests. / PHPUnit 単体テスト。 |
-| `e2e/` | Playwright E2E specs and test-data helpers. / Playwright E2E spec とテストデータヘルパー。 |
-| `docs/` | Documentation. / ドキュメント。 |
-| `bin/` | Tooling scripts — the static-export script. / ツールスクリプト(静的書き出し)。 |
-| `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. / ローカルの PHP 8.3 + MySQL 8 環境。 |
-| `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. / 静的解析の設定。 |
-| `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). / PHP 開発ツール。 |
-| `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node tooling — Playwright E2E and the husky/lint-staged pre-commit hook. / Node ツール — Playwright E2E と husky/lint-staged の pre-commit フック。 |
+| パス | 内容 |
+|------|------|
+| `src/` | WordPress 0.71-gold のソース(改修対象の本体)。 |
+| `tests/` | PHPUnit 単体テスト。 |
+| `e2e/` | Playwright E2E spec とテストデータヘルパー。 |
+| `docs/` | ドキュメント。 |
+| `bin/` | ツールスクリプト(静的書き出し)。 |
+| `Dockerfile`, `docker-compose.yml` | ローカルの PHP 8.3 + MySQL 8 環境。 |
+| `phpcs.xml.dist`, `phpstan.neon.dist` | 静的解析の設定。 |
+| `composer.json` | PHP 開発ツール(phpcs / WPCS / PHPStan / PHPUnit)。 |
+| `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node ツール — Playwright E2E と husky/lint-staged の pre-commit フック。 |
 
-## What was done / 実施内容
+## 実施内容
 
-EN:
-- **PHP 8.3 migration** — `ext/mysql` → `mysqli`, POSIX `ereg*` → PCRE,
-  removed/changed PHP functions and superglobals, PHP4-style constructors, etc.
-- **MySQL 8 compatibility** — strict `sql_mode`, reserved words, etc.
-- **Security hardening** — SQL injection, XSS, CSRF, authentication & session,
-  access control, file upload, information disclosure.
-- **Removed unused features** — XML-RPC, comments, trackback and pingback.
-- **Static analysis** — phpcs (WordPress-Core / WPCS) and PHPStan, both at 0.
-
-JA:
 - **PHP 8.3 移行** — `ext/mysql` → `mysqli`、POSIX `ereg*` → PCRE、廃止・変更
   された PHP 関数やスーパーグローバル、PHP4 形式コンストラクタ など。
 - **MySQL 8 互換** — 厳格な `sql_mode`、予約語 など。
@@ -200,26 +294,21 @@ JA:
 - **不要機能の撤去** — XML-RPC・コメント・トラックバック・ピンバック。
 - **静的解析** — phpcs(WordPress-Core / WPCS)と PHPStan、いずれも 0 件。
 
-EN: Every change is recorded, per GitHub Issue, in `docs/php83-migration.md`.
+すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に記録している。
 
-JA: すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に記録している。
+## ドキュメント
 
-## Documentation / ドキュメント
+| ファイル | 内容 |
+|------|------|
+| `docs/php83-migration.md` | Issue 単位の移行ログ。 |
+| `docs/security-audit.md` | セキュリティ監査のまとめ。 |
+| `docs/static-export.md` | 静的書き出しと安全な公開。 |
+| `docs/static-analysis.md` | phpcs・PHPStan ツール。 |
+| `docs/docker-environment.md` | Docker 環境の詳細。 |
+| `docs/gutenberg-investigation.md` | Gutenberg 移植可否の調査。 |
+| `docs/block-editor-media-and-layout.md` | ブロックエディタ: 画像アップロードとレイアウト整合性。 |
 
-| File | Contents / 内容 |
-|------|-----------------|
-| `docs/php83-migration.md` | Per-Issue migration log. / Issue 単位の移行ログ。 |
-| `docs/security-audit.md` | Security audit summary. / セキュリティ監査のまとめ。 |
-| `docs/static-export.md` | Static export & safe publishing. / 静的書き出しと安全な公開。 |
-| `docs/static-analysis.md` | phpcs / PHPStan tooling. / phpcs・PHPStan ツール。 |
-| `docs/docker-environment.md` | Docker environment details. / Docker 環境の詳細。 |
-| `docs/gutenberg-investigation.md` | Gutenberg port feasibility investigation. / Gutenberg 移植可否の調査。 |
-| `docs/block-editor-media-and-layout.md` | Block editor: image upload & layout-block consistency. / ブロックエディタ: 画像アップロードとレイアウト整合性。 |
+## ライセンス
 
-## License / ライセンス
-
-EN: GPL-2.0-or-later. WordPress is released under the GNU General Public
-License; this derivative work follows the same license.
-
-JA: GPL-2.0-or-later。WordPress は GNU 一般公衆利用許諾契約書で配布されており、
+GPL-2.0-or-later。WordPress は GNU 一般公衆利用許諾契約書で配布されており、
 本派生物も同じライセンスに従う。
