@@ -13,3 +13,10 @@ FROM php:8.3-apache
 #     廃止された ext/mysql API を使用しており、移行先は mysqli とする。ベース
 #     イメージにはどちらの拡張も含まれていない。
 RUN docker-php-ext-install mysqli
+
+# EN: Load the PHP 7/8 compatibility shim before every request via
+#     auto_prepend_file, so its functions are defined regardless of each entry
+#     point's include order.
+# JA: auto_prepend_file により PHP 7/8 互換シムを毎リクエストの前に読み込み、
+#     各エントリポイントの include 順に依存せず互換関数を定義する。
+COPY docker/php-compat.ini /usr/local/etc/php/conf.d/php-compat.ini
