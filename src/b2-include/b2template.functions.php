@@ -1246,7 +1246,11 @@ function apply_filters($tag, $string) {
 	global $b2_filter;
 	if (isset($b2_filter['all'])) {
 		$b2_filter['all'] = (is_string($b2_filter['all'])) ? array($b2_filter['all']) : $b2_filter['all'];
-		$b2_filter[$tag] = array_merge($b2_filter['all'], $b2_filter[$tag]);
+		// EN: $b2_filter[$tag] may be unset/null; PHP 8's array_merge() rejects
+		//     a non-array argument with a TypeError, so coerce it to an array.
+		// JA: $b2_filter[$tag] は未設定/null のことがある。PHP 8 の array_merge()
+		//     は非配列引数を TypeError とするため、配列へ変換する。
+		$b2_filter[$tag] = array_merge($b2_filter['all'], (array) ($b2_filter[$tag] ?? array()));
 		$b2_filter[$tag] = array_unique($b2_filter[$tag]);
 	}
 	if (isset($b2_filter[$tag])) {
