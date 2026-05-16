@@ -45,7 +45,7 @@ not touch the repository root's npm setup). It uses:
 
 Vite bundles React **and** every `@wordpress/*` package **into** a single
 standalone module, so the boot page needs no separate WordPress JavaScript
-runtime. The build output is written to `../src/block-editor-assets/` so the
+runtime. The build output is written to `../assets/` so the
 Docker blog can serve it.
 
 JA: 独自の **`package.json`** を持つ、小さく自己完結した React アプリ
@@ -64,9 +64,9 @@ JA: 独自の **`package.json`** を持つ、小さく自己完結した React �
 Vite は React **と** 全 `@wordpress/*` パッケージを 1 つのスタンドアロン
 モジュールへバンドルするため、起動ページは別の WordPress JavaScript
 ランタイムを必要としない。ビルド成果物は Docker のブログが配信できるよう
-`../src/block-editor-assets/` へ書き出す。
+`../assets/` へ書き出す。
 
-### 2. The WordPress 0.71 backend (`src/block-editor-api/`) / WordPress 0.71 バックエンド
+### 2. The WordPress 0.71 backend (`src/block-editor/api/`) / WordPress 0.71 バックエンド
 
 EN: Three small PHP files, served by the existing Docker blog:
 
@@ -105,13 +105,13 @@ Issue #31 でプロジェクトが適用したのと同じ SQL 堅牢化であ�
 ```
   Browser (editor.php?post=N)
         |
-        |  GET  block-editor-api/load.php?post=N      ── JSON ──▶  b2posts.post_content
+        |  GET  block-editor/api/load.php?post=N      ── JSON ──▶  b2posts.post_content
         |                                                              |
         |  React app:  parse(content) → block tree → BlockEditor       |
         |                                                              |
         |  edit blocks → serialize(blocks) → block markup              |
         |                                                              |
-        |  POST block-editor-api/save.php  { post, title, content } ──▶ b2posts.post_content
+        |  POST block-editor/api/save.php  { post, title, content } ──▶ b2posts.post_content
         |
   0.71 front end (index.php?p=N) renders the post; the <!-- wp:* -->
   delimiters are HTML comments, so they are invisible to visitors.
@@ -136,18 +136,18 @@ EN: Requires Node.js (developed and tested with v24) and npm.
 JA: Node.js(v24 で開発・検証)と npm が必要。
 
 ```sh
-cd block-editor-prototype
+cd src/block-editor/app
 npm install
 npm run build
 ```
 
-EN: `npm run build` bundles the app into `../src/block-editor-assets/`
+EN: `npm run build` bundles the app into `../assets/`
 (git-ignored — it is a build artifact). `editor.php` reads
-`block-editor-assets/.vite/manifest.json` to find the hashed bundle filename.
+`../assets/.vite/manifest.json` to find the hashed bundle filename.
 
-JA: `npm run build` はアプリを `../src/block-editor-assets/` へバンドルする
+JA: `npm run build` はアプリを `../assets/` へバンドルする
 (git 管理外 — ビルド成果物のため)。`editor.php` は
-`block-editor-assets/.vite/manifest.json` を読んでハッシュ付きの
+`../assets/.vite/manifest.json` を読んでハッシュ付きの
 バンドルファイル名を特定する。
 
 ## Open the editor / エディタを開く
@@ -156,14 +156,14 @@ EN: With the local Docker blog running (`docker compose up -d` from the
 repository root) and after building:
 
 1. Log in to the 0.71 admin at `http://localhost:8080/b2login.php`.
-2. Open `http://localhost:8080/block-editor-api/editor.php?post=1` (replace
+2. Open `http://localhost:8080/block-editor/api/editor.php?post=1` (replace
    `1` with any post id).
 
 JA: ローカルの Docker ブログを起動し(リポジトリルートで
 `docker compose up -d`)、ビルドした後で:
 
 1. `http://localhost:8080/b2login.php` で 0.71 の管理画面にログインする。
-2. `http://localhost:8080/block-editor-api/editor.php?post=1` を開く
+2. `http://localhost:8080/block-editor/api/editor.php?post=1` を開く
    (`1` は任意の投稿 ID に置き換える)。
 
 ## Round-trip demo / 往復デモ

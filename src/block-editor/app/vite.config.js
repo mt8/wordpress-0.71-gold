@@ -2,12 +2,12 @@
 //     (Issue #65). It bundles React and every @wordpress/* package the editor
 //     uses INTO a single standalone module, so the boot page (editor.php)
 //     needs no separate WordPress JavaScript runtime. The build output is
-//     written into src/block-editor-assets/, which the Docker blog serves.
+//     written into src/block-editor/assets/, which the Docker blog serves.
 // JA: WordPress 0.71 カスタムブロックエディタ試作(Issue #65)向けの Vite
 //     ビルド設定。React とエディタが使う全 @wordpress/* パッケージを 1 つの
 //     スタンドアロンモジュールへバンドルするため、起動ページ(editor.php)
 //     は別の WordPress JavaScript ランタイムを必要としない。ビルド成果物は
-//     Docker のブログが配信する src/block-editor-assets/ へ書き出す。
+//     Docker のブログが配信する src/block-editor/assets/ へ書き出す。
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
@@ -25,7 +25,7 @@ export default defineConfig( {
 	build: {
 		// EN: Emit into src/ so the Docker-served blog can load the bundle.
 		// JA: Docker が配信するブログがバンドルを読めるよう src/ へ出力する。
-		outDir: fileURLToPath( new URL( '../src/block-editor-assets', import.meta.url ) ),
+		outDir: fileURLToPath( new URL( '../assets', import.meta.url ) ),
 		emptyOutDir: true,
 		// EN: editor.php reads this manifest to find the hashed bundle name.
 		// JA: editor.php はこのマニフェストからハッシュ付きバンドル名を得る。

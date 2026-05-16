@@ -18,8 +18,8 @@ test-results/
 playwright-report/
 /playwright/.cache/
 
-# Block-editor prototype, Issue #65 / ブロックエディタ試作 (Issue #65)
+# Block editor (src/block-editor/), Issue #65 / #76 / ブロックエディタ
 # EN: npm dependencies and the bundled build output are artifacts, not source.
 # JA: npm の依存関係とバンドルされたビルド成果物は成果物でありソースではない。
-/block-editor-prototype/node_modules/
-/src/block-editor-assets/
+/src/block-editor/app/node_modules/
+/src/block-editor/assets/
