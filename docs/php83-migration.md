@@ -2239,3 +2239,97 @@ phpcs` は違反 0 件(41 ファイル)。`composer phpstan --memory-limit=1G` �
 `b2categories.php`・`b2team.php`・`b2options.php`・`b2profile.php`・
 `b2template.php`・`linkcategories.php` および `linkedit` アクションは
 すべて HTTP 200・PHP 警告/fatal 0 で表示される。
+
+## Issue #49: Raise phpcs to the WordPress Coding Standard / phpcs を WordPress コーディング規約に引き上げる
+
+EN: phpcs previously ran only `PHPCompatibility`. Issue #49 adds the official
+**WordPress Coding Standards** (`wp-coding-standards/wpcs`) and curates it down
+to a passing `WordPress-Core` subset, so phpcs now also enforces the WordPress
+code style. The full WordPress-Core standard reported about 1,043 violations on
+this 2003-era codebase. They were addressed in three steps:
+
+1. **Auto-format** — `phpcbf` fixed **15,081** whitespace/brace/spacing
+   violations automatically.
+2. **Manual fixes** — the mechanical, behaviour-preserving remainder was fixed
+   by hand (see the table below).
+3. **Curated ruleset** — sniffs whose only "fix" would be renaming public
+   identifiers/files, rewriting SQL to prepared statements, or changing runtime
+   behaviour were excluded in `phpcs.xml.dist`, each with a bilingual comment.
+
+EN: After all three steps, `composer phpcs` reports **0 errors and 0 warnings**.
+
+JA: phpcs はこれまで `PHPCompatibility` のみを実行していた。Issue #49 で公式の
+**WordPress Coding Standards**(`wp-coding-standards/wpcs`)を追加し、合格する
+`WordPress-Core` のサブセットに絞り込んだ。これにより phpcs は WordPress の
+コードスタイルも検査するようになった。WordPress-Core 標準は 2003 年当時の本
+コードベースに対し約 1,043 件の違反を報告した。これらを 3 段階で対応した:
+
+1. **自動整形** — `phpcbf` が空白・波括弧・スペースの違反 **15,081** 件を自動修正。
+2. **手動修正** — 機械的で挙動を変えない残りを手作業で修正(下表)。
+3. **ルールセットの精選** — 唯一の「修正」が公開識別子・ファイル名の改名、
+   prepared statement への SQL 書き換え、または実行時挙動の変更となる sniff は
+   `phpcs.xml.dist` で除外し、それぞれに英日のコメントを付した。
+
+JA: 3 段階すべての後、`composer phpcs` は **エラー 0 件・警告 0 件** を報告する。
+
+EN: As a follow-up within this Issue, the `PHPCompatibility` standard (and the
+`phpcompatibility/php-compatibility` dev dependency) were removed from the phpcs
+configuration: it had already reached 0 violations and the PHP 8.3 migration is
+complete, so phpcs now runs the `WordPress-Core` standard only.
+
+JA: 本 Issue の追加対応として、`PHPCompatibility` 標準(および
+`phpcompatibility/php-compatibility` 開発依存)を phpcs 設定から除去した。
+すでに 0 件に到達しており PHP 8.3 移行も完了しているため、phpcs は現在
+`WordPress-Core` 標準のみを実行する。
+
+### Manual fixes / 手動修正
+
+| Sniff | Count | Fix / 修正 |
+|---|---|---|
+| `WordPress.PHP.YodaConditions.NotYoda` | 232 | rewrote each `$var == literal` comparison to Yoda form `literal == $var` (behaviour-identical) / 各 `$var == literal` 比較を Yoda 形式 `literal == $var` に書き換え(挙動は同一) |
+| `PSR2.Classes.PropertyDeclaration` (`VarUsed` / `ScopeMissing`) | 24 | replaced the `var` keyword on `wpdb` properties with explicit `public` / `wpdb` のプロパティの `var` を明示的な `public` に置換 |
+| `Squiz.Scope.MethodScope.Missing` | 13 | added explicit `public` visibility to every `wpdb` method / `wpdb` の各メソッドに明示的な `public` 可視性を付与 |
+| `PSR2.ControlStructures.SwitchDeclaration` | 14 | removed the `{ }` blocks wrapping `case`/`default` bodies / `case`/`default` 本体を包む `{ }` ブロックを除去 |
+| `Squiz.PHP.DisallowMultipleAssignments.FoundInControlStructure` | 9 | moved each assignment used inside an `if ( ... )` condition to its own statement / `if ( ... )` 条件内の代入を独立した文に移動 |
+| `Squiz.ControlStructures.ControlSignature.SpaceAfterCloseBrace` | 4 | joined `elseif`/`else` to the preceding closing brace / `elseif`/`else` を直前の閉じ波括弧に連結 |
+
+### Excluded sniffs / 除外した sniff
+
+EN: These sniffs are excluded inside the `<rule ref="WordPress-Core">` block of
+`phpcs.xml.dist`. Each exclusion would require a rename / SQL rewrite /
+behaviour change that is out of scope for a code-style pass.
+
+JA: 以下の sniff は `phpcs.xml.dist` の `<rule ref="WordPress-Core">` ブロック内
+で除外する。いずれも改名・SQL 書き換え・挙動変更が必要で、コードスタイル対応の
+範囲外である。
+
+| Sniff | Why excluded / 除外理由 |
+|---|---|
+| `WordPress.NamingConventions.ValidVariableName` / `ValidFunctionName` | snake_case renaming would rewrite the 2003-era b2/WordPress API (`the_ID()`, `balanceTags()`, …) / snake_case 改名は 2003 年当時の b2/WordPress API を書き換える |
+| `PEAR.NamingConventions.ValidClassName` | wants `class wpdb` renamed to `Wpdb`; `wpdb` is a public API class / `class wpdb` を `Wpdb` に改名要求。`wpdb` は公開 API クラス |
+| `Universal.NamingConventions.NoReservedKeywordParameterNames` | renaming a parameter changes the public function signature / 引数の改名は公開関数のシグネチャを変える |
+| `WordPress.Files.FileName` | renaming files ripples through every include/require and link / ファイル名の改名は全 include/require とリンクに波及 |
+| `WordPress.DB.PreparedSQL` | prepared statements; Issue #31 already hardened SQL with `(int)` casts / prepared statement。Issue #31 で `(int)` キャストにより SQL は堅牢化済み |
+| `WordPress.DB.RestrictedFunctions` | "use `$wpdb` not `mysqli_*`"; WordPress 0.71 IS the data layer and calls mysqli by design / 「`mysqli_*` でなく `$wpdb`」だが 0.71 はデータ層そのもので設計上 mysqli を直接呼ぶ |
+| `Universal.Operators.StrictComparisons` | `==`→`===` changes comparison strictness / `==`→`===` は比較の厳密さを変える |
+| `WordPress.PHP.StrictInArray` | adding `true` to `in_array()` changes comparison strictness / `in_array()` への `true` 追加は比較の厳密さを変える |
+| `WordPress.DateTime.RestrictedFunctions` | `date()`→`gmdate()` is a timezone behaviour change / `date()`→`gmdate()` はタイムゾーンの挙動変更 |
+| `WordPress.PHP.NoSilencedErrors` | removing `@` changes runtime warning behaviour / `@` の除去は実行時の警告挙動を変える |
+| `Generic.CodeAnalysis.AssignmentInCondition` | the `while ( $row = mysqli_fetch_*() )` fetch-loop idiom cannot be silenced with extra parentheses, and restructuring every loop risks infinite loops; the safe `if ( ... )` cases were fixed instead / `while ( $row = mysqli_fetch_*() )` の取得ループ慣用句は括弧追加では抑止できず、全ループ再構成は無限ループのリスク。安全な `if ( ... )` の事例は修正済み |
+
+### Verification / 検証
+
+EN: `vendor/bin/phpcs` reports 0 errors and 0 warnings; `php -l` passes on all
+30 changed files; `composer phpstan --memory-limit=1G` still reports 0 errors
+(the Yoda rewrites did not regress it). In Docker (web container restarted to
+clear OPcache) the front end (`/`, `?cat=2`, `?p=1`) returns HTTP 200 with 0 PHP
+warnings/fatals and still renders 20 posts; admin login succeeds (HTTP 302) and
+`wp-admin/b2edit.php`, `linkmanager.php` and `linkcategories.php` load with 0
+warnings/fatals.
+
+JA: `vendor/bin/phpcs` はエラー 0 件・警告 0 件。`php -l` は変更した 30 ファイル
+すべてで通る。`composer phpstan --memory-limit=1G` はエラー 0 件のまま(Yoda
+の書き換えで退行なし)。Docker(OPcache を消すため web コンテナを再起動)で
+フロントエンド(`/`・`?cat=2`・`?p=1`)は HTTP 200・PHP 警告/fatal 0 で 20 件の
+投稿を表示し、管理者ログインは成功(HTTP 302)、`wp-admin/b2edit.php`・
+`linkmanager.php`・`linkcategories.php` は警告/fatal 0 で表示される。

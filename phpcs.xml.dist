@@ -1,24 +1,111 @@
 <?xml version="1.0"?>
 <!--
-  EN: PHP 8.3 compatibility check for WordPress 0.71-gold. Runs the
-      PHPCompatibility standard against src/ with the target PHP version 8.3.
-  JA: WordPress 0.71-gold の PHP 8.3 互換性チェック。PHPCompatibility 標準を
-      src/ に対し、対象 PHP バージョン 8.3 で実行する。
+  EN: phpcs ruleset for WordPress 0.71-gold. Runs the WordPress-Core coding
+      standard (WPCS) against src/.
+  JA: WordPress 0.71-gold の phpcs ルールセット。WordPress-Core コーディング
+      標準(WPCS)を src/ に対して実行する。
 -->
 <ruleset name="wordpress-0.71-gold">
-    <description>PHP 8.3 compatibility check for WordPress 0.71-gold.</description>
+    <description>WordPress-Core coding standard (WPCS) check.</description>
 
     <file>src</file>
 
-    <!-- EN: Reference the PHPCompatibility ruleset by path, so no phpcs
-              "composer installer" plugin is needed.
-         JA: PHPCompatibility ルールセットをパス参照する。phpcs の
-              composer-installer プラグインは不要。 -->
-    <rule ref="./vendor/phpcompatibility/php-compatibility/PHPCompatibility/ruleset.xml"/>
+    <!-- EN: WordPress coding style. b2vars.php is a mixed cp1252 / UTF-8 file
+              whose byte-significant translation tables would be corrupted by
+              the auto-formatter, so it is exempt from this style check.
+         JA: WordPress コーディングスタイル。b2vars.php は cp1252 と UTF-8 が
+              混在し、バイトに意味のある変換テーブルを持つため自動整形すると
+              壊れる。よって本スタイルチェックの対象外とする。 -->
+    <rule ref="WordPress-Core">
+        <exclude-pattern>src/b2-include/b2vars.php</exclude-pattern>
 
-    <!-- EN: Target PHP version for the compatibility check.
-         JA: 互換性チェックの対象 PHP バージョン。 -->
-    <config name="testVersion" value="8.3"/>
+        <!-- EN: The sniffs below are excluded because making the code pass
+                  them would require renaming public identifiers/files,
+                  rewriting SQL to prepared statements, or changing runtime
+                  behaviour. That is out of scope for this code-style pass on
+                  a 2003-era codebase; every other WordPress-Core sniff is
+                  enforced and the code was fixed to satisfy it.
+             JA: 以下の sniff は除外する。準拠させるには公開識別子やファイル名
+                  の改名、prepared statement への SQL 書き換え、または実行時
+                  挙動の変更が必要になるため。2003 年当時のコードに対する本
+                  コードスタイル対応の範囲外である。これ以外の WordPress-Core
+                  sniff はすべて有効化し、コードを修正して準拠させている。 -->
+
+        <!-- EN: snake_case renaming of variables/functions would rewrite the
+                  2003-era b2/WordPress API surface (e.g. the_ID(), balanceTags()).
+             JA: 変数・関数の snake_case 改名は 2003 年当時の b2/WordPress API
+                  (例: the_ID(), balanceTags())を書き換えることになる。 -->
+        <exclude name="WordPress.NamingConventions.ValidVariableName"/>
+        <exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+
+        <!-- EN: PEAR class-name rule wants `class wpdb` renamed to `Wpdb`;
+                  wpdb is a public API class referenced throughout.
+             JA: PEAR のクラス名規則は `class wpdb` を `Wpdb` への改名を求める。
+                  wpdb は全体から参照される公開 API クラスである。 -->
+        <exclude name="PEAR.NamingConventions.ValidClassName"/>
+
+        <!-- EN: renaming a parameter that happens to be a reserved keyword
+                  changes the public function signature.
+             JA: 予約語と重なる引数名の改名は公開関数のシグネチャを変える。 -->
+        <exclude name="Universal.NamingConventions.NoReservedKeywordParameterNames"/>
+
+        <!-- EN: renaming files (e.g. blog.header.php -> blog-header.php)
+                  ripples through every include/require and hyperlink.
+             JA: ファイル名の改名(例: blog.header.php -> blog-header.php)は
+                  すべての include/require とリンクに波及する。 -->
+        <exclude name="WordPress.Files.FileName"/>
+
+        <!-- EN: prepared statements; Issue #31 already hardened the SQL with
+                  (int) casts and addslashes(). A full prepared-statement
+                  rewrite was explicitly out of scope there.
+             JA: prepared statement。Issue #31 で (int) キャストと addslashes()
+                  により SQL は堅牢化済み。prepared statement への全面書き換えは
+                  当時明示的にスコープ外とした。 -->
+        <exclude name="WordPress.DB.PreparedSQL"/>
+
+        <!-- EN: "use $wpdb, not mysqli_*"; WordPress 0.71 IS the data layer
+                  (the wpdb class itself) and calls mysqli directly by design.
+             JA: 「mysqli_* ではなく $wpdb を使え」。WordPress 0.71 はデータ層
+                  そのもの(wpdb クラス自体)であり、設計上 mysqli を直接呼ぶ。 -->
+        <exclude name="WordPress.DB.RestrictedFunctions"/>
+
+        <!-- EN: == -> === changes comparison strictness; unsafe to blanket-
+                  apply to 2003 code that relies on loose comparison.
+             JA: == -> === は比較の厳密さを変える。緩い比較に依存する 2003 年
+                  のコードへ一律適用するのは危険。 -->
+        <exclude name="Universal.Operators.StrictComparisons"/>
+
+        <!-- EN: in_array() without the strict flag; adding `true` changes
+                  comparison strictness, same risk as the operator above.
+             JA: strict フラグ無しの in_array()。`true` の追加は比較の厳密さを
+                  変え、上記の比較演算子と同じリスクがある。 -->
+        <exclude name="WordPress.PHP.StrictInArray"/>
+
+        <!-- EN: date() -> gmdate() is a timezone behaviour change; the blog
+                  intentionally formats timestamps in server local time.
+             JA: date() -> gmdate() はタイムゾーンの挙動変更。本ブログは意図的に
+                  サーバのローカル時刻でタイムスタンプを整形している。 -->
+        <exclude name="WordPress.DateTime.RestrictedFunctions"/>
+
+        <!-- EN: removing the `@` error-suppression operator changes runtime
+                  warning behaviour; the legacy code relies on it.
+             JA: `@` エラー抑制演算子の除去は実行時の警告挙動を変える。レガシー
+                  コードはこれに依存している。 -->
+        <exclude name="WordPress.PHP.NoSilencedErrors"/>
+
+        <!-- EN: assignment inside a while () condition. The 2003 code uses the
+                  classic `while ( $row = mysqli_fetch_*() )` fetch-loop idiom;
+                  this sniff cannot be silenced with the extra-parentheses
+                  idiom, and restructuring every fetch loop risks introducing
+                  infinite loops. The behaviour-preserving `if (...)` cases
+                  were fixed by moving the assignment to its own statement.
+             JA: while () 条件内の代入。2003 年のコードは古典的な
+                  `while ( $row = mysqli_fetch_*() )` の取得ループ慣用句を使う。
+                  この sniff は括弧追加の慣用句では抑止できず、全取得ループの
+                  再構成は無限ループ混入のリスクがある。挙動を変えない if (...)
+                  の事例は代入を独立した文に出して修正済み。 -->
+        <exclude name="Generic.CodeAnalysis.AssignmentInCondition"/>
+    </rule>
 
     <arg name="extensions" value="php"/>
     <arg value="sp"/>
