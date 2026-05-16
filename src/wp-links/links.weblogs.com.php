@@ -33,7 +33,7 @@ function preload_links() {
 function update_links() {
     global $tablelinks, $all_links, $wpdb;
     reset($all_links);
-    while (list($id, $val) = each($all_links)) {
+    foreach ($all_links as $id => $val) {
         if ($val[1]) {
             //echo("executing: $sql\n");
             $wpdb->query("UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $val[0]");
