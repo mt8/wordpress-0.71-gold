@@ -75,6 +75,10 @@ switch ($action) {
     $standalone = 1;
     include_once('b2header.php');
 
+    // EN: CSRF check -- reject a forged request to add a link.
+    // JA: CSRF チェック -- リンク追加リクエストの偽造を拒否する。
+    b2_csrf_check('link-add');
+
     $link_url = $_POST["linkurl"];
     $link_name = $_POST["name"];
     $link_image = $_POST["image"];
@@ -124,6 +128,10 @@ switch ($action) {
       $standalone = 1;
       include_once('b2header.php');
 
+      // EN: CSRF check -- reject a forged request to save an edited link.
+      // JA: CSRF チェック -- リンク編集保存リクエストの偽造を拒否する。
+      b2_csrf_check('link-edit');
+
       // EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id=$link_id).
       // JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id=$link_id)で使われる。
       $link_id = (int) $_POST["link_id"];
@@ -168,6 +176,10 @@ switch ($action) {
   {
     $standalone = 1;
     include_once('b2header.php');
+
+    // EN: CSRF check -- reject a forged request to delete a link.
+    // JA: CSRF チェック -- リンク削除リクエストの偽造を拒否する。
+    b2_csrf_check('link-list');
 
     // EN: Cast the link id to int -- it reaches SQL (WHERE link_id = '$link_id').
     // JA: リンク ID を整数にキャスト -- SQL(WHERE link_id = '$link_id')に渡る。
@@ -228,6 +240,11 @@ switch ($action) {
     
   <table width="95%" cellpadding="5" cellspacing="0" border="0"><form name="editlink" method="post">
     <input type="hidden" name="action" value="editlink" />
+    <?php
+    // EN: CSRF token for the link-edit save submit (verified in linkmanager.php).
+    // JA: リンク編集保存の送信用 CSRF トークン(linkmanager.php で検証)。
+    b2_csrf_field('link-edit');
+    ?>
     <input type="hidden" name="link_id" value="<?php echo $link_id; ?>" />
     <input type="hidden" name="order_by" value="<?php echo $order_by ?>" />
     <input type="hidden" name="cat_id" value="<?php echo $cat_id ?>" />
@@ -426,6 +443,13 @@ switch ($action) {
      <form name="links" id="links" method="post">
     <input type="hidden" name="link_id" value="" />
     <input type="hidden" name="action" value="" />
+    <?php
+    // EN: CSRF token for the per-row Delete submit of the link list
+    //     (verified in linkmanager.php's Delete case).
+    // JA: リンク一覧の行ごとの削除送信用 CSRF トークン
+    //     (linkmanager.php の Delete ケースで検証)。
+    b2_csrf_field('link-list');
+    ?>
     <input type="hidden" name="order_by" value="<?php echo $order_by ?>" />
     <input type="hidden" name="cat_id" value="<?php echo $cat_id ?>" />
   <table width="100%" border="0" cellspacing="0" cellpadding="5">
@@ -502,6 +526,11 @@ LINKS;
     <table width="95%" cellpadding="5" cellspacing="0" border="0">
     <form name="addlink" method="post">
     <input type="hidden" name="action" value="Add" />
+    <?php
+    // EN: CSRF token for the add-link submit (verified in linkmanager.php).
+    // JA: リンク追加の送信用 CSRF トークン(linkmanager.php で検証)。
+    b2_csrf_field('link-add');
+    ?>
     <tr><td colspan="2"><b>Add</b> a link:</td></tr>
       <tr height="20">
         <td height="20" align="right">URL:</td>
