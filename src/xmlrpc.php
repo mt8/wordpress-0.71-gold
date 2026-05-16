@@ -394,7 +394,9 @@ function bloggereditpost($m) {
 	$password=$m->getParam(3);
 	$newcontent=$m->getParam(4);
 
-	$post_ID = $post_ID->scalarval();
+	// EN: Cast the post id to int -- it reaches SQL (WHERE ID = ...).
+	// JA: 投稿 ID を整数にキャスト -- SQL(WHERE ID = ...)に渡る。
+	$post_ID = (int) $post_ID->scalarval();
 	$username = $username->scalarval();
 	$password = $password->scalarval();
 	$newcontent = $newcontent->scalarval();
@@ -481,7 +483,9 @@ function bloggerdeletepost($m) {
 	$password=$m->getParam(3);
 	$newcontent=$m->getParam(4);
 
-	$post_ID = $post_ID->scalarval();
+	// EN: Cast the post id to int -- it reaches SQL (WHERE ID = ...).
+	// JA: 投稿 ID を整数にキャスト -- SQL(WHERE ID = ...)に渡る。
+	$post_ID = (int) $post_ID->scalarval();
 	$username = $username->scalarval();
 	$password = $password->scalarval();
 	$newcontent = $newcontent->scalarval();
@@ -624,7 +628,9 @@ function bloggergetpost($m) {
 	dbconnect();
 
 	$post_ID=$m->getParam(1);
-	$post_ID = $post_ID->scalarval();
+	// EN: Cast the post id to int -- it reaches SQL (WHERE ID = ...).
+	// JA: 投稿 ID を整数にキャスト -- SQL(WHERE ID = ...)に渡る。
+	$post_ID = (int) $post_ID->scalarval();
 
 	$username=$m->getParam(2);
 	$username = $username->scalarval();
@@ -979,6 +985,12 @@ function pingback_ping($m) {
 		} else {
 			$post_ID = -1;
 		}
+
+		// EN: Cast the post id to int -- it is derived from the remote
+		//     pingback URL and used unquoted in SQL (WHERE ID = $post_ID).
+		// JA: 投稿 ID を整数にキャスト -- リモートのピンバック URL 由来で、
+		//     SQL でクォート無し(WHERE ID = $post_ID)で使われる。
+		$post_ID = (int) $post_ID;
 
 		debug_fwrite($log, "Found post ID $way: $post_ID\n");
 
