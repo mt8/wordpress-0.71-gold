@@ -313,3 +313,69 @@ JA: ブログ本体は fatal エラーなく描画されるが、初期投稿は
   警告を出し、テキストを変換しない。
 - 多数の非 fatal な `E_WARNING` / `E_DEPRECATED`(未定義変数、動的プロパティ、
   `define()` 第3引数、未初期化文字列オフセット)。
+
+---
+
+## Issue #11: Make the blog front end display posts / ブログ本体に投稿を表示させる
+
+EN: Follow-up to Issue #9. Two blockers stopped the blog from displaying the
+seeded post.
+
+JA: Issue #9 のフォローアップ。ブログが初期投稿を表示できない障壁が 2 つあった。
+
+### Changes / 変更内容
+
+#### 1. `src/blog.header.php` — PHP 8 comparison semantics
+
+EN: PHP 8.0 changed string-to-number comparison: `0 == ''` is now false. The
+condition `'' != intval($user_ID)` was therefore true when `$user_ID` is unset
+(`intval` 0), so `blog.header.php` appended `OR post_author =  AND post_status
+!= 'draft')` with an empty `$user_ID` — an invalid `SELECT` that failed with a
+SQL syntax error. Changed to `if (intval($user_ID))`, which is true only for a
+real (non-zero) user id, matching the original intent on PHP 7 and PHP 8.
+
+JA: PHP 8.0 は文字列と数値の比較を変更し、`0 == ''` は false になった。条件
+`'' != intval($user_ID)` は `$user_ID` 未設定時(`intval` 0)に真となり、
+`blog.header.php` が空の `$user_ID` で `OR post_author =  AND post_status !=
+'draft')` を連結 — 不正な `SELECT` となり SQL 構文エラーで失敗していた。
+`if (intval($user_ID))` に変更。実在の(非ゼロの)user id でのみ真となり、
+PHP 7 / PHP 8 双方で本来の意図に一致する。
+
+#### 2. `src/b2-include/b2functions.php` — `/e` modifier in `convert_bbcode_email()`
+
+EN: With the SQL fixed, the post was queried but its content rendered empty.
+`convert_bbcode_email()` runs on every `the_content()` / `bloginfo()` call (it
+is not behind the `$use_bbcode` guard), and its `preg_replace()` used the `/e`
+modifier, removed in PHP 7.0. `preg_replace()` with `/e` now returns `null`,
+which wiped `$content`. Rewritten with `preg_replace_callback()`.
+
+JA: SQL を修正すると投稿はクエリされたが本文が空で描画された。
+`convert_bbcode_email()` は `the_content()` / `bloginfo()` のたびに実行される
+(`$use_bbcode` ガードの外)。その `preg_replace()` が PHP 7.0 で廃止された `/e`
+修飾子を使っており、`/e` 付き `preg_replace()` は現在 `null` を返すため
+`$content` が消えていた。`preg_replace_callback()` で書き換えた。
+
+### Verification / 検証
+
+EN: In the Docker environment with WordPress installed, the blog front end
+(`index.php`) returns HTTP 200 with no SQL error and no fatal error, and
+**displays the seeded post** — title ("Hello world!"), category, author, time
+and content ("Welcome to WordPress...").
+
+JA: Docker 環境(WordPress インストール済み)で、ブログ本体(`index.php`)が
+SQL エラー・fatal エラーなく HTTP 200 を返し、**初期投稿を表示する** — タイトル
+(「Hello world!」)、カテゴリ、著者、時刻、本文(「Welcome to WordPress...」)。
+
+### Out of scope / スコープ外
+
+EN: The remaining `/e` `preg_replace()` modifiers — the `%u` decoder and the
+`$b2_bbcode` / `$b2_gmcode` / smilies arrays (which run only when the
+corresponding `$use_*` option is on, all off by default) — and the non-fatal
+`E_WARNING` / `E_DEPRECATED` notices (e.g. the `$tags` typo in `apply_filters()`,
+uninitialized `$output` in `wptexturize()`) are deferred to later Issues.
+
+JA: 残りの `/e` `preg_replace()` 修飾子 — `%u` デコーダおよび `$b2_bbcode` /
+`$b2_gmcode` / スマイリーの配列(対応する `$use_*` オプションが有効なときのみ実行。
+既定はすべて無効) — および非 fatal な `E_WARNING` / `E_DEPRECATED`(例:
+`apply_filters()` の `$tags` タイプミス、`wptexturize()` の未初期化 `$output`)は
+後続 Issue に先送りする。
