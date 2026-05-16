@@ -18,17 +18,27 @@ $_POST   = add_magic_quotes($_POST);
 $_COOKIE = add_magic_quotes($_COOKIE);
 
 $b2varstoreset = array('action','standalone','redirect','profile','error','warning','a','file');
+// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
+//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
+//     write. The name list is a fixed whitelist and this loop runs at global
+//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
+//     intent (populate known globals from $_GET/$_POST) explicit.
+// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
+//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
+//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
+//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
+//     から設定する)が明確になる。
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
-	if (!isset($$b2var)) {
+	if (!isset($GLOBALS[$b2var])) {
 		if (empty($_POST["$b2var"])) {
 			if (empty($_GET["$b2var"])) {
-				$$b2var = '';
+				$GLOBALS[$b2var] = '';
 			} else {
-				$$b2var = $_GET["$b2var"];
+				$GLOBALS[$b2var] = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $_POST["$b2var"];
+			$GLOBALS[$b2var] = $_POST["$b2var"];
 		}
 	}
 }
