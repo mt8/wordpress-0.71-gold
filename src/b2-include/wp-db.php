@@ -1,11 +1,4 @@
 <?php
-
-// EN: Load the ext/mysql -> mysqli compatibility shim before anything else, so
-//     the wpdb class below and every legacy mysql_* call site keep working.
-// JA: 先頭で ext/mysql -> mysqli 互換シムを読み込み、下記の wpdb クラスと
-//     すべてのレガシー mysql_* 呼び出し箇所をそのまま動作させる。
-require_once(__DIR__ . '/mysql-shim.php');
-
 	// ==================================================================
 	//  Author: Justin Vincent (justin@visunet.ie)
 	//	Web: 	http://php.justinvincent.com
