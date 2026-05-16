@@ -1,25 +1,21 @@
 <?xml version="1.0"?>
 <!--
   EN: phpcs ruleset for WordPress 0.71-gold. Runs the WordPress-Core coding
-      standard (code style) and the PHPCompatibility standard (PHP 8.3 target)
-      against src/.
+      standard (WPCS) against src/.
   JA: WordPress 0.71-gold の phpcs ルールセット。WordPress-Core コーディング
-      標準(コードスタイル)と PHPCompatibility 標準(対象 PHP 8.3)を src/ に
-      対して実行する。
+      標準(WPCS)を src/ に対して実行する。
 -->
 <ruleset name="wordpress-0.71-gold">
-    <description>WordPress-Core coding standard + PHP 8.3 compatibility check.</description>
+    <description>WordPress-Core coding standard (WPCS) check.</description>
 
     <file>src</file>
 
     <!-- EN: WordPress coding style. b2vars.php is a mixed cp1252 / UTF-8 file
               whose byte-significant translation tables would be corrupted by
-              the auto-formatter, so it is exempt from this style check
-              (PHPCompatibility below still covers it).
+              the auto-formatter, so it is exempt from this style check.
          JA: WordPress コーディングスタイル。b2vars.php は cp1252 と UTF-8 が
               混在し、バイトに意味のある変換テーブルを持つため自動整形すると
-              壊れる。よって本スタイルチェックの対象外とする(下の
-              PHPCompatibility は引き続き対象)。 -->
+              壊れる。よって本スタイルチェックの対象外とする。 -->
     <rule ref="WordPress-Core">
         <exclude-pattern>src/b2-include/b2vars.php</exclude-pattern>
 
@@ -110,11 +106,6 @@
                   の事例は代入を独立した文に出して修正済み。 -->
         <exclude name="Generic.CodeAnalysis.AssignmentInCondition"/>
     </rule>
-
-    <!-- EN: PHP 8.3 compatibility, referenced by path (covers every file).
-         JA: PHP 8.3 互換性。パス参照(全ファイルが対象)。 -->
-    <rule ref="./vendor/phpcompatibility/php-compatibility/PHPCompatibility/ruleset.xml"/>
-    <config name="testVersion" value="8.3"/>
 
     <arg name="extensions" value="php"/>
     <arg value="sp"/>

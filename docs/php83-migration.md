@@ -2272,6 +2272,16 @@ JA: phpcs はこれまで `PHPCompatibility` のみを実行していた。Issue
 
 JA: 3 段階すべての後、`composer phpcs` は **エラー 0 件・警告 0 件** を報告する。
 
+EN: As a follow-up within this Issue, the `PHPCompatibility` standard (and the
+`phpcompatibility/php-compatibility` dev dependency) were removed from the phpcs
+configuration: it had already reached 0 violations and the PHP 8.3 migration is
+complete, so phpcs now runs the `WordPress-Core` standard only.
+
+JA: 本 Issue の追加対応として、`PHPCompatibility` 標準(および
+`phpcompatibility/php-compatibility` 開発依存)を phpcs 設定から除去した。
+すでに 0 件に到達しており PHP 8.3 移行も完了しているため、phpcs は現在
+`WordPress-Core` 標準のみを実行する。
+
 ### Manual fixes / 手動修正
 
 | Sniff | Count | Fix / 修正 |
