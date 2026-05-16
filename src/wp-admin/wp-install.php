@@ -2,7 +2,9 @@
 require('../b2config.php');
 
 
-$step = $HTTP_GET_VARS['step'];
+// EN: $HTTP_GET_VARS was removed in PHP 5.4; use the $_GET superglobal.
+// JA: $HTTP_GET_VARS は PHP 5.4 で廃止。$_GET スーパーグローバルを使う。
+$step = $_GET['step'] ?? null;
 if (!$step) $step = 0;
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
