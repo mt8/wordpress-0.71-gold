@@ -107,7 +107,7 @@ switch ($action) {
     <form name="editcat" method="post">
       <b>New</b> name:<br />
       <input type="hidden" name="action" value="editedcat" />
-      <input type="hidden" name="cat_id" value="<?php echo $_POST["cat_id"] ?>" />
+      <input type="hidden" name="cat_id" value="<?php echo htmlspecialchars($_POST["cat_id"]) ?>" />
       <input type="text" name="cat_name" value="<?php echo $cat_name ?>" /><br />
       <input type="checkbox" name="auto_toggle" value="Y" <?php echo $auto_toggle == 'Y' ? '"checked"' : ''; ?>/> auto-toggle?<br />
       <input type="submit" name="submit" value="Edit it !" class="search" />

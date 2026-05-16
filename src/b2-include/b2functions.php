@@ -689,7 +689,7 @@ function alert_error($msg) { // displays a warning box with an error message (or
 	<body>
 	<!-- this is for non-JS browsers (actually we should never reach that code, but hey, just in case...) -->
 	<?php echo $msg; ?><br />
-	<a href="<?php echo $_SERVER["HTTP_REFERER"]; ?>">go back</a>
+	<a href="<?php echo htmlspecialchars($_SERVER["HTTP_REFERER"]); ?>">go back</a>
 	</body>
 	</html>
 	<?php
