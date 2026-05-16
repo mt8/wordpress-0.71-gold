@@ -112,6 +112,28 @@ and upload only the static files to a public server — which then runs no PHP
 and no database, so the 2003 codebase is never exposed. See
 `docs/static-export.md`.
 
+## Block editor
+
+The project also includes an experimental **custom block editor**, built on
+the `@wordpress/block-editor` package — a modern editing method offered
+alongside the classic `wp-admin/b2edit.php` editor (it does not replace it).
+WordPress 0.71 has no REST API, so the editor is a deliberately-scoped
+experiment; see `docs/gutenberg-investigation.md`.
+
+Build the editor once:
+
+```sh
+cd src/block-editor/app
+npm install
+npm run build
+```
+
+Then, logged in to the admin, open a post in it from the **"Block editor"**
+link shown next to each post in the admin post list (`wp-admin/b2edit.php`),
+or directly at `block-editor/api/editor.php?post=<ID>`. Block content is
+stored as block markup in the existing `post_content` column, so the 0.71
+front end keeps rendering the post normally.
+
 ## Project layout
 
 | Path | Contents |
@@ -269,6 +291,29 @@ WordPress 0.71 を、稼働中の PHP アプリケーションとして公開イ
 `bin/static-export.php` でサイトを**静的 HTML** へ書き出し、静的ファイルだけを
 公開サーバーへアップロードする — 公開サーバーは PHP も DB も動かさないため、
 2003 年のコードベースが晒されることはない。詳細は `docs/static-export.md`。
+
+## ブロックエディタ
+
+本プロジェクトには、`@wordpress/block-editor` パッケージを用いた実験的な
+**カスタムブロックエディタ**も入っている — 従来の `wp-admin/b2edit.php`
+エディタと並ぶモダンな編集手段である(置き換えではない)。WordPress 0.71 に
+REST API は無いため、本エディタは範囲を限定した実験である。詳細は
+`docs/gutenberg-investigation.md` を参照。
+
+エディタは最初に一度ビルドする:
+
+```sh
+cd src/block-editor/app
+npm install
+npm run build
+```
+
+ビルド後、管理画面にログインした状態で、管理画面の投稿一覧
+(`wp-admin/b2edit.php`)の各投稿の隣に表示される **「Block editor」**リンク、
+または直接 `block-editor/api/editor.php?post=<ID>` から投稿をブロック
+エディタで開く。ブロック内容はブロックマークアップとして既存の
+`post_content` カラムに保存されるため、0.71 のフロントエンドは投稿を通常
+どおり描画し続ける。
 
 ## 構成
 
