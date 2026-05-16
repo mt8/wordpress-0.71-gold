@@ -21,20 +21,20 @@
 
 class wpdb {
 
-	var $debug_called;
-	var $vardump_called;
-	var $show_errors = true;
+	public $debug_called;
+	public $vardump_called;
+	public $show_errors = true;
 	// EN: Declared so PHP 8.2 does not warn about dynamic property creation.
 	// JA: PHP 8.2 の動的プロパティ生成の警告を避けるため宣言する。
-	var $dbh;
-	var $result;
-	var $last_query;
-	var $last_result;
-	var $col_info;
-	var $num_rows;
-	var $rows_affected;
-	var $insert_id;
-	var $func_call;
+	public $dbh;
+	public $result;
+	public $last_query;
+	public $last_result;
+	public $col_info;
+	public $num_rows;
+	public $rows_affected;
+	public $insert_id;
+	public $func_call;
 
 	// ==================================================================
 	//  DB Constructor - connects to the server and selects a database
@@ -43,7 +43,7 @@ class wpdb {
 	//     recognized as constructors in PHP 8.0; renamed to __construct().
 	// JA: 旧式コンストラクタ(メソッド名 == クラス名)は PHP 8.0 でコンスト
 	//     ラクタとして認識されないため __construct() に改名。
-	function __construct( $dbuser, $dbpassword, $dbname, $dbhost ) {
+	public function __construct( $dbuser, $dbpassword, $dbname, $dbhost ) {
 		// EN: PHP 8.1+ makes mysqli throw exceptions on error by default;
 		//     this class expects the classic false-return style, so disable it.
 		// JA: PHP 8.1+ は mysqli を既定でエラー時に例外送出にする。本クラスは
@@ -77,7 +77,7 @@ class wpdb {
 	// ==================================================================
 	//  Select a DB (if another one needs to be selected)
 
-	function select( $db ) {
+	public function select( $db ) {
 		if ( ! ( $this->dbh instanceof mysqli ) || ! @mysqli_select_db( $this->dbh, $db ) ) {
 			$this->print_error(
 				"<ol id='error'>
@@ -92,7 +92,7 @@ class wpdb {
 	// ====================================================================
 	//  Format a string correctly for safe insert under all PHP conditions
 
-	function escape( $str ) {
+	public function escape( $str ) {
 		return ( $this->dbh instanceof mysqli )
 			? mysqli_real_escape_string( $this->dbh, stripslashes( $str ) )
 			: addslashes( stripslashes( $str ) );
@@ -101,7 +101,7 @@ class wpdb {
 	// ==================================================================
 	//  Print SQL/DB error.
 
-	function print_error( $str = '' ) {
+	public function print_error( $str = '' ) {
 
 		// All errors go to the global error array $EZSQL_ERROR..
 		global $EZSQL_ERROR;
@@ -132,18 +132,18 @@ class wpdb {
 	// ==================================================================
 	//  Turn error handling on or off..
 
-	function show_errors() {
+	public function show_errors() {
 		$this->show_errors = true;
 	}
 
-	function hide_errors() {
+	public function hide_errors() {
 		$this->show_errors = false;
 	}
 
 	// ==================================================================
 	//  Kill cached query results
 
-	function flush() {
+	public function flush() {
 
 		// Get rid of these
 		$this->last_result = null;
@@ -154,7 +154,7 @@ class wpdb {
 	// ==================================================================
 	//  Basic Query - see docs for more detail
 
-	function query( $query ) {
+	public function query( $query ) {
 
 		// Flush cached values..
 		$this->flush();
@@ -244,7 +244,7 @@ class wpdb {
 	// ==================================================================
 	//  Get one variable from the DB - see docs for more detail
 
-	function get_var( $query = null, $x = 0, $y = 0 ) {
+	public function get_var( $query = null, $x = 0, $y = 0 ) {
 
 		// Log how the function was called
 		$this->func_call = "\$db->get_var(\"$query\",$x,$y)";
@@ -260,13 +260,13 @@ class wpdb {
 		}
 
 		// If there is a value return it else return null
-		return ( isset( $values[ $x ] ) && $values[ $x ] !== '' ) ? $values[ $x ] : null;
+		return ( isset( $values[ $x ] ) && '' !== $values[ $x ] ) ? $values[ $x ] : null;
 	}
 
 	// ==================================================================
 	//  Get one row from the DB - see docs for more detail
 
-	function get_row( $query = null, $output = OBJECT, $y = 0 ) {
+	public function get_row( $query = null, $output = OBJECT, $y = 0 ) {
 
 		// Log how the function was called
 		$this->func_call = "\$db->get_row(\"$query\",$output,$y)";
@@ -298,7 +298,7 @@ class wpdb {
 	//  Function to get 1 column from the cached result set based in X index
 	// se docs for usage and info
 
-	function get_col( $query = null, $x = 0 ) {
+	public function get_col( $query = null, $x = 0 ) {
 
 		// If there is a query then perform it if not then use cached results..
 		if ( $query ) {
@@ -316,7 +316,7 @@ class wpdb {
 	// ==================================================================
 	// Return the the query as a result set - see docs for more details
 
-	function get_results( $query = null, $output = OBJECT ) {
+	public function get_results( $query = null, $output = OBJECT ) {
 
 		// Log how the function was called
 		$this->func_call = "\$db->get_results(\"$query\", $output)";
@@ -355,10 +355,10 @@ class wpdb {
 	// Function to get column meta data info pertaining to the last query
 	// see docs for more info and usage
 
-	function get_col_info( $info_type = 'name', $col_offset = -1 ) {
+	public function get_col_info( $info_type = 'name', $col_offset = -1 ) {
 
 		if ( $this->col_info ) {
-			if ( $col_offset == -1 ) {
+			if ( -1 == $col_offset ) {
 				$i = 0;
 				foreach ( $this->col_info as $col ) {
 					$new_array[ $i ] = $col->{$info_type};
