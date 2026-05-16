@@ -1286,4 +1286,37 @@ function rss_update($blog_ID) {
 	// no-op: RSS rebuild/ping is not part of WordPress 0.71-gold
 }
 
+// ---------------------------------------------------------------------------
+// CSRF protection (Issue #33).
+// EN: WordPress 0.71 has no PHP sessions, so the CSRF token is derived from the
+//     admin authentication cookie 'wordpresspass'. A cross-site attacker cannot
+//     read that cookie, so cannot compute a valid token, so cannot forge a
+//     state-changing request. A distinct $action string scopes each token to
+//     one operation.
+// JA: WordPress 0.71 には PHP セッションが無いため、CSRF トークンは管理者の
+//     認証クッキー 'wordpresspass' から生成する。クロスサイトの攻撃者はその
+//     クッキーを読めないため、正しいトークンを計算できず、状態変更リクエストを
+//     偽造できない。$action 文字列ごとにトークンを操作単位へ限定する。
+function b2_csrf_token($action = 'global') {
+	// EN: Build a token from the action name and the auth cookie value.
+	// JA: アクション名と認証クッキーの値からトークンを生成する。
+	$seed = isset($_COOKIE['wordpresspass']) ? $_COOKIE['wordpresspass'] : '';
+	return substr(md5($action . '|' . $seed . '|b2-csrf-v1'), 0, 20);
+}
+
+// EN: Print a hidden form input carrying the token for a POST form.
+// JA: POST フォーム用に、トークンを保持する隠し入力欄を出力する。
+function b2_csrf_field($action = 'global') {
+	echo '<input type="hidden" name="_b2csrf" value="' . b2_csrf_token($action) . '" />';
+}
+
+// EN: Verify the submitted token; abort the request if it is missing or wrong.
+// JA: 送信されたトークンを検証する。欠落または不一致ならリクエストを中止する。
+function b2_csrf_check($action = 'global') {
+	$given = isset($_REQUEST['_b2csrf']) ? $_REQUEST['_b2csrf'] : '';
+	if ($given === '' || $given !== b2_csrf_token($action)) {
+		die('Security check failed (possible CSRF). <a href="javascript:history.back()">Go back</a>.');
+	}
+}
+
 ?>
