@@ -111,6 +111,7 @@ function single_month_title($prefix = '', $display = true ) {
 }
 
 function get_archives($type='', $limit='') {
+	global $querycount;
 	global $tableposts, $dateformat, $time_difference, $siteurl, $blogfilename;
     GLOBAL $querystring_start, $querystring_equal, $querystring_separator, $month, $wpdb, $start_of_week;
 

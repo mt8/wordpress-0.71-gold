@@ -381,6 +381,7 @@ function strip_all_but_one_link($text, $mylink) {
 
 
 function get_lastpostdate() {
+	global $querycount;
 	global $wpdb;
 	global $tableposts, $cache_lastpostdate, $use_cache, $time_difference, $pagenow;
 	if ((!isset($cache_lastpostdate)) OR (!$use_cache)) {
