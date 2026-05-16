@@ -149,7 +149,7 @@ if ($action != 'editcomment') {
 <p><input type="submit" name="submit" value="<?php echo $submitbutton_text ?>" class="search" style="font-weight: bold;" tabindex="5" /></p>
 
 
-<?php if ( ($use_fileupload) && ($user_level >= $fileupload_minlevel) && ((ereg(" ".$user_login." ", $fileupload_allowedusers)) || (trim($fileupload_allowedusers)=="")) ) { ?>
+<?php if ( ($use_fileupload) && ($user_level >= $fileupload_minlevel) && ((preg_match('~ ' . $user_login . ' ~', $fileupload_allowedusers)) || (trim($fileupload_allowedusers)=="")) ) { ?>
 <input type="button" value="upload a file/image" onclick="launchupload();" class="search"  tabindex="10" />
 <?php }
 

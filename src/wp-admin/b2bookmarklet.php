@@ -158,7 +158,7 @@ preg_match("/\%u[1-9A-F][1-9A-F][1-9A-F][1-9A-F]/is", $text, $stufftofix);
 <input type="submit" name="submit" value="Blog this !" class="search" tabindex="3" /> 
 
 
-<?php if ( ($use_fileupload) && ($user_level >= $fileupload_minlevel) && ((ereg(" ".$user_login." ", $fileupload_allowedusers)) || (trim($fileupload_allowedusers)=="")) ) { ?>
+<?php if ( ($use_fileupload) && ($user_level >= $fileupload_minlevel) && ((preg_match('~ ' . $user_login . ' ~', $fileupload_allowedusers)) || (trim($fileupload_allowedusers)=="")) ) { ?>
 <input type="button" value="upload a file" onClick="launchupload();" class="search" />
 <?php } ?>
 

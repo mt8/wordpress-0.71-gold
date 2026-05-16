@@ -86,7 +86,7 @@ for ($iCount=1; $iCount<=$Count; $iCount++) {
 					$subject = explode($phoneemail_separator, $subject);
 					$subject = trim($subject[0]);
 				}
-				if (!ereg($subjectprefix, $subject)) {
+				if (!preg_match('~' . $subjectprefix . '~', $subject)) {
 					continue;
 				}
 			}
