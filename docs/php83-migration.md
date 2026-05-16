@@ -2382,6 +2382,106 @@ JA: `composer test` で PHPUnit が走り、**12 テスト・18 アサーショ�
 phpcs と PHPStan は不変: 両者は `src/` のみを解析し、`tests/` はその対象外の
 新規コードである。
 
+## Issue #59: Expand PHPUnit coverage toward all functions and classes / PHPUnit の網羅性を高める
+
+EN: The Issue #53 starter suite covered five pure helpers and the CSRF token
+helper (12 tests). Issue #59 substantially expands `composer test` to cover the
+unit-testable functions and the pure classes -- including the database-dependent
+helpers, made testable by mocking the global database state.
+
+JA: Issue #53 の初期スイートは純粋なヘルパー 5 つと CSRF トークンヘルパーを
+網羅していた(12 テスト)。Issue #59 では `composer test` を大幅に拡充し、
+単体テスト可能な関数と純粋クラス -- グローバルな DB 状態をモック化して
+テスト可能にした DB 依存ヘルパーを含む -- を網羅する。
+
+### Mocking the global state / グローバル状態のモック化
+
+EN: Many legacy helpers read `global $wpdb` and the table-name globals
+(`$tableposts`, `$tableusers`, ...). Two test-support classes make them
+unit-testable without a live MySQL server:
+
+- `tests/Support/FakeWpdb.php` -- a fake `$wpdb`. Its `get_row()` /
+  `get_results()` / `get_var()` / `query()` return values the test
+  pre-configures, and it records every SQL string it was given so the test can
+  assert on the query (e.g. that an id was cast to `int`).
+- `tests/Support/DatabaseTestCase.php` -- a shared base `TestCase` that, in
+  `setUp()`, installs a fresh `FakeWpdb` as the `$wpdb` global, sets the
+  table-name globals as fixtures, and disables the in-process result caches;
+  `tearDown()` removes them so tests stay isolated.
+
+`tests/bootstrap.php` now also loads `b2template.functions.php`, `b2vars.php`
+(required for the `convert_*()` helpers' translation tables) and `textile.php`.
+`b2vars.php` is a Latin-1 file loaded inside a closure that promotes its
+translation tables into `$GLOBALS`; the file itself is never modified.
+
+JA: 多くのレガシーヘルパーは `global $wpdb` とテーブル名グローバル
+(`$tableposts`・`$tableusers` ほか)を読む。2 つのテスト補助クラスにより、
+実 MySQL サーバー無しで単体テスト可能にする:
+
+- `tests/Support/FakeWpdb.php` -- 偽の `$wpdb`。その `get_row()` /
+  `get_results()` / `get_var()` / `query()` はテストが事前設定した値を返し、
+  渡された SQL 文字列をすべて記録するため、テストはクエリ内容(例: id が
+  `int` にキャストされたか)を検証できる。
+- `tests/Support/DatabaseTestCase.php` -- 共有ベース `TestCase`。`setUp()` で
+  新しい `FakeWpdb` を `$wpdb` グローバルとして差し込み、テーブル名グローバルを
+  フィクスチャとして設定し、プロセス内の結果キャッシュを無効化する。
+  `tearDown()` でそれらを除去しテストを分離する。
+
+`tests/bootstrap.php` は `b2template.functions.php`・`b2vars.php`
+(`convert_*()` ヘルパーの変換テーブルに必要)・`textile.php` も読み込むように
+した。`b2vars.php` は Latin-1 ファイルで、変換テーブルを `$GLOBALS` へ昇格
+させるクロージャ内で読み込む。ファイル自体は一切変更しない。
+
+### Tests / テスト
+
+| File | Covers / 対象 |
+|---|---|
+| `tests/HelpersTest.php` | `zeroise()`, `is_email()`, `mysql2date()` |
+| `tests/TextFormattingTest.php` | `wptexturize()`, `balanceTags()` |
+| `tests/SecurityTest.php` | `b2_csrf_token()`, `b2_csrf_field()` |
+| `tests/FormattingFunctionsTest.php` | `wpautop()`, `autobrize()`, `unautobrize()`, `backslashit()`, `format_to_edit()`, `format_to_post()`, `popuplinks()`, `make_clickable()`, `strip_all_but_one_link()`, `make_url_footnote()`, `convert_bbcode()`, `convert_bbcode_email()`, `convert_gmcode()`, `convert_smilies()`, `convert_chars()`, `antispambot()` |
+| `tests/DateAndMiscHelpersTest.php` | `date_i18n()`, `mysql2date()`, `get_weekstartend()`, `timer_start()`, `timer_stop()`, `addslashes_gpc()`, `wptexturize()` |
+| `tests/TextileTest.php` | `textile()` (Textile 1.0 formatter), `callback_url()`, `linkit()`, `cmap()`, `encode_high()`, `decode_high()` |
+| `tests/TemplateFunctionsTest.php` | `get_bloginfo()`, `get_the_title()`, `get_the_content()`, `get_the_excerpt()`, `single_month_title()`, `is_new_day()`, `apply_filters()`, `add_filter()` |
+| `tests/DatabaseDependentFunctionsTest.php` | `get_postdata()`, `get_postdata2()`, `get_userdata()`, `get_userdata2()`, `get_userdatabylogin()`, `get_userid()`, `get_usernumposts()`, `user_pass_ok()`, `get_settings()`, `get_the_category()`, `get_the_category_by_ID()` |
+
+EN: Page-level scripts (`index.php`, `wp-admin/b2edit.php`, ...) and the `wpdb`
+class against a live database are intentionally **out of scope** -- they are
+covered by the E2E suite (Issue #60).
+
+JA: ページレベルのスクリプト(`index.php`・`wp-admin/b2edit.php` ほか)と、実
+データベースに対する `wpdb` クラスは意図的に**範囲外** -- E2E スイート
+(Issue #60)で扱う。
+
+### Bug noticed (not fixed) / 発見したバグ(未修正)
+
+EN: `user_pass_ok()` (`b2functions.php`) reads `$userdata['user_pass']` as an
+**array**, but its uncached path calls `get_userdatabylogin()`, which returns an
+**object** from `$wpdb->get_row()`. On the uncached path this raises
+"Cannot use object of type stdClass as array". The function only works on the
+cache path, where `cache_userdata` holds arrays. Per the Issue #59 scope, the
+tests document this and exercise the working cache path; `src/` is not changed.
+
+JA: `user_pass_ok()`(`b2functions.php`)は `$userdata['user_pass']` を
+**配列**として読むが、非キャッシュ経路は `get_userdatabylogin()` を呼び、
+これは `$wpdb->get_row()` から**オブジェクト**を返す。非キャッシュ経路では
+「stdClass オブジェクトを配列として使えない」エラーになる。本関数は
+`cache_userdata` が配列を保持するキャッシュ経路でしか動かない。Issue #59 の
+範囲に従い、テストはこれを記録し、動作するキャッシュ経路を検証する。`src/` は
+変更しない。
+
+### Verification / 検証
+
+EN: `composer test` runs PHPUnit -- **95 tests, 150 assertions, all passing**
+(up from 12 tests / 18 assertions). `php -l` reports 0 syntax errors on every
+new test file. phpcs and PHPStan are unchanged: both analyse `src/` only, which
+this Issue did not touch, and `tests/` is outside their scope.
+
+JA: `composer test` で PHPUnit が走り、**95 テスト・150 アサーション・全合格**
+(12 テスト・18 アサーションから増加)。`php -l` は新規テストファイルすべてで
+構文エラー 0 件。phpcs と PHPStan は不変: 両者は本 Issue が触れていない `src/`
+のみを解析し、`tests/` はその対象外である。
+
 ## Issue #60: Introduce an end-to-end (E2E) test suite / E2E テストスイートを導入
 
 EN: The PHPUnit suite (Issue #53) unit-tests pure helpers, but nothing

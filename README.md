@@ -82,13 +82,29 @@ level 0 で実行する。詳細は `docs/static-analysis.md`。
 composer test      # PHPUnit
 ```
 
-EN: A PHPUnit starter suite unit-tests the pure string / format helpers in
-`b2-include/b2functions.php` (`wptexturize`, `balanceTags`, `is_email`,
-`zeroise`, `mysql2date`) and the CSRF token helper. Tests live in `tests/`.
+EN: A PHPUnit suite (**95 tests**) covers the unit-testable parts of the
+2003-era code in `tests/`:
 
-JA: PHPUnit の初期スイートが、`b2-include/b2functions.php` の純粋な文字列/
-整形ヘルパー(`wptexturize`・`balanceTags`・`is_email`・`zeroise`・
-`mysql2date`)と CSRF トークンヘルパーを単体テストする。テストは `tests/`。
+- **Pure helpers** — text formatting, escaping, date/URL/number helpers in
+  `b2functions.php` and `b2template.functions.php`.
+- **The `textile` formatter** in `b2-include/textile.php` (string in, HTML out).
+- **Database-dependent helpers** — `get_postdata()`, `get_userdata()`,
+  `get_the_category()`, etc. A test-support fake `$wpdb` stub
+  (`tests/Support/FakeWpdb.php`) plus the table-name globals make these
+  unit-testable without a live MySQL server.
+- **The CSRF helpers** added in Issue #33.
+
+JA: PHPUnit スイート(**95 テスト**)が、2003 年当時のコードのうち単体テスト
+可能な部分を `tests/` で網羅する:
+
+- **純粋なヘルパー** — `b2functions.php` と `b2template.functions.php` の
+  テキスト整形・エスケープ・日付/URL/数値ヘルパー。
+- **`textile` フォーマッタ** — `b2-include/textile.php`(文字列入力・HTML 出力)。
+- **DB 依存ヘルパー** — `get_postdata()`・`get_userdata()`・
+  `get_the_category()` ほか。テスト補助の偽 `$wpdb` スタブ
+  (`tests/Support/FakeWpdb.php`)とテーブル名グローバルにより、実 MySQL
+  サーバー無しで単体テスト可能にする。
+- **CSRF ヘルパー** — Issue #33 で追加。
 
 ## E2E tests / E2E テスト
 
@@ -193,6 +209,7 @@ JA: すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に�
 | `docs/static-export.md` | Static export & safe publishing. / 静的書き出しと安全な公開。 |
 | `docs/static-analysis.md` | phpcs / PHPStan tooling. / phpcs・PHPStan ツール。 |
 | `docs/docker-environment.md` | Docker environment details. / Docker 環境の詳細。 |
+| `docs/gutenberg-investigation.md` | Gutenberg port feasibility investigation. / Gutenberg 移植可否の調査。 |
 
 ## License / ライセンス
 
