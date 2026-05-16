@@ -8,6 +8,13 @@
  */
 import { createRoot } from '@wordpress/element';
 import { registerCoreBlocks } from '@wordpress/block-library';
+// EN: Importing @wordpress/format-library registers the core RichText formats
+//     (bold, italic, link, ...) as a side effect, so they appear in the block
+//     toolbar when editing text.
+// JA: @wordpress/format-library の読み込みは、副作用としてコアの RichText
+//     フォーマット(太字・斜体・リンク等)を登録する。テキスト編集時に
+//     ブロックツールバーへ表示される。
+import '@wordpress/format-library';
 
 // EN: Stylesheets for the bundled @wordpress/* UI. Vite collects them into
 //     the build's CSS, which editor.php links from the manifest.
