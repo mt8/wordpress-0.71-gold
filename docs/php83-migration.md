@@ -1742,3 +1742,142 @@ warning/deprecated 0 で投稿を表示し、コメントリンクもピンバ�
 `b2pingback*.php`・`b2mail.php`・`b2.php`)はすべて HTTP 404 を返す。投稿も
 動作する: `post` アクションで送信したテスト投稿が成功(302 リダイレクト)し
 フロントページに表示され、その後削除した。
+
+## Issue #35: Access control / authorization / アクセス制御・認可
+
+EN: A security audit (Issue #35) found that authorization was enforced
+inconsistently in the admin screens. Two distinct problems remained after the
+comment feature was removed in Issue #44:
+
+1. `b2team.php` -- the `promote` and `delete` action handlers only performed a
+   *relative* level check (`if ($user_level <= $target_level) die()`). They
+   had **no minimum-level gate**. The user-list UI shows the promote/demote
+   links only to `$user_level >= 2` users and the delete link only to
+   high-level users, but that is a display-time test only. A low-level user
+   who crafts the request URL directly (with a valid CSRF token) bypassed the
+   UI gate entirely and could act on any user below their own level -- e.g. a
+   level-1 user deleting level-0 users.
+
+2. `b2edit.php` -- the `edit` and `delete` handlers checked ownership with the
+   loose test `if ($user_level < $authordata->user_level)`, so a user at the
+   *same* level as the author could edit or delete that author's posts even
+   when they were not the author. Worse, the `editpost` handler (the form
+   submission that actually writes the UPDATE) loaded no post row and ran no
+   ownership check at all -- it only rejected `$user_level == 0`. Any non-zero
+   user could overwrite any post by posting a crafted `post_ID`.
+
+JA: セキュリティ監査(Issue #35)で、管理画面の認可の適用が不統一であること
+が判明した。Issue #44 でコメント機能を撤去した後も、次の 2 つの問題が残って
+いた:
+
+1. `b2team.php` -- `promote`・`delete` アクションハンドラは*相対的*なレベル
+   比較(`if ($user_level <= $target_level) die()`)のみを行っていた。
+   **最低レベルのゲートが無かった**。ユーザー一覧の UI は昇格/降格リンクを
+   `$user_level >= 2` のユーザーにのみ、削除リンクを高レベルのユーザーにのみ
+   表示するが、これは表示時の判定にすぎない。リクエスト URL を直接組み立てた
+   低レベルユーザー(正しい CSRF トークン付き)は UI のゲートを完全に回避し、
+   自分より下のレベルのユーザーを操作できた — 例えば level-1 ユーザーが
+   level-0 ユーザーを削除できた。
+
+2. `b2edit.php` -- `edit`・`delete` ハンドラは所有者チェックを緩い判定
+   `if ($user_level < $authordata->user_level)` で行っていたため、作者と
+   *同じ*レベルのユーザーは、作者本人でなくてもその作者の投稿を編集・削除
+   できた。さらに `editpost` ハンドラ(実際に UPDATE を書き込むフォーム送信)
+   は投稿行を読み込まず、所有者チェックを一切行っていなかった — `$user_level
+   == 0` を拒否するだけだった。0 でないユーザーなら誰でも、`post_ID` を細工
+   して送信すれば任意の投稿を上書きできた。
+
+### Changes / 変更内容
+
+EN:
+1. `wp-admin/b2team.php`: add an explicit minimum-level gate at the start of
+   each action handler, right after the existing CSRF check, so the server
+   enforces the same condition the UI uses.
+   - `case 'promote'`: require `$user_level >= 2`, otherwise `die()` with
+     "You are not allowed to change user levels."
+   - `case 'delete'`: require `$user_level > 3`, otherwise `die()` with
+     "You are not allowed to delete users."
+   The pre-existing relative check (a user cannot act on someone at or above
+   their own level) is kept as defence in depth.
+2. `wp-admin/b2edit.php`: tighten the post edit/delete authorization to proper
+   ownership in the `edit`, `editpost` and `delete` handlers. A user may act
+   on a post only if they are its author **or** their level is strictly
+   higher than the author's; the handler rejects when
+   `$postdata["Author_ID"] != $user_ID && $user_level <= $authordata->user_level`.
+   The post's real author is taken from the loaded post row
+   (`get_postdata()` -> `Author_ID`), never from a request value. The
+   `editpost` handler -- which previously loaded no post -- now calls
+   `get_postdata()` and keeps an `or die(...)` guard for a non-existent post,
+   matching the `edit`/`delete` handlers.
+
+JA:
+1. `wp-admin/b2team.php`: 各アクションハンドラの先頭、既存の CSRF チェックの
+   直後に、明示的な最低レベルゲートを追加。UI が使うのと同じ条件をサーバー側
+   でも強制する。
+   - `case 'promote'`: `$user_level >= 2` を要求。満たさなければ
+     "You are not allowed to change user levels." で `die()`。
+   - `case 'delete'`: `$user_level > 3` を要求。満たさなければ
+     "You are not allowed to delete users." で `die()`。
+   既存の相対チェック(自分と同等以上のユーザーは操作不可)は多層防御として
+   残す。
+2. `wp-admin/b2edit.php`: `edit`・`editpost`・`delete` ハンドラの投稿編集/
+   削除の認可を、適切な所有者チェックに厳格化。投稿を操作できるのはその投稿の
+   作者本人、**または**作者よりレベルが厳密に高いユーザーのみ。
+   `$postdata["Author_ID"] != $user_ID && $user_level <= $authordata->user_level`
+   のとき拒否する。投稿の真の作者は読み込んだ投稿行(`get_postdata()` の
+   `Author_ID`)から取得し、リクエスト値は使わない。これまで投稿を読み込んで
+   いなかった `editpost` ハンドラは `get_postdata()` を呼び、存在しない投稿に
+   対する `or die(...)` ガードを `edit`/`delete` ハンドラと同様に持つように
+   した。
+
+### Notes / 注記
+
+EN: The new minimum-level gates run *after* the CSRF check added in Issue #33,
+so a forged cross-site request is still rejected first and the gate then
+applies to legitimately-tokened requests. The new gates do not change or
+weaken the CSRF protection. Note the `delete` gate (`$user_level > 3`) is
+slightly stricter than the inactive-user-list delete link, which the UI shows
+at `$user_level >= 3`; this follows the audit recommendation to enforce a
+clear high-level requirement for user deletion. The tightened ownership rule
+is transparent for normal use: the admin is level 10 and authors own their
+posts, so an author always passes the "is author" branch and the admin always
+passes the "strictly higher level" branch.
+
+JA: 新しい最低レベルゲートは Issue #33 で追加した CSRF チェックの*後*に実行
+されるため、偽造されたクロスサイトリクエストは先に拒否され、ゲートは正しく
+トークンを持つリクエストにのみ適用される。新しいゲートは CSRF 対策を変更も
+弱体化もしない。`delete` ゲート(`$user_level > 3`)は、UI が `$user_level
+>= 3` で表示する非アクティブユーザー一覧の削除リンクよりわずかに厳格である
+が、これはユーザー削除に明確な高レベル要件を強制するという監査の推奨に従った
+もの。厳格化した所有者ルールは通常利用では透過的である: 管理者は level 10
+であり、作者は自分の投稿を所有するため、作者は常に「作者本人」分岐を、
+管理者は常に「レベルが厳密に高い」分岐を通過する。
+
+### Verification / 検証
+
+EN: `php -l` passes on both changed files (`b2team.php`, `b2edit.php`) with 0
+syntax errors. `composer phpcs` reports 0 violations (41 files).
+`composer phpstan --memory-limit=1G` reports 0 errors (the default 128 MB
+OOMs on this repository -- a pre-existing, unrelated constraint). Against the
+Docker environment on this branch (web container restarted to clear OPcache):
+logged in as `admin` (level 10), `b2team.php` and `b2edit.php` both load with
+0 PHP warnings/fatals; the admin created a test post, edited it via
+`action=edit` + `editpost`, and deleted it via `action=delete` -- all returned
+302 redirects with no "not allowed" message. A `delete` request without the
+CSRF token is still rejected with "Security check failed", confirming the new
+level gate sits alongside (after) the Issue #33 CSRF check without breaking
+it. The front end (`/`, `?p=1`) and admin pages load with 0 PHP
+warnings/fatals.
+
+JA: `php -l` は変更した両ファイル(`b2team.php`・`b2edit.php`)で通る(構文
+エラー 0)。`composer phpcs` は違反 0 件(41 ファイル)。
+`composer phpstan --memory-limit=1G` はエラー 0 件(既定の 128 MB はこの
+リポジトリで OOM する — 既知の無関係な制約)。本ブランチの Docker 環境に
+対し(OPcache を消すため web コンテナを再起動): `admin`(level 10)で
+ログインし、`b2team.php` と `b2edit.php` はともに PHP 警告/fatal 0 で表示。
+管理者はテスト投稿を作成し、`action=edit` + `editpost` で編集、
+`action=delete` で削除した — いずれも 302 リダイレクトを返し「not allowed」
+は出なかった。CSRF トークン無しの `delete` リクエストは引き続き
+"Security check failed" で拒否され、新しいレベルゲートが Issue #33 の CSRF
+チェックの隣(後ろ)に位置し、それを壊していないことを確認した。
+フロントエンド(`/`・`?p=1`)と管理画面は PHP 警告/fatal 0 で表示される。
