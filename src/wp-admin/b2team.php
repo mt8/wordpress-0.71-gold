@@ -25,6 +25,10 @@ case 'promote':
 	$standalone = 1;
 	require_once('b2header.php');
 
+	// EN: CSRF check -- reject a forged GET request to change a user level.
+	// JA: CSRF チェック -- ユーザーレベル変更の GET リクエストの偽造を拒否する。
+	b2_csrf_check('promote-user');
+
 	if (empty($_GET["prom"])) {
 		header('Location: b2team.php');
 	}
@@ -56,6 +60,10 @@ case 'delete':
 
 	$standalone = 1;
 	require_once('b2header.php');
+
+	// EN: CSRF check -- reject a forged GET request to delete a user.
+	// JA: CSRF チェック -- ユーザー削除の GET リクエストの偽造を拒否する。
+	b2_csrf_check('delete-user');
 
 	// EN: Cast the user id to int -- it is used unquoted in SQL
 	//     (WHERE ID = $id / WHERE post_author = $id).
@@ -125,10 +133,12 @@ default:
 			echo "<a href=\"$url\" target=\"_blank\" title=\"website: $url\"><img src=\"../b2-img/url.gif\" border=\"0\" alt=\"website: $url\" /></a>&nbsp;";
 		echo "</td>\n";
 		echo "<td $bg2>".$user_data->user_level;
+		// EN: Append the CSRF token to the promote/demote links (verified by b2team.php).
+		// JA: 昇格/降格リンクに CSRF トークンを付与する(b2team.php で検証)。
 		if (($user_level >= 2) and ($user_level > ($user_data->user_level + 1)))
-			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=up\">+</a> ";
+			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=up&_b2csrf=".b2_csrf_token('promote-user')."\">+</a> ";
 		if (($user_level >= 2) and ($user_level > $user_data->user_level) and ($user_data->user_level > 0))
-			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=down\">-</a> ";
+			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=down&_b2csrf=".b2_csrf_token('promote-user')."\">-</a> ";
 		echo "</td>\n";
 		if ($user_level > 3) {
 			echo "<td $bg1>".$user_data->user_login."</td>\n";
@@ -177,10 +187,12 @@ default:
 			echo "<a href=\"$url\" target=\"_blank\" title=\"website: $url\"><img src=\"../b2-img/url.gif\" border=\"0\" alt=\"website: $url\" /></a>&nbsp;";
 		echo "</td>\n";
 		echo "<td $bg1>".$user_data->user_level;
+		// EN: Append the CSRF token to the promote/delete links (verified by b2team.php).
+		// JA: 昇格/削除リンクに CSRF トークンを付与する(b2team.php で検証)。
 		if ($user_level >= 2)
-			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=up\">+</a> ";
+			echo " <a href=\"b2team.php?action=promote&id=".$user_data->ID."&prom=up&_b2csrf=".b2_csrf_token('promote-user')."\">+</a> ";
 		if ($user_level >= 3)
-			echo " <a href=\"b2team.php?action=delete&id=".$user_data->ID."\" style=\"color:red;font-weight:bold;\">X</a> ";
+			echo " <a href=\"b2team.php?action=delete&id=".$user_data->ID."&_b2csrf=".b2_csrf_token('delete-user')."\" style=\"color:red;font-weight:bold;\">X</a> ";
 		echo "</td>\n";
 		if ($user_level > 3) {
 			echo "<td $bg2>".$user_data->user_login."</td>\n";
