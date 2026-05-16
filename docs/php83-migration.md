@@ -829,3 +829,55 @@ JA: フロントエンドの全ページ -- home・`?cat=`・`?m=`(年と年月)
 `?s=`・`?author=`・`?w=`、および 3 つのフィード -- が **PHP 警告 0** で
 表示される。category / archive のタイトルも正しく描画され、管理画面と
 静的解析(phpcs 0、PHPStan level 0)は不変。
+
+---
+
+## Issue #28: Posting from the admin fails to redirect / 管理画面からの投稿でリダイレクトが失敗する
+
+EN: Testing "post from the admin" found that posting does insert the row, but
+the page does not redirect back to `b2edit.php` -- two undefined variables in
+the publish branch print output, which then breaks the `header("Location:")`
+redirect.
+
+JA: 「管理画面から投稿」をテストした結果、投稿自体は行が INSERT されるが
+`b2edit.php` へリダイレクトされないことが判明した。publish 分岐の未定義変数
+2 つが出力を行い、`header("Location:")` のリダイレクトを壊していた。
+
+### Changes / 変更内容
+
+EN:
+1. `b2config.php`: define `$cafelogID` and `$use_cafelogping` (a new "Cafelog
+   ping" block, disabled). WordPress 0.71 references `$cafelogID`
+   (`b2edit.php`, `xmlrpc.php`, `b2mail.php`) but the original `b2config.php`
+   never shipped the Cafelog settings, so `$cafelogID` was undefined.
+2. `b2edit.php`: `case 'post'` reads `$_POST["post_pingback"]` with `?? 0`
+   (the pingback checkbox is not submitted when left unchecked); `case
+   'editpost'` never read `$post_pingback` at all, so it is now read the same
+   way. Both `case`s call `pingCafelog($cafelogID, ...)` and `if
+   ($post_pingback)` in the draft/private -> publish branch.
+
+JA:
+1. `b2config.php`: `$cafelogID` と `$use_cafelogping` を定義(新しい
+   「Cafelog ping」ブロック、無効)。WordPress 0.71 は `$cafelogID` を
+   `b2edit.php` / `xmlrpc.php` / `b2mail.php` で参照するが、元の
+   `b2config.php` には Cafelog 設定が無く `$cafelogID` が未定義だった。
+2. `b2edit.php`: `case 'post'` は `$_POST["post_pingback"]` を `?? 0` 付きで
+   読む(pingback チェックボックスは未チェックだと送信されない)。`case
+   'editpost'` は `$post_pingback` を全く読んでいなかったため、同じ形で
+   読むようにした。両 `case` とも draft/private -> publish 分岐で
+   `pingCafelog($cafelogID, ...)` と `if ($post_pingback)` を呼ぶ。
+
+### Verification / 検証
+
+EN: From the admin, creating a post (publish and draft), editing a post
+(`editpost`, including a draft -> publish transition) and deleting a post all
+redirect with **HTTP 302** and **0 PHP warnings**; the post is correctly
+inserted / updated / removed in the database. Admin screens, the blog front
+end and the static analysis tools (phpcs 0, PHPStan level 0) are unchanged.
+The temporary test posts were removed afterwards.
+
+JA: 管理画面から、投稿の作成(publish と draft)、編集(`editpost`、
+draft -> publish の遷移を含む)、削除のいずれも **HTTP 302** と
+**PHP 警告 0** でリダイレクトされ、投稿は DB に正しく作成/更新/削除される。
+管理画面・ブログ本体・静的解析(phpcs 0、PHPStan level 0)は不変。
+検証に使った一時的なテスト投稿は後で削除した。

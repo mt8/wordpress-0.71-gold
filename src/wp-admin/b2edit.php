@@ -40,7 +40,7 @@ switch($action) {
         $standalone = 1;
         require_once('b2header.php');	
 		
-        $post_pingback = intval($_POST["post_pingback"]);
+        $post_pingback = intval($_POST["post_pingback"] ?? 0);
         $content = balanceTags($_POST["content"]);
         $content = format_to_post($content);
         $excerpt = balanceTags($_POST["excerpt"]);
@@ -168,6 +168,12 @@ switch($action) {
         $post_ID = $_POST["post_ID"];
         $post_category = intval($_POST["post_category"]);
         $post_autobr = intval($_POST["post_autobr"]);
+        // EN: 'editpost' never read $post_pingback; default to 0 when
+        //     the form omits it (an unchecked checkbox is not sent).
+        // JA: 'editpost' は $post_pingback を読んでいなかった。
+        //     フォームが送らない場合(未チェックのチェックボックスは
+        //     省略される)は 0 とする。
+        $post_pingback = intval($_POST["post_pingback"] ?? 0);
         $content = balanceTags($_POST["content"]);
         $content = format_to_post($content);
         $excerpt = balanceTags($_POST["excerpt"]);
