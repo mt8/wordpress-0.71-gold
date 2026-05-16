@@ -14,26 +14,38 @@ JA: PHP 8.3 互換性と退行を追跡するため、2 つの静的解析ツー
 composer install
 ```
 
-## phpcs + PHPCompatibility
+## phpcs: WordPress-Core + PHPCompatibility
 
-EN: Flags code that is incompatible with a target PHP version. Configured by
-`phpcs.xml.dist` to run the `PHPCompatibility` standard against `src/` with
-`testVersion` 8.3.
+EN: phpcs runs two standards, both configured by `phpcs.xml.dist` against
+`src/`:
 
-JA: 対象 PHP バージョンと非互換なコードを検出する。`phpcs.xml.dist` で
-`PHPCompatibility` 標準を `src/` に対し `testVersion` 8.3 で実行する設定。
+- **`WordPress-Core`** — the official WordPress code style
+  (`wp-coding-standards/wpcs`), curated down to a passing subset (see below).
+- **`PHPCompatibility`** — flags code incompatible with the target PHP version
+  (`testVersion` 8.3).
+
+JA: phpcs は 2 つの標準を実行する。いずれも `phpcs.xml.dist` で `src/` に対して
+設定されている:
+
+- **`WordPress-Core`** — 公式の WordPress コードスタイル
+  (`wp-coding-standards/wpcs`)。合格するサブセットに精選(下記参照)。
+- **`PHPCompatibility`** — 対象 PHP バージョン(`testVersion` 8.3)と非互換な
+  コードを検出する。
 
 ```sh
 composer phpcs                 # or: vendor/bin/phpcs
 vendor/bin/phpcs --report=source   # summary by sniff
 ```
 
-EN: As of Issue #22, **phpcs reports 0 violations**. The compatibility-shim
-removal (Issue #13) first cut the count from 234 to 11, and Issue #22 fixed the
-rest:
+EN: As of Issue #49, **phpcs reports 0 errors and 0 warnings**.
 
-JA: Issue #22 時点で **phpcs は検出 0 件**。互換シム廃止(Issue #13)でまず
-234 件から 11 件まで減り、Issue #22 で残りを修正した:
+For PHPCompatibility: the compatibility-shim removal (Issue #13) first cut the
+count from 234 to 11, and Issue #22 fixed the rest:
+
+JA: Issue #49 時点で **phpcs はエラー 0 件・警告 0 件**。
+
+PHPCompatibility について: 互換シム廃止(Issue #13)でまず 234 件から 11 件まで
+減り、Issue #22 で残りを修正した:
 
 | Fixed in #22 / #22 で修正 | Count | How / 方法 |
 |---|---|---|
@@ -42,6 +54,19 @@ JA: Issue #22 時点で **phpcs は検出 0 件**。互換シム廃止(Issue #13
 | `$HTTP_RAW_POST_DATA` | 2 | renamed to a plain `$raw_post_data` variable |
 | PHP4-style constructor | 1 | `POP3::POP3()` → `POP3::__construct()` |
 | `global $$var` | 1 | removed the unused variable-variable in `alert_error()` |
+
+EN: The `WordPress-Core` standard was added in Issue #49. `phpcbf` auto-formatted
+15,081 style violations, the mechanical remainder (Yoda conditions, property
+visibility, switch/control-structure formatting) was fixed by hand, and sniffs
+requiring renames / prepared-SQL rewrites / behaviour changes were excluded with
+documented bilingual comments. See `docs/php83-migration.md` (Issue #49) for the
+full breakdown of fixed and excluded sniffs.
+
+JA: `WordPress-Core` 標準は Issue #49 で追加した。`phpcbf` が 15,081 件のスタイル
+違反を自動整形し、機械的な残り(Yoda 条件・プロパティ可視性・switch/制御構造の
+整形)を手作業で修正、改名・prepared SQL 書き換え・挙動変更が必要な sniff は
+英日コメント付きで除外した。修正・除外した sniff の詳細は
+`docs/php83-migration.md`(Issue #49）を参照。
 
 ## PHPStan
 
