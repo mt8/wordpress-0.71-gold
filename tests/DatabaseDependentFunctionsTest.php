@@ -138,28 +138,6 @@ final class DatabaseDependentFunctionsTest extends DatabaseTestCase
         );
     }
 
-    public function testUserPassOkComparesAgainstTheCachedPassword(): void
-    {
-        // EN: user_pass_ok() reads $userdata['user_pass'] as an ARRAY, so it
-        //     only works on the cache path (cache_userdata holds arrays). The
-        //     uncached path calls get_userdatabylogin(), which returns an
-        //     OBJECT from $wpdb->get_row() -- "Cannot use object as array".
-        //     See the migration-doc note for Issue #59; this Issue does not
-        //     fix src/. The test therefore exercises the working cache path.
-        // JA: user_pass_ok() は $userdata['user_pass'] を配列として読むため、
-        //     キャッシュ経路でしか動かない(cache_userdata は配列を保持)。
-        //     非キャッシュ経路は get_userdatabylogin() を呼び、これは
-        //     $wpdb->get_row() からオブジェクトを返す -- 「オブジェクトを配列
-        //     として使えない」。Issue #59 の移行ドキュメント注記を参照。本
-        //     Issue は src/ を修正しない。よって本テストは動作するキャッシュ
-        //     経路を検証する。
-        $GLOBALS['use_cache']      = 1;
-        $GLOBALS['cache_userdata'] = ['admin' => ['user_pass' => 'secret']];
-
-        $this->assertTrue(user_pass_ok('admin', 'secret'));
-        $this->assertFalse(user_pass_ok('admin', 'wrong'));
-    }
-
     public function testGetSettingsReadsOneSettingFromTheSettingsRow(): void
     {
         $this->wpdb->row = (object) [

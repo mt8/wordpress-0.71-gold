@@ -1,0 +1,16 @@
+{
+  "name": "wordpress-071-gold-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end (Playwright) test suite for WordPress 0.71-gold on PHP 8.3 / WordPress 0.71-gold (PHP 8.3) の E2E (Playwright) テストスイート",
+  "license": "GPL-2.0-or-later",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5"
+  }
+}

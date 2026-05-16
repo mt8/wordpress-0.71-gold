@@ -63,9 +63,14 @@ JA: より深い静的解析(未定義変数・型エラー)。`phpstan.neon.dis
 `src/` を解析。WordPress 0.71 は WordPress コア自体のため WordPress スタブは不要。
 
 ```sh
-composer phpstan               # or: vendor/bin/phpstan analyse
-vendor/bin/phpstan analyse --memory-limit=1G
+composer phpstan               # runs: phpstan analyse --memory-limit=1G
 ```
+
+EN: The `composer phpstan` script passes `--memory-limit=1G` -- PHPStan's
+default memory limit can OOM-crash on some machines (Issue #71).
+
+JA: `composer phpstan` スクリプトは `--memory-limit=1G` を渡す -- PHPStan の
+既定のメモリ上限は環境によって OOM クラッシュしうる(Issue #71)。
 
 EN: As of Issue #22, **PHPStan level 0 reports 0 errors with no baseline**. The
 legacy code previously produced ~260 level-0 findings captured in
@@ -88,3 +93,48 @@ JA: level を 0 より上げることはスコープ外: level 1 だけで WordP
 レガシーな global 多用に由来する未定義変数が約 1050 件増え、より高い level は
 全体への型注釈が必要になる。level 0 で 0 件が現実的な「クリーン」の目標であり、
 今後は**新規**の退行がすぐに目立つようになる。
+
+## Pre-commit hooks (husky + lint-staged) / pre-commit フック
+
+EN: A git `pre-commit` hook keeps the two checks above from regressing
+unnoticed -- e.g. PR #66 merged a phpcs warning that was only caught by a
+later manual run (Issue #71). The hook is managed with **husky** and
+**lint-staged**, declared in the root `package.json` as devDependencies.
+
+JA: git の `pre-commit` フックにより、上記 2 つの検査が気づかれぬまま退行する
+のを防ぐ -- 例えば PR #66 は phpcs 警告をマージしてしまい、後の手動実行で
+ようやく検出された(Issue #71)。フックは **husky** と **lint-staged** で
+管理し、ルートの `package.json` に devDependencies として宣言する。
+
+```sh
+npm install        # installs husky + lint-staged and activates the hook
+```
+
+EN: On every commit, `.husky/pre-commit` runs `lint-staged`. When the commit
+stages files matching `src/**/*.php` (`lint-staged.config.mjs`):
+
+- **phpcs** runs, scoped to the staged files;
+- **phpstan** runs project-wide -- it resolves symbols across the whole
+  codebase, so analysing only the staged files in isolation would raise false
+  "not found" errors.
+
+If either reports a problem the commit is aborted. When no `src/` PHP file is
+staged, the hook does nothing. In a checkout without the dev tooling installed
+(e.g. a fresh git worktree without `composer install` / `npm install`) the
+hook skips gracefully so commits there are not blocked. `git commit
+--no-verify` bypasses the hook when genuinely needed.
+
+JA: コミットのたびに `.husky/pre-commit` が `lint-staged` を実行する。
+`src/**/*.php` に一致するファイルが staged されているとき
+(`lint-staged.config.mjs`):
+
+- **phpcs** を staged ファイルに限定して実行する;
+- **phpstan** をプロジェクト全体で実行する -- コードベース全体で記号解決する
+  ため、staged ファイルだけを単体解析すると誤検出の「見つかりません」
+  エラーが出る。
+
+どちらかが問題を報告するとコミットは中止される。`src/` の PHP ファイルが
+staged されていないとき、フックは何もしない。開発ツール未導入の作業場所
+(composer install / npm install していない新規 git worktree など)では
+フックはグレースフルにスキップし、そこでのコミットを妨げない。本当に必要な
+ときは `git commit --no-verify` でフックを迂回できる。
