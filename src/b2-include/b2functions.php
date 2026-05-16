@@ -287,16 +287,20 @@ function convert_bbcode($content) {
 
 function convert_bbcode_email($content) {
 	global $use_bbcode;
-	$bbcode_email["in"] = array(
-		'#\[email](.+?)\[/email]#eis',
-		'#\[email=(.+?)](.+?)\[/email]#eis'
+	// EN: The /e preg_replace modifier was removed in PHP 7.0; it now returns
+	//     null, which wiped $content. Use preg_replace_callback instead.
+	// JA: preg_replace の /e 修飾子は PHP 7.0 で廃止され、現在は null を返すため
+	//     $content が消えていた。preg_replace_callback を使う。
+	$content = preg_replace_callback(
+		'#\[email](.+?)\[/email]#is',
+		function ($m) { return '<a href="mailto:' . antispambot($m[1]) . '">' . antispambot($m[1]) . '</a>'; },
+		$content
 	);
-	$bbcode_email["out"] = array(
-		"'<a href=\"mailto:'.antispambot('\\1').'\">'.antispambot('\\1').'</a>'",		// E-mail
-		"'<a href=\"mailto:'.antispambot('\\1').'\">\\2</a>'"
+	$content = preg_replace_callback(
+		'#\[email=(.+?)](.+?)\[/email]#is',
+		function ($m) { return '<a href="mailto:' . antispambot($m[1]) . '">' . $m[2] . '</a>'; },
+		$content
 	);
-
-	$content = preg_replace($bbcode_email["in"], $bbcode_email["out"], $content);
 	return $content;
 }
 
