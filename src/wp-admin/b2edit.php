@@ -189,7 +189,7 @@ switch ( $action ) {
 		die( 'You don&#8217;t have the right to edit <strong>' . $authordata[1] . '</strong>&#8217;s posts.' );
 	}
 
-		$post_category  = intval( $_POST['post_category'] );
+		$post_category = intval( $_POST['post_category'] );
 		// EN: Issue #60 -- the edit form (b2edit.form.php) never renders a
 		//     'post_autobr' field, so reading $_POST['post_autobr'] directly
 		//     raised an "Undefined array key" warning under PHP 8.3. Default
