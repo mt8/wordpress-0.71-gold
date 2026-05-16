@@ -8,7 +8,8 @@ if (!isset($rss_encoded_html)) { $rss_encoded_html = 0; }
 if (!isset($rss_excerpt_length) || ($rss_encoded_html == 1)) { $rss_excerpt_length = 0; }
 ?>
 <?php echo "<?xml version=\"1.0\"?".">"; ?>
-<!-- generator="wordpress/<?php echo $b2_version ?>" -->
+<!-- EN: version removed from the generator string (Issue #37). JA: generator 文字列からバージョンを除去(Issue #37)。 -->
+<!-- generator="wordpress" -->
 <rss version="2.0" 
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
@@ -24,7 +25,7 @@ if (!isset($rss_excerpt_length) || ($rss_encoded_html == 1)) { $rss_excerpt_leng
 	<dc:creator><?php echo $admin_email ?></dc:creator>
 	<dc:rights>Copyright <?php echo mysql2date('Y', get_lastpostdate()); ?></dc:rights>
 	<dc:date><?php echo gmdate('Y-m-d\TH:i:s'); ?></dc:date>
-	<admin:generatorAgent rdf:resource="http://wordpress.org/?v=<?php echo $b2_version ?>"/>
+	<admin:generatorAgent rdf:resource="http://wordpress.org/"/><!-- EN: version (?v=) removed (Issue #37). JA: バージョン(?v=)を除去(Issue #37)。 -->
 	<admin:errorReportsTo rdf:resource="mailto:<?php echo $admin_email ?>"/>
 	<sy:updatePeriod>hourly</sy:updatePeriod>
 	<sy:updateFrequency>1</sy:updateFrequency>

@@ -8,7 +8,8 @@ if (!isset($rss_encoded_html)) { $rss_encoded_html = 0; }
 if (!isset($rss_excerpt_length) || ($rss_encoded_html == 1)) { $rss_excerpt_length = 0; }
 ?>
 <?php echo "<?xml version=\"1.0\"?".">"; ?>
-<!-- generator="wordpress/<?php echo $b2_version ?>" -->
+<!-- EN: version removed from the generator string (Issue #37). JA: generator 文字列からバージョンを除去(Issue #37)。 -->
+<!-- generator="wordpress" -->
 <rss version="0.92">
     <channel>
         <title><?php bloginfo_rss("name") ?></title>
