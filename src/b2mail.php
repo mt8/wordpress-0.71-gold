@@ -61,7 +61,7 @@ for ($iCount=1; $iCount<=$Count; $iCount++) {
 	$bodysignal = 0;
 	$dmonths = array('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 					 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
-	while ( list ( $lineNum,$line ) = each ($MsgOne) ) {
+	foreach ( $MsgOne as $lineNum => $line ) {
 		if (strlen($line) < 3) {
 			$bodysignal = 1;
 		}

@@ -1281,7 +1281,7 @@ function agesorter($m) {
 	// allow us to pass any other auxilliary information
 	uksort($agesorter_arr, agesorter_compare);
 	$outAr=array();
-	while (list( $key, $val ) = each( $agesorter_arr ) ) {
+	foreach ( $agesorter_arr as $key => $val ) {
 	  // recreate each struct element
 	  $outAr[]=new xmlrpcval(array("name" => 
 								   new xmlrpcval($key),
