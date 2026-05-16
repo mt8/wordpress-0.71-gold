@@ -37,8 +37,15 @@ require_once(__DIR__ . '/mysql-shim.php');
 		//     ラクタとして認識されないため __construct() に改名。
 		function __construct($dbuser, $dbpassword, $dbname, $dbhost)
 		{
+			// EN: PHP 8.1+ makes mysqli throw exceptions on error by default;
+			//     this class expects the classic false-return style, so disable it.
+			// JA: PHP 8.1+ は mysqli を既定でエラー時に例外送出にする。本クラスは
+			//     従来の false 返却を前提とするため無効化する。
+			if ( function_exists('mysqli_report') ) {
+				mysqli_report(MYSQLI_REPORT_OFF);
+			}
 
-			$this->dbh = @mysql_connect($dbhost,$dbuser,$dbpassword);
+			$this->dbh = @mysqli_connect($dbhost, $dbuser, $dbpassword);
 
 			if ( ! $this->dbh )
 			{
@@ -49,7 +56,14 @@ require_once(__DIR__ . '/mysql-shim.php');
 				<li>Are you sure that the database server is running?</li>
 				</ol>");
 			}
-
+			else
+			{
+				// EN: WordPress 0.71-era SQL relies on the permissive sql_mode of
+				//     2003-era MySQL; MySQL 8 defaults to STRICT. Reset it.
+				// JA: WordPress 0.71 当時の SQL は当時の MySQL の寛容な sql_mode に
+				//     依存する。MySQL 8 は既定で STRICT のためリセットする。
+				@mysqli_query($this->dbh, "SET SESSION sql_mode=''");
+			}
 
 			$this->select($dbname);
 
@@ -60,7 +74,7 @@ require_once(__DIR__ . '/mysql-shim.php');
 
 		function select($db)
 		{
-			if ( !@mysql_select_db($db,$this->dbh))
+			if ( !($this->dbh instanceof mysqli) || !@mysqli_select_db($this->dbh, $db))
 			{
 				$this->print_error("<ol id='error'>
 				<li><strong>Error selecting database <u>$db</u>!</strong></li>
@@ -75,7 +89,9 @@ require_once(__DIR__ . '/mysql-shim.php');
 		
 		function escape($str)
 		{
-			return mysql_escape_string(stripslashes($str));				
+			return ($this->dbh instanceof mysqli)
+				? mysqli_real_escape_string($this->dbh, stripslashes($str))
+				: addslashes(stripslashes($str));				
 		}
 
 		// ==================================================================
@@ -88,7 +104,7 @@ require_once(__DIR__ . '/mysql-shim.php');
 			global $EZSQL_ERROR;
 
 			// If no special error string then use mysql default..
-			if ( !$str ) $str = mysql_error();
+			if ( !$str ) $str = ($this->dbh instanceof mysqli) ? mysqli_error($this->dbh) : (string) mysqli_connect_error();
 			
 			// Log this error to the global array..
 			$EZSQL_ERROR[] = array 
@@ -154,8 +170,8 @@ require_once(__DIR__ . '/mysql-shim.php');
 			// Keep track of the last query for debug..
 			$this->last_query = $query;
 
-			// Perform the query via std mysql_query function..
-			$this->result = mysql_query($query, $this->dbh);
+			// Perform the query via the mysqli_query function..
+			$this->result = mysqli_query($this->dbh, $query);
 
 			// If there was an insert, delete or update see how many rows were affected
 			// (Also, If there there was an insert take note of the insert_id
@@ -167,12 +183,12 @@ require_once(__DIR__ . '/mysql-shim.php');
 				// This is true if the query starts with insert, delete or update
 				if ( preg_match("/^\\s*$word /i",$query) )
 				{
-					$this->rows_affected = mysql_affected_rows();
+					$this->rows_affected = mysqli_affected_rows($this->dbh);
 					
 					// This gets the insert ID
 					if ( $word == 'insert' || $word == 'replace' )
 					{
-						$this->insert_id = mysql_insert_id($this->dbh);
+						$this->insert_id = mysqli_insert_id($this->dbh);
 					}
 					
 					$this->result = false;
@@ -180,7 +196,7 @@ require_once(__DIR__ . '/mysql-shim.php');
 				
 			}
    
-			if ( mysql_error() )
+			if ( mysqli_error($this->dbh) )
 			{
 
 				// If there is an error then take note of it..
@@ -198,9 +214,9 @@ require_once(__DIR__ . '/mysql-shim.php');
 					// Take note of column info
 
 					$i=0;
-					while ($i < @mysql_num_fields($this->result))
+					while ($i < @mysqli_num_fields($this->result))
 					{
-						$this->col_info[$i] = @mysql_fetch_field($this->result);
+						$this->col_info[$i] = @mysqli_fetch_field($this->result);
 						$i++;
 					}
 
@@ -208,7 +224,7 @@ require_once(__DIR__ . '/mysql-shim.php');
 					// Store Query Results
 
 					$i=0;
-					while ( $row = @mysql_fetch_object($this->result) )
+					while ( $row = @mysqli_fetch_object($this->result) )
 					{
 
 						// Store relults as an objects within main array
@@ -220,7 +236,7 @@ require_once(__DIR__ . '/mysql-shim.php');
 					// Log number of rows the query returned
 					$this->num_rows = $i;
 
-					@mysql_free_result($this->result);
+					@mysqli_free_result($this->result);
 
 
 					// If there were results then return true for $db->query
