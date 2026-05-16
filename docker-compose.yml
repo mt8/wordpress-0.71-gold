@@ -1,0 +1,38 @@
+# EN: Local development environment for WordPress 0.71-gold (PHP 8.3 + MySQL 8).
+#     Start : docker compose up -d --build
+#     Browse: http://localhost:8080
+# JA: WordPress 0.71-gold のローカル開発環境 (PHP 8.3 + MySQL 8)。
+#     起動    : docker compose up -d --build
+#     アクセス: http://localhost:8080
+services:
+  # EN: Apache + PHP 8.3 web server, built from the local Dockerfile.
+  # JA: ローカルの Dockerfile からビルドする Apache + PHP 8.3 Web サーバー。
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      # EN: Mount the WordPress source as the Apache document root.
+      # JA: WordPress のソースを Apache のドキュメントルートにマウントする。
+      - ./src:/var/www/html
+    depends_on:
+      - db
+
+  # EN: MySQL 8 database. Credentials match src/b2config.php.
+  # JA: MySQL 8 データベース。認証情報は src/b2config.php と一致させている。
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: b2
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3306:3306"
+    volumes:
+      # EN: Named volume so database contents persist across container restarts.
+      # JA: 名前付きボリュームにより、コンテナ再起動後も DB の内容を永続化する。
+      - db-data:/var/lib/mysql
+
+volumes:
+  db-data:
