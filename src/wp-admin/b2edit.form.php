@@ -59,6 +59,14 @@ switch($action) {
 <form name="post" action="b2edit.php" method="POST">
 <input type="hidden" name="user_ID" value="<?php echo $user_ID ?>" />
 <input type="hidden" name="action" value='<?php echo $form_action . $form_extra ?>' />
+<?php
+// EN: CSRF token scoped to the action this form submits ('post' /
+//     'editpost' / 'editedcomment'); verified by b2_csrf_check() in b2edit.php.
+// JA: このフォームが送信するアクション('post' / 'editpost' /
+//     'editedcomment')に限定した CSRF トークン。b2edit.php の
+//     b2_csrf_check() で検証する。
+b2_csrf_field($form_action);
+?>
 
 <?php if ($action != "editcomment") {
   // this is for everything but comment editing
@@ -170,8 +178,10 @@ echo $form_trackback;
 if ($user_level > 4) {
 	touch_time(($action == 'edit'));
 }
+// EN: Append the CSRF token to the delete link (verified by b2edit.php).
+// JA: 削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
 if ('edit' == $action) echo "
-<p><a href='b2edit.php?action=delete&amp;post=$post' onclick=\"return confirm('You are about to delete this post \'".$edited_post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete this post</a></p>";
+<p><a href='b2edit.php?action=delete&amp;post=$post&amp;_b2csrf=".b2_csrf_token('delete-post')."' onclick=\"return confirm('You are about to delete this post \'".$edited_post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete this post</a></p>";
 ?>
 </form>
 </div>

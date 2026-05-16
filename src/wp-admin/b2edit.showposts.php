@@ -241,7 +241,9 @@ if ($i == "ASC")
 				if ($m)
 				echo "&m=$m";
 				echo "'>Edit</a>";
-				echo " - <a href='b2edit.php?action=delete&amp;post=$id' onclick=\"return confirm('You are about to delete this post \'".$post->post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete</a> ";
+				// EN: Append the CSRF token to the delete link (verified by b2edit.php).
+				// JA: 削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
+				echo " - <a href='b2edit.php?action=delete&amp;post=$id&amp;_b2csrf=".b2_csrf_token('delete-post')."' onclick=\"return confirm('You are about to delete this post \'".$post->post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete</a> ";
 				}
 				if ('private' == $post->post_status) echo ' - <strong>Private</strong>';
 				?>
@@ -277,7 +279,9 @@ if ($i == "ASC")
 					<?php 
 					if (($user_level > $authordata->user_level) or ($user_login == $authordata->user_login)) {
 						echo "[ <a href=\"b2edit.php?action=editcomment&amp;comment=".$commentdata->comment_ID."\">Edit</a>";
-						echo " - <a href=\"b2edit.php?action=deletecomment&amp;p=".$post->ID."&amp;comment=".$commentdata->comment_ID."\">Delete</a> ]";
+						// EN: Append the CSRF token to the delete-comment link (verified by b2edit.php).
+						// JA: コメント削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
+						echo " - <a href=\"b2edit.php?action=deletecomment&amp;p=".$post->ID."&amp;comment=".$commentdata->comment_ID."&amp;_b2csrf=".b2_csrf_token('delete-comment')."\">Delete</a> ]";
 					}
 					?>
 					</li>
