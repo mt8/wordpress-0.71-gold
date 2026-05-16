@@ -6,11 +6,13 @@
     "require-dev": {
         "squizlabs/php_codesniffer": "^3.7",
         "phpstan/phpstan": "^2.0",
-        "wp-coding-standards/wpcs": "^3.1"
+        "wp-coding-standards/wpcs": "^3.1",
+        "phpunit/phpunit": "^12.5"
     },
     "scripts": {
         "phpcs": "phpcs",
-        "phpstan": "phpstan analyse"
+        "phpstan": "phpstan analyse",
+        "test": "phpunit"
     },
     "config": {
         "allow-plugins": {

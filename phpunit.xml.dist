@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  EN: PHPUnit configuration for WordPress 0.71-gold. The starter suite
+      unit-tests the pure string / format helpers that run without a database.
+  JA: WordPress 0.71-gold の PHPUnit 設定。初期スイートは DB 無しで動作する
+      純粋な文字列/整形ヘルパーを単体テストする。
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         cacheDirectory=".phpunit.cache"
+         colors="true">
+    <testsuites>
+        <testsuite name="unit">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
