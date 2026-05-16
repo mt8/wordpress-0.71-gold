@@ -97,7 +97,7 @@ JA: `b2upload.php` は保存パスをユーザー指定ファイル名から組�
 トラバーサル)、緩い `preg_match` で型判定し、`chmod 777` ディレクトリを
 前提とする -- リモートコード実行の余地。既定では無効。
 
-### 7. Information disclosure & misc (#37)
+### 7. Information disclosure & misc (#37) -- RESOLVED / 解決済み
 EN: Mail header injection (commenter-controlled `From:` header, no CRLF
 filtering); SQL errors and full SQL printed to the page; WordPress version
 disclosed in a `generator` meta tag and `X-Mailer` header; `register_globals`
@@ -106,6 +106,22 @@ JA: メールヘッダインジェクション(コメント投稿者制御の `F
 CRLF フィルタ無し)、SQL エラーと SQL 全文の画面出力、`generator` meta
 タグ・`X-Mailer` ヘッダでの WordPress バージョン露出、`register_globals`
 風の `$$var` 代入。
+
+EN: **Resolved (Issue #37).** The mail-header-injection and `X-Mailer` items
+were already eliminated by the Issue #44 removal (comment / trackback /
+XML-RPC). The remaining items are now fixed: SQL errors are logged
+server-side and replaced in the page with a generic message; the WordPress
+version is no longer printed in the `generator` meta tag or the RSS/RDF feed
+generator strings; and the `$$var` assignment loops were rewritten to the
+explicit `$GLOBALS[$b2var]` form. See `docs/php83-migration.md` (Issue #37)
+for details.
+JA: **解決済み(Issue #37)。** メールヘッダインジェクションと `X-Mailer` の
+項目は、Issue #44 の撤去(コメント・トラックバック・XML-RPC)で既に
+解消済み。残る項目を修正した: SQL エラーはサーバ側でログに記録し、ページ
+には汎用メッセージを表示する。WordPress バージョンは `generator` meta タグや
+RSS/RDF フィードの generator 文字列に出力しない。`$$var` 代入ループは明示的な
+`$GLOBALS[$b2var]` 形に書き換えた。詳細は `docs/php83-migration.md`
+(Issue #37)を参照。
 
 ## Remediation approach / 修正方針
 

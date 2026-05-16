@@ -47,20 +47,46 @@ $_GET    = add_magic_quotes($_GET);
 $_POST   = add_magic_quotes($_POST);
 $_COOKIE = add_magic_quotes($_COOKIE);
 
+// EN: Information-disclosure fix (Issue #37). On a failed query, the original
+//     code printed mysqli_error() -- and sometimes the full SQL text -- to the
+//     browser, leaking the database schema and the exact queries. This helper
+//     writes the technical detail to the server error log only and shows the
+//     visitor a generic message, so nothing query/schema-specific reaches the
+//     page output.
+// JA: 情報漏洩の修正(Issue #37)。元のコードはクエリ失敗時に mysqli_error()
+//     を、場合によっては SQL 全文をブラウザに出力し、データベースのスキーマと
+//     クエリそのものを漏らしていた。本ヘルパは技術的詳細をサーバのエラー
+//     ログにのみ書き出し、訪問者には汎用メッセージを表示することで、クエリや
+//     スキーマに固有の情報がページ出力に出ないようにする。
+function linkmanager_db_error($dbh, $sql) {
+	error_log('linkmanager.php SQL error: ' . mysqli_error($dbh) . ' -- query: ' . $sql);
+	die('A database error occurred.');
+}
+
 $b2varstoreset = array('action','standalone','cat_id', 'linkurl', 'name', 'image',
                        'description', 'visible', 'target', 'category', 'link_id',
                        'submit', 'order_by', 'links_show_cat_id', 'rating', 'rel');
+// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
+//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
+//     write. The name list is a fixed whitelist and this loop runs at global
+//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
+//     intent (populate known globals from $_GET/$_POST) explicit.
+// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
+//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
+//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
+//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
+//     から設定する)が明確になる。
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
     $b2var = $b2varstoreset[$i];
-    if (!isset($$b2var)) {
+    if (!isset($GLOBALS[$b2var])) {
         if (empty($_POST["$b2var"])) {
             if (empty($_GET["$b2var"])) {
-                $$b2var = '';
+                $GLOBALS[$b2var] = '';
             } else {
-                $$b2var = $_GET["$b2var"];
+                $GLOBALS[$b2var] = $_GET["$b2var"];
             }
         } else {
-            $$b2var = $_POST["$b2var"];
+            $GLOBALS[$b2var] = $_POST["$b2var"];
         }
     }
 }
@@ -97,7 +123,7 @@ switch ($action) {
     // need to make the others invisible before we add this new one.
     if (($auto_toggle == 'Y') && ($link_visible == 'Y')) {
       $sql = "UPDATE $tablelinks set link_visible = 'N' WHERE link_category = $link_category";
-      $sql_result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query."."sql=[$sql]". mysqli_error($wpdb->dbh));
+      $sql_result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
     }
 
     $sql = "INSERT INTO $tablelinks (link_url, link_name, link_image, link_target, link_category, link_description, link_visible, link_owner, link_rating, link_rel) " .
@@ -106,7 +132,7 @@ switch ($action) {
            . addslashes($link_image) . "', '$link_target', $link_category, '"
            . addslashes($link_description) . "', '$link_visible', $user_ID, $link_rating, '" . addslashes($link_rel) ."')";
 
-    $sql_result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query."."sql=[$sql]". mysqli_error($wpdb->dbh));
+    $sql_result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
 
     header('Location: linkmanager.php');
     break;
@@ -153,7 +179,7 @@ switch ($action) {
       // need to make the others invisible before we update this one.
       if (($auto_toggle == 'Y') && ($link_visible == 'Y')) {
         $sql = "UPDATE $tablelinks set link_visible = 'N' WHERE link_category = $link_category";
-        $sql_result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query."."sql=[$sql]". mysqli_error($wpdb->dbh));
+        $sql_result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
       }
 
       $sql = "UPDATE $tablelinks SET link_url='" . addslashes($link_url) . "',\n " .
@@ -164,7 +190,7 @@ switch ($action) {
              " link_rel='" . addslashes($link_rel) . "'\n" .
              " WHERE link_id=$link_id";
       //error_log($sql);
-      $sql_result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query."."sql=[$sql]". mysqli_error($wpdb->dbh));
+      $sql_result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
 
     } // end if save
     setcookie('links_show_cat_id', $links_show_cat_id, time()+600);
@@ -189,7 +215,7 @@ switch ($action) {
       die ("Cheatin' uh ?");
 
     $sql = "DELETE FROM $tablelinks WHERE link_id = '$link_id'";
-    $sql_result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query.".mysqli_error($wpdb->dbh));
+    $sql_result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
 
     if (isset($links_show_cat_id) && ($links_show_cat_id != ''))
         $cat_id = $links_show_cat_id;
@@ -221,7 +247,7 @@ switch ($action) {
       " FROM $tablelinks " .
       " WHERE link_id = $link_id";
 
-    $result = mysqli_query($wpdb->dbh, $sql) or die("Couldn't execute query.".mysqli_error($wpdb->dbh));
+    $result = mysqli_query($wpdb->dbh, $sql) or linkmanager_db_error($wpdb->dbh, $sql);
     if ($row = mysqli_fetch_object($result)) {
       $link_url = $row->link_url;
       $link_name = stripslashes($row->link_name);
@@ -311,7 +337,7 @@ switch ($action) {
       <td> 
         <?php
     $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
-    $result = mysqli_query($wpdb->dbh, $query) or die("Couldn't execute query. ".mysqli_error($wpdb->dbh));
+    $result = mysqli_query($wpdb->dbh, $query) or linkmanager_db_error($wpdb->dbh, $query);
     echo "        <select name=\"category\" size=\"1\">\n";
     while($row = mysqli_fetch_object($result)) {
       echo "          <option value=\"".$row->cat_id."\"";
@@ -401,7 +427,7 @@ switch ($action) {
         <td>
 <?php
     $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
-    $result = mysqli_query($wpdb->dbh, $query) or die("Couldn't execute query. ".mysqli_error($wpdb->dbh));
+    $result = mysqli_query($wpdb->dbh, $query) or linkmanager_db_error($wpdb->dbh, $query);
     echo "        <select name=\"cat_id\">\n";
     echo "          <option value=\"All\"";
     if ($cat_id == 'All')
@@ -586,7 +612,7 @@ LINKS;
         <td>
 <?php
     $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
-    $result = mysqli_query($wpdb->dbh, $query) or die("Couldn't execute query. ".mysqli_error($wpdb->dbh));
+    $result = mysqli_query($wpdb->dbh, $query) or linkmanager_db_error($wpdb->dbh, $query);
     echo "        <select name=\"category\" size=\"1\">\n";
     while($row = mysqli_fetch_object($result)) {
       echo "          <option value=\"".$row->cat_id."\"";

@@ -9,7 +9,7 @@ require($abspath.'wp-links/links.php');
 	<title><?php bloginfo('name') ?><?php single_post_title(' :: ') ?><?php single_cat_title(' :: ') ?><?php single_month_title(' :: ') ?></title>
 	
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-	<meta name="generator" content="WordPress .7" /> <!-- leave this for stats -->
+	<meta name="generator" content="WordPress" /> <!-- EN: version removed (Issue #37) so the exact release is not disclosed publicly. JA: バージョンを除去(Issue #37) - 正確なリリースを公開しないため。 -->
 
 	<style type="text/css" media="screen">
 		@import url( <?php echo $siteurl; ?>/layout2b.css );

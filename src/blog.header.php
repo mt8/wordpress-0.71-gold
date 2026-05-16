@@ -13,17 +13,30 @@ require_once ($curpath.$b2inc.'/b2functions.php');
 
 $b2varstoreset = array('m','p','posts','w','c', 'cat','withcomments','s','search','exact', 'sentence','poststart','postend','preview','debug', 'calendar','page','paged','more','tb', 'pb','author','order','orderby');
 
+	// EN: Issue #37 hardening. The original loop used the variable-variable
+	//     form ($$b2var = ...), a register_globals-style construct. The name
+	//     list ($b2varstoreset) is a fixed whitelist, so this was never
+	//     arbitrary variable injection, but $$var is fragile and obscures the
+	//     intent. This loop runs at global scope, so assigning through
+	//     $GLOBALS[$b2var] is exactly equivalent and makes it explicit that
+	//     the script populates a known set of globals from $_GET/$_POST.
+	// JA: Issue #37 の堅牢化。元のループは可変変数($$b2var = ...)を使って
+	//     おり、register_globals 風の構文だった。名前リスト($b2varstoreset)
+	//     は固定のホワイトリストなので任意の変数注入ではないが、$$var は脆く
+	//     意図が分かりにくい。本ループはグローバルスコープで動くため、
+	//     $GLOBALS[$b2var] への代入は完全に等価であり、既知のグローバル変数群
+	//     を $_GET/$_POST から設定していることを明示できる。
 	for ($i=0; $i<count($b2varstoreset); $i += 1) {
 		$b2var = $b2varstoreset[$i];
-		if (!isset($$b2var)) {
+		if (!isset($GLOBALS[$b2var])) {
 			if (empty($_POST[$b2var])) {
 				if (empty($_GET[$b2var])) {
-					$$b2var = '';
+					$GLOBALS[$b2var] = '';
 				} else {
-					$$b2var = $_GET[$b2var];
+					$GLOBALS[$b2var] = $_GET[$b2var];
 				}
 			} else {
-				$$b2var = $_POST[$b2var];
+				$GLOBALS[$b2var] = $_POST[$b2var];
 			}
 		}
 	}

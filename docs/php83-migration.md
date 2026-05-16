@@ -2057,3 +2057,185 @@ Docker 環境での機能テスト: `b2config.php` を一時的に `$use_fileupl
 ファイルは書き込まれなかった。テスト後、`b2config.php` を
 (`git checkout` で)元に戻し、一時ディレクトリを削除した。フロントエンド
 (`/`)と管理画面(`b2edit.php`)は HTTP 200・PHP 警告/fatal 0 で表示される。
+
+---
+
+## Issue #37: Information disclosure & misc / 情報漏洩・その他
+
+EN: A security audit (Issue #37) found three remaining lower-severity issues.
+The original finding also listed mail-header injection in `b2comments.post.php`
+and the `X-Mailer` version header; those code paths were deleted entirely by
+Issue #44 (comment / trackback / XML-RPC removal) and no longer exist, so this
+fix covers only what remains:
+
+1. **SQL error disclosure** -- `wp-admin/linkmanager.php` and
+   `wp-admin/b2edit.showposts.php` printed `mysqli_error()` -- and, in
+   `linkmanager.php`, the full SQL string (`"sql=[$sql]"`) -- straight to the
+   browser when a query failed. This leaks the database schema, table/column
+   names and the exact queries to any visitor who can trigger an error.
+
+2. **Version disclosure** -- the WordPress version was exposed publicly:
+   `index.php` carried `<meta name="generator" content="WordPress .7" />`, and
+   the three feeds (`b2rss.php`, `b2rss2.php`, `b2rdf.php`) echoed
+   `$b2_version` into `generator` comments and `admin:generatorAgent` tags
+   (`?v=0.71`). An exact version helps an attacker target known 0.71
+   vulnerabilities.
+
+3. **`register_globals`-style `$$var` assignment** -- the entry scripts
+   populated variables with the variable-variable form
+   `$$b2var = $_GET/$_POST[...]` inside a loop. The name list (`$b2varstoreset`)
+   is a fixed whitelist, so this was never arbitrary variable injection, but
+   `$$var` is a fragile, register_globals-era construct that obscures intent.
+
+JA: セキュリティ監査(Issue #37)で、深刻度が中程度の残り 3 件の問題が
+判明した。元の指摘には `b2comments.post.php` のメールヘッダインジェクション
+と `X-Mailer` バージョンヘッダも含まれていたが、それらのコード経路は
+Issue #44(コメント・トラックバック・XML-RPC の撤去)で完全に削除され
+最早存在しないため、本修正は残った項目のみを扱う:
+
+1. **SQL エラーの露出** -- `wp-admin/linkmanager.php` と
+   `wp-admin/b2edit.showposts.php` は、クエリ失敗時に `mysqli_error()` を、
+   さらに `linkmanager.php` では SQL 全文(`"sql=[$sql]"`)をそのまま
+   ブラウザに出力していた。これはデータベースのスキーマ、テーブル/カラム名、
+   クエリそのものを、エラーを起こせる訪問者に漏らす。
+
+2. **バージョン露出** -- WordPress のバージョンが公開出力に出ていた:
+   `index.php` は `<meta name="generator" content="WordPress .7" />` を
+   持ち、3 つのフィード(`b2rss.php`・`b2rss2.php`・`b2rdf.php`)は
+   `$b2_version` を `generator` コメントと `admin:generatorAgent` タグ
+   (`?v=0.71`)に出力していた。正確なバージョンは、既知の 0.71 脆弱性を
+   攻撃者が狙いやすくする。
+
+3. **`register_globals` 風の `$$var` 代入** -- エントリスクリプトは、ループ内で
+   可変変数 `$$b2var = $_GET/$_POST[...]` の形で変数を生成していた。名前
+   リスト(`$b2varstoreset`)は固定のホワイトリストなので任意の変数注入では
+   ないが、`$$var` は register_globals 時代の脆い構文で意図を分かりにくくする。
+
+### Changes / 変更内容
+
+EN:
+
+**A. SQL error disclosure.**
+
+- `wp-admin/linkmanager.php`: a small helper `linkmanager_db_error($dbh, $sql)`
+  was added. It writes the technical detail
+  (`mysqli_error()` + the query text) to the server error log via
+  `error_log()` and then `die('A database error occurred.')`. All nine
+  `... or die("Couldn't execute query." ...)` sites -- including the four that
+  echoed `"sql=[$sql]"` -- now call this helper, so nothing query- or
+  schema-specific reaches the page; the detail is still available to the
+  operator in the server log.
+- `wp-admin/b2edit.showposts.php`: the three
+  `mysqli_query(...) or die($arc_sql."<br />".mysqli_error(...))` sites
+  (the monthly / daily / weekly archive dropdowns) were rewritten to test the
+  result, `error_log()` the detail server-side and `die('A database error
+  occurred.')` for the visitor.
+
+**B. Version disclosure.**
+
+- `index.php`: the `generator` meta tag changed from
+  `content="WordPress .7"` to a bare `content="WordPress"` -- the tag is
+  kept (it is harmless and conventional) but no longer carries a version.
+- `b2rss.php`, `b2rss2.php`, `b2rdf.php`: the `generator="wordpress/<version>"`
+  HTML comment became a bare `generator="wordpress"`, and in `b2rss2.php` /
+  `b2rdf.php` the `admin:generatorAgent` resource changed from
+  `http://wordpress.org/?v=<version>` to `http://wordpress.org/`. The feeds
+  remain well-formed XML.
+- `$b2_version` is **kept defined** in `b2-include/b2vars.php` -- other code
+  (e.g. the admin footer `wp-admin/b2footer.php`) still uses it internally.
+  Only the *public* printing of the value was removed; that file was not
+  touched (it holds Latin-1 bytes and must be edited byte-safely).
+
+**C. `register_globals`-style `$$var` assignment.**
+
+- The `$$b2var` assignment loop appears in eleven entry scripts:
+  `blog.header.php`, `b2login.php`, `b2register.php`, and the admin scripts
+  `wp-admin/b2header.php`, `b2edit.php`, `b2categories.php`, `b2template.php`,
+  `b2options.php`, `b2profile.php`, `b2team.php`, `linkmanager.php`,
+  `linkcategories.php`. Every loop runs at **global scope** (none is inside a
+  function), so `$$b2var` and `$GLOBALS[$b2var]` are exactly equivalent there.
+  Each `$$b2var` read/write was replaced with the explicit
+  `$GLOBALS[$b2var]` form (including the `isset()` test), and a bilingual
+  comment was added before each loop explaining the change. This is a
+  behaviour-preserving readability/robustness hardening: it makes explicit
+  that the script populates a known, whitelisted set of globals from
+  `$_GET`/`$_POST`, and removes the fragile variable-variable construct
+  without changing what runs on the front end.
+
+### Decision on item C / 項目 C の判断
+
+EN: The audit asked to weigh hardening item C versus leaving it. The chosen
+option is to **harden it**, because the change is provably behaviour-neutral:
+every `$$b2var` loop runs at file/global scope, so `$GLOBALS[$b2var]` produces
+the identical variable. No `$$var` loop lives inside a function, so there is no
+scope difference to break. The whitelist (`$b2varstoreset`) and all downstream
+logic are untouched, and `blog.header.php` -- which runs on every front-end
+page -- was verified unchanged in behaviour. Switching to `$GLOBALS[...]` is the
+explicit form recommended in the audit and removes the register_globals-era
+idiom without risk.
+
+JA: 監査は項目 C を堅牢化するか、そのまま残すかの判断を求めていた。選んだ
+方針は **堅牢化する** ことである。変更が挙動中立であることを証明できるため
+だ: すべての `$$b2var` ループはファイル/グローバルスコープで動くので、
+`$GLOBALS[$b2var]` は同一の変数を生成する。関数内で動く `$$var` ループは無く、
+スコープの差異で壊れる箇所が無い。ホワイトリスト(`$b2varstoreset`)と下流の
+ロジックはすべて無変更で、毎ページ動く `blog.header.php` も挙動不変であること
+を確認した。`$GLOBALS[...]` への切り替えは監査が推奨する明示形であり、
+register_globals 時代の語法をリスク無く除去できる。
+
+JA(A): **SQL エラーの露出。** `wp-admin/linkmanager.php` には小さなヘルパ
+`linkmanager_db_error($dbh, $sql)` を追加した。技術的詳細(`mysqli_error()`
+とクエリ本文)を `error_log()` でサーバのエラーログに書き、その後
+`die('A database error occurred.')` する。`"sql=[$sql]"` を出力していた 4 箇所
+を含む 9 箇所すべての `... or die("Couldn't execute query." ...)` がこの
+ヘルパを呼ぶようになり、クエリやスキーマに固有の情報はページに出ない。
+詳細は運用者向けにサーバログに残る。`wp-admin/b2edit.showposts.php` の 3 箇所
+(月別/日別/週別アーカイブのドロップダウン)は、結果を判定し詳細を
+`error_log()` でサーバ側に記録し、訪問者には `die('A database error
+occurred.')` を表示するよう書き換えた。
+
+JA(B): **バージョン露出。** `index.php` の `generator` meta タグは
+`content="WordPress .7"` から、バージョンを持たない `content="WordPress"`
+に変更した(タグ自体は無害で慣例的なので残す)。`b2rss.php`・`b2rss2.php`・
+`b2rdf.php` の `generator="wordpress/<version>"` という HTML コメントは
+`generator="wordpress"` にし、`b2rss2.php` / `b2rdf.php` の
+`admin:generatorAgent` リソースを `http://wordpress.org/?v=<version>` から
+`http://wordpress.org/` に変更した。フィードは整形式 XML のまま。
+`$b2_version` は `b2-include/b2vars.php` に**定義したまま残す** -- 管理画面
+フッタ `wp-admin/b2footer.php` など他のコードが内部で使うため。値の*公開*
+出力のみを除去した。`b2vars.php` は Latin-1 バイトを含むため触れていない。
+
+### Verification / 検証
+
+EN: `php -l` passes with 0 syntax errors on all 17 changed files.
+`composer phpcs` reports 0 violations (41 files). `composer phpstan
+--memory-limit=1G` reports 0 errors (the default 128 MB OOMs on this
+repository -- a pre-existing, unrelated constraint). Functional test against
+the Docker environment on the `issue-37-info-disclosure` branch, web container
+restarted to clear OPcache: the front end (`/`, requested twice) returns HTTP
+200 with 0 PHP warnings/fatals, the `generator` meta now reads
+`content="WordPress"` with no version, and all 20 posts still display. The
+three feeds (`b2rss2.php`, `b2rss.php`, `b2rdf.php`) return HTTP 200, pass
+`xmllint` as well-formed XML, and show no version in their generator output.
+Admin login succeeds (HTTP 302, auth cookies set), confirming the
+`$GLOBALS[...]`-driven `$action` dispatch in `b2login.php` still works;
+`wp-admin/linkmanager.php`, `b2edit.php`, the `showposts` archive view,
+`b2categories.php`, `b2team.php`, `b2options.php`, `b2profile.php`,
+`b2template.php`, `linkcategories.php` and the `linkedit` action all return
+HTTP 200 with 0 PHP warnings/fatals.
+
+JA: `php -l` は変更した 17 ファイルすべてで構文エラー 0 で通る。`composer
+phpcs` は違反 0 件(41 ファイル)。`composer phpstan --memory-limit=1G` は
+エラー 0 件(既定の 128 MB はこのリポジトリで OOM する — 既知の無関係な
+制約)。`issue-37-info-disclosure` ブランチで OPcache を消すため web コンテナ
+を再起動し、Docker 環境で機能テストを実施した: フロントエンド(`/`、2 回
+取得)は HTTP 200・PHP 警告/fatal 0 で、`generator` meta は
+`content="WordPress"` でバージョン無し、20 件の投稿はすべて表示される。
+3 つのフィード(`b2rss2.php`・`b2rss.php`・`b2rdf.php`)は HTTP 200 で、
+`xmllint` で整形式 XML として通り、generator 出力にバージョンが出ない。
+管理者ログインは成功(HTTP 302、認証クッキー設定)し、`b2login.php` の
+`$GLOBALS[...]` 駆動の `$action` ディスパッチが動作することを確認した。
+`wp-admin/linkmanager.php`・`b2edit.php`・`showposts` のアーカイブ表示・
+`b2categories.php`・`b2team.php`・`b2options.php`・`b2profile.php`・
+`b2template.php`・`linkcategories.php` および `linkedit` アクションは
+すべて HTTP 200・PHP 警告/fatal 0 で表示される。
