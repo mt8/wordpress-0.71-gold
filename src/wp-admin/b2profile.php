@@ -51,7 +51,7 @@ case 'update':
 
 	/* if the ICQ UIN has been entered, check to see if it has only numbers */
 	if (!empty($_POST["newuser_icq"])) {
-		if ((ereg("^[0-9]+$",$_POST["newuser_icq"]))==false) {
+		if ((preg_match('~^[0-9]+$~',$_POST["newuser_icq"]))==false) {
 			die ("<strong>ERROR</strong>: your ICQ UIN can only be a number, no letters allowed");
 			return false;
 		}

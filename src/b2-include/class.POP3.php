@@ -281,7 +281,7 @@ class POP3 {
         $MsgArray = array();
 
         $line = fgets($fp,$buffer);
-        while ( !ereg("^\.\r\n",$line))
+        while ( !preg_match('~^\.\r\n~',$line))
         {
             $MsgArray[$count] = $line;
             $count++;
@@ -348,7 +348,7 @@ class POP3 {
             if($msgC > $Total) { break; }
             $line = fgets($fp,$this->BUFFER);
             $line = $this->strip_clf($line);
-            if(ereg("^\.",$line))
+            if(preg_match('~^\.~',$line))
             {
                 $this->ERROR = _("POP3 pop_list:") . ' ' . _("Premature end of list");
                 return false;
@@ -394,7 +394,7 @@ class POP3 {
         $MsgArray = array();
 
         $line = fgets($fp,$buffer);
-        while ( !ereg("^\.\r\n",$line))
+        while ( !preg_match('~^\.\r\n~',$line))
         {
             $MsgArray[$count] = $line;
             $count++;
@@ -581,8 +581,8 @@ class POP3 {
             $line = "";
             $count = 1;
             $line = fgets($fp,$buffer);
-            while ( !ereg("^\.\r\n",$line)) {
-                if(ereg("^\.\r\n",$line)) {
+            while ( !preg_match('~^\.\r\n~',$line)) {
+                if(preg_match('~^\.\r\n~',$line)) {
                     break;
                 }
                 list ($msg,$msgUidl) = explode(" ",$line);
@@ -634,7 +634,7 @@ class POP3 {
         if( empty($cmd) )
             return false;
         else
-            return( ereg ("^\+OK", $cmd ) );
+            return( preg_match('~^\+OK~', $cmd ) );
     }
 
     function strip_clf ($text = "") {

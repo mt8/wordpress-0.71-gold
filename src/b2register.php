@@ -44,7 +44,7 @@ switch($action) {
 case "register":
 
 	function filter($value)	{
-		return ereg("^[a-zA-Z0-9\_-\|]+$",$value);
+		return preg_match('~^[a-zA-Z0-9\_-\|]+$~',$value);
 	}
 
 	$user_login = $_POST["user_login"];
