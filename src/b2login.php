@@ -23,6 +23,24 @@ $_COOKIE = add_magic_quotes($_COOKIE);
 
 $b2varstoreset = array('action','mode','error','text','popupurl','popuptitle');
 
+// EN: Cookie hardening (Issue #34). Build the security flags shared by every
+//     authentication cookie: HttpOnly so JavaScript cannot read the token,
+//     SameSite=Lax to blunt cross-site sends, and Secure only over HTTPS so the
+//     local HTTP environment keeps working.
+// JA: クッキーのセキュリティ強化(Issue #34)。すべての認証クッキーで共有する
+//     セキュリティフラグを組み立てる。HttpOnly で JavaScript からトークンを
+//     読めないようにし、SameSite=Lax でクロスサイト送信を抑止し、Secure は
+//     HTTPS のときだけ付与してローカルの HTTP 環境を壊さないようにする。
+function b2_auth_cookie_flags($expires) {
+	return array(
+		'expires'  => $expires,
+		'path'     => '/',
+		'httponly' => true,
+		'samesite' => 'Lax',
+		'secure'   => !empty($_SERVER['HTTPS']),
+	);
+}
+
 for ($i = 0; $i < count($b2varstoreset); $i = $i + 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
@@ -42,8 +60,12 @@ switch($action) {
 
 case 'logout':
 
-	setcookie('wordpressuser');
-	setcookie('wordpresspass');
+	// EN: Expire the auth cookies; pass the same path/flags so the browser
+	//     matches and actually deletes the hardened cookies set at login.
+	// JA: 認証クッキーを失効させる。ログイン時に設定した強化クッキーと一致して
+	//     確実に削除されるよう、同じ path/フラグを渡す。
+	setcookie('wordpressuser', '', b2_auth_cookie_flags(time() - 31536000));
+	setcookie('wordpresspass', '', b2_auth_cookie_flags(time() - 31536000));
 		header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 		header('Cache-Control: no-cache, must-revalidate');
@@ -67,7 +89,7 @@ case 'login':
 
 	function login() {
 		global $wpdb, $log, $pwd, $error, $user_ID;
-		global $tableusers, $pass_is_md5;
+		global $tableusers, $pass_is_md5, $stored_user_pass;
 		$user_login = &$log;
 		$password = &$pwd;
 		if (!$user_login) {
@@ -80,30 +102,73 @@ case 'login':
 			return false;
 		}
 
+		// EN: Issue #34 -- look the user up by login name only, then verify the
+		//     password in PHP. Passwords are now stored as bcrypt hashes.
+		// JA: Issue #34 -- ユーザーはログイン名のみで検索し、パスワードは PHP 側で
+		//     検証する。パスワードは bcrypt ハッシュで保存されるようになった。
 		if ('md5:' == substr($password, 0, 4)) {
 			$pass_is_md5 = 1;
 			$password = substr($password, 4, strlen($password));
-			$query = "SELECT ID, user_login, user_pass FROM $tableusers WHERE user_login = '$user_login' AND MD5(user_pass) = '$password'";
 		} else {
 			$pass_is_md5 = 0;
-			$query = "SELECT ID, user_login, user_pass FROM $tableusers WHERE user_login = '$user_login' AND user_pass = '$password'";
 		}
-		$login = $wpdb->get_row($query);
+
+		$safe_login = addslashes($user_login);
+		$login = $wpdb->get_row("SELECT ID, user_login, user_pass FROM $tableusers WHERE user_login = '$safe_login'");
 
 		if (!$login) {
 			$error = '<b>ERROR</b>: wrong login or password';
 			$pwd = '';
 			return false;
+		}
+
+		$stored = $login->user_pass;
+		$info = password_get_info($stored);
+		$is_hash = !empty($info['algo']);
+		$ok = false;
+
+		if ($pass_is_md5) {
+			// EN: Edge feature -- the typed value is md5(stored user_pass). This
+			//     only works for a legacy plaintext row, because the stored bcrypt
+			//     hash is not recoverable from its md5. A hashed row therefore
+			//     cannot be reached through the md5: path (documented limitation).
+			// JA: エッジ機能 -- 入力値は md5(保存された user_pass)。bcrypt ハッシュは
+			//     その md5 から復元できないため、これはレガシーな平文行でのみ成立する。
+			//     ハッシュ済みの行は md5: 経路では認証できない(既知の制限として記録)。
+			$ok = (md5($stored) === $password);
+		} elseif ($is_hash) {
+			// EN: Normal path -- verify the typed password against the bcrypt hash.
+			// JA: 通常経路 -- 入力されたパスワードを bcrypt ハッシュで検証する。
+			$ok = password_verify($password, $stored);
 		} else {
-		$user_ID = $login->ID;
-			if (($pass_is_md5 == 0 && $login->user_login == $user_login && $login->user_pass == $password) || ($pass_is_md5 == 1 && $login->user_login == $user_login && md5($login->user_pass) == $password)) {
-				return true;
-			} else {
-				$error = '<b>ERROR</b>: wrong login or password';
-				$pwd = '';
-			return false;
+			// EN: Legacy fallback -- the row still holds a plaintext password.
+			//     On a match, transparently re-hash it and upgrade the row.
+			// JA: レガシーフォールバック -- 行にまだ平文パスワードが残っている。
+			//     一致したら透過的に再ハッシュして行を更新する。
+			if ($stored === $password) {
+				$ok = true;
+				$new_hash = password_hash($password, PASSWORD_DEFAULT);
+				$safe_hash = addslashes($new_hash);
+				$wpdb->query("UPDATE $tableusers SET user_pass = '$safe_hash' WHERE ID = " . (int) $login->ID);
+				$stored = $new_hash;
 			}
 		}
+
+		if ($ok) {
+			$user_ID = $login->ID;
+			// EN: Hand the (possibly just upgraded) stored value to the cookie
+			//     setter so wordpresspass = md5(stored) -- the same value that
+			//     checklogin() and the CSRF token expect.
+			// JA: (アップグレードされた可能性のある)保存値をクッキー設定側へ渡し、
+			//     wordpresspass = md5(保存値) とする -- checklogin() と CSRF
+			//     トークンが期待するのと同じ値。
+			$stored_user_pass = $stored;
+			return true;
+		}
+
+		$error = '<b>ERROR</b>: wrong login or password';
+		$pwd = '';
+		return false;
 	}
 
 	if (!login()) {
@@ -119,15 +184,19 @@ case 'login':
 		exit();
 	} else {
 		$user_login = $log;
-		$user_pass = $pwd;
-		setcookie('wordpressuser', $user_login, time()+31536000);
-		if ($pass_is_md5) {
-			setcookie('wordpresspass', $user_pass, time()+31536000);
-		} else {
-			setcookie('wordpresspass', md5($user_pass), time()+31536000);
-		}
+		// EN: Issue #34 -- the auth cookie carries md5() of the *stored*
+		//     user_pass value (the bcrypt hash), not md5() of the typed
+		//     plaintext. checklogin() compares the cookie to
+		//     md5($userdata->user_pass), so both sides agree whether the row is
+		//     hashed or still legacy plaintext.
+		// JA: Issue #34 -- 認証クッキーには入力された平文ではなく、*保存された*
+		//     user_pass の値(bcrypt ハッシュ)の md5() を入れる。checklogin() は
+		//     クッキーを md5($userdata->user_pass) と比較するため、行がハッシュ済み
+		//     でもレガシー平文でも両者が一致する。
+		setcookie('wordpressuser', $user_login, b2_auth_cookie_flags(time()+31536000));
+		setcookie('wordpresspass', md5($stored_user_pass), b2_auth_cookie_flags(time()+31536000));
 		if (empty($_COOKIE['wordpressblogid'])) {
-			setcookie('wordpressblogid', 1,time()+31536000);
+			setcookie('wordpressblogid', 1, b2_auth_cookie_flags(time()+31536000));
 		}
 		header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
@@ -199,11 +268,39 @@ case 'retrievepassword':
 
 	$user_login = $_POST["user_login"];
 	$user_data = get_userdatabylogin($user_login);
+
+	// EN: Issue #34 -- never email a stored secret. After hashing, the stored
+	//     user_pass is a bcrypt hash and is useless to the user anyway. Instead
+	//     generate a fresh random temporary password, store its hash, and email
+	//     the new plaintext password so the user can log in and then change it.
+	// JA: Issue #34 -- 保存されている秘密情報をメール送信しない。ハッシュ化後の
+	//     user_pass は bcrypt ハッシュであり、利用者にとっては無意味である。
+	//     代わりに新しいランダムな一時パスワードを生成してそのハッシュを保存し、
+	//     新しい平文パスワードをメール送信する。利用者はログイン後に変更できる。
+	if (!$user_data) {
+		// EN: Do not reveal whether the login exists; reply the same way.
+		// JA: ログインが存在するか否かを明かさず、同じ応答を返す。
+		echo "<p>If that login exists, an email with a new password has been sent.<br />
+		<a href='b2login.php' title='Check your email first, of course'>Click here to login!</a></p>";
+		die();
+	}
+
 	$user_email = $user_data->user_email;
-	$user_pass = $user_data->user_pass;
+
+	$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	$new_pass = '';
+	for ($i = 0; $i < 12; $i = $i + 1) {
+		$new_pass .= $chars[random_int(0, strlen($chars) - 1)];
+	}
+
+	$new_hash = password_hash($new_pass, PASSWORD_DEFAULT);
+	$safe_hash = addslashes($new_hash);
+	$safe_id = (int) $user_data->ID;
+	$wpdb->query("UPDATE $tableusers SET user_pass = '$safe_hash' WHERE ID = $safe_id");
 
 	$message  = "Login: $user_login\r\n";
-	$message .= "Password: $user_pass\r\n";
+	$message .= "Password: $new_pass\r\n";
+	$message .= "\r\nThis is a temporary password. Please log in and change it from your profile.\r\n";
 
 	$m = mail($user_email, "Your weblog's login/password", $message);
 

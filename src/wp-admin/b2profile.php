@@ -83,9 +83,22 @@ case 'update':
 			die ("<strong>ERROR</strong>: you typed your new password only once. Go back to type it twice.");
 		if ($_POST["pass1"] != $_POST["pass2"])
 			die ("<strong>ERROR</strong>: you typed two different passwords. Go back to correct that.");
-		$newuser_pass = $_POST["pass1"];
-		$updatepassword = "user_pass='$newuser_pass', ";
-		setcookie("wordpresspass",md5($newuser_pass),time()+31536000);
+		// EN: Issue #34 -- store a bcrypt hash of the new password, not the
+		//     plaintext. The auth cookie 'wordpresspass' is then set to md5() of
+		//     that stored hash (the value now in the DB), so checklogin() and the
+		//     CSRF token stay consistent and the session persists.
+		// JA: Issue #34 -- 新しいパスワードは平文ではなく bcrypt ハッシュで保存する。
+		//     認証クッキー 'wordpresspass' はその保存ハッシュ(DB に入る値)の md5()
+		//     とし、checklogin() と CSRF トークンの整合性を保ちセッションを維持する。
+		$newuser_pass_hash = password_hash($_POST["pass1"], PASSWORD_DEFAULT);
+		$updatepassword = "user_pass='".addslashes($newuser_pass_hash)."', ";
+		setcookie("wordpresspass", md5($newuser_pass_hash), array(
+			'expires'  => time() + 31536000,
+			'path'     => '/',
+			'httponly' => true,
+			'samesite' => 'Lax',
+			'secure'   => !empty($_SERVER['HTTPS']),
+		));
 	}
 
 	$newuser_firstname=addslashes($_POST["newuser_firstname"]);
