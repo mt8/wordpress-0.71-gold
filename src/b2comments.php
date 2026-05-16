@@ -7,6 +7,9 @@
 		$comment_author_email = (empty($_COOKIE["comment_author"])) ? "email" : trim($_COOKIE["comment_author_email"]);
 		$comment_author_url = (empty($_COOKIE["comment_author"])) ? "url" : trim($_COOKIE["comment_author_url"]);
 
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE comment_post_ID = $id).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE comment_post_ID = $id)で使われる。
+	$id = (int) $id;
 	$comments = $wpdb->get_results("SELECT * FROM $tablecomments WHERE comment_post_ID = $id ORDER BY comment_date");
 ?>
 

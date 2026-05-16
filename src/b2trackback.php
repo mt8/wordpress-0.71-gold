@@ -2,6 +2,9 @@
 <!-- you can START editing here -->
 
 	<?php // don't touch these 2 lines
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE comment_post_ID = $id).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE comment_post_ID = $id)で使われる。
+	$id = (int) $id;
 	$queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date";
 	$resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) {
 	?>
@@ -36,7 +39,9 @@
 
 if (!empty($_GET['tb_id'])) {
 	// trackback is done by a GET
-	$tb_id = $_GET['tb_id'];
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $tb_id).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $tb_id)で使われる。
+	$tb_id = (int) $_GET['tb_id'];
 	$tb_url = $_GET['url'];
 	$title = $_GET['title'];
 	$excerpt = $_GET['excerpt'];
@@ -45,7 +50,11 @@ if (!empty($_GET['tb_id'])) {
 	// trackback is done by a POST
 	$request_array = 'HTTP_POST_VARS';
 	$tb_id = explode('/', $_SERVER['REQUEST_URI']);
-	$tb_id = $tb_id[count($tb_id)-1];
+	// EN: The id is taken from the request URI; cast to int -- it is used
+	//     unquoted in SQL (WHERE ID = $tb_id).
+	// JA: ID はリクエスト URI から取得する。整数にキャスト -- SQL で
+	//     クォート無し(WHERE ID = $tb_id)で使われる。
+	$tb_id = (int) $tb_id[count($tb_id)-1];
 	$tb_url = $_POST['url'];
 	$title = $_POST['title'];
 	$excerpt = $_POST['excerpt'];

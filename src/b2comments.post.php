@@ -30,7 +30,9 @@ $url = trim($_POST["url"]);
 $comment = trim($_POST["comment"]);
 $original_comment = $comment;
 $comment_autobr = $_POST["comment_autobr"];
-$comment_post_ID = $_POST["comment_post_ID"];
+// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $comment_post_ID).
+// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $comment_post_ID)で使われる。
+$comment_post_ID = (int) $_POST["comment_post_ID"];
 
 $commentstatus = $wpdb->get_var("SELECT comment_status FROM $tableposts WHERE ID = $comment_post_ID");
 

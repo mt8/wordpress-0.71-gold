@@ -26,7 +26,12 @@ $blog=1; include ("blog.header.php"); while($row = mysqli_fetch_object($result))
 <p><em><?php trackback_url() ?></em></p>
 
 
-	<?php /* do not delete this line */ $queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date"; $resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) { ?>
+	<?php
+	/* do not delete this line */
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE comment_post_ID = $id).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE comment_post_ID = $id)で使われる。
+	$id = (int) $id;
+	$queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date"; $resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) { ?>
 
 <h2>Trackbacks</h2>
 <ol id="trackbacks">

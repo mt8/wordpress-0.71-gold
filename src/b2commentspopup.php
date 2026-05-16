@@ -22,7 +22,10 @@ foreach ($posts as $post) { start_b2();
 <h2>Comments</h2>
 <ol id="comments">
 
-<?php /* this line is b2's motor, do not delete it */ 
+<?php /* this line is b2's motor, do not delete it */
+// EN: Cast the post id to int -- it is used unquoted in SQL below.
+// JA: 投稿 ID を整数にキャスト -- 下の SQL でクォート無しで使われる。
+$id = (int) $id;
 $comments = $wpdb->get_results("SELECT * FROM $tablecomments WHERE comment_post_ID = $id ORDER BY comment_date");
 $commentstatus = $wpdb->get_var("SELECT comment_status FROM $tableposts WHERE ID = $id");
 // this line is WordPress' motor, do not delete it.
