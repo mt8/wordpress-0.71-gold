@@ -34,7 +34,8 @@ EN: A small, self-contained React app with its **own `package.json`** (it does
 not touch the repository root's npm setup). It uses:
 
 - `@wordpress/block-editor` — the block-editing UI (`BlockEditorProvider`,
-  `BlockList`, `BlockTools`, `BlockInspector`).
+  `BlockList`, `BlockTools`, `BlockToolbar`, `BlockInspector`,
+  `BlockBreadcrumb` and the list view).
 - `@wordpress/block-library` — the core *static* blocks. They register
   themselves **client-side** via `registerCoreBlocks()`; no server-side
   `register_block_type()` is needed, which is exactly why this works on 0.71.
@@ -52,7 +53,8 @@ JA: 独自の **`package.json`** を持つ、小さく自己完結した React �
 (リポジトリルートの npm 設定には触れない)。使用パッケージ:
 
 - `@wordpress/block-editor` — ブロック編集 UI(`BlockEditorProvider`・
-  `BlockList`・`BlockTools`・`BlockInspector`)。
+  `BlockList`・`BlockTools`・`BlockToolbar`・`BlockInspector`・
+  `BlockBreadcrumb`・リストビュー)。
 - `@wordpress/block-library` — 標準の *静的* ブロック。`registerCoreBlocks()`
   で **クライアント側**に自己登録する。サーバー側の `register_block_type()`
   は不要であり、これこそが 0.71 でも動作する理由である。
@@ -74,9 +76,15 @@ EN: Three small PHP files, served by the existing Docker blog:
   connection, and reuses 0.71's own cookie auth (`wordpressuser` /
   `wordpresspass`, the `b2users` table) — the same trust source as
   `b2verifauth.php`.
-- `load.php` — `GET load.php?post=ID` → JSON `{ id, title, content, status }`.
+- `load.php` — `GET load.php?post=ID` → JSON
+  `{ id, title, content, status, category, categories }`. `category` is the
+  post's single `b2posts.post_category` cat_ID; `categories` is the full
+  `b2categories` list (`{ id, name }`) for the sidebar selector.
 - `save.php` — `POST save.php` with a JSON body
-  `{ post, title, content }` → writes the block markup into `b2posts.post_content`.
+  `{ post, title, content, status, category }` → writes the block markup into
+  `b2posts.post_content` and persists `post_status` / `post_category`.
+  `status` is whitelisted (`publish` / `draft` / `private`) and `category` is
+  verified to exist in `b2categories`.
 - `editor.php` — the boot page. `editor.php?post=ID` serves an HTML shell that
   loads the bundle and mounts the editor for that post.
 
@@ -90,9 +98,15 @@ JA: 既存の Docker ブログが配信する 3 + 1 個の小さな PHP ファ�
   接続を再利用し、0.71 自身のクッキー認証(`wordpressuser` /
   `wordpresspass`、`b2users` テーブル)を再利用する — `b2verifauth.php` と
   同じ信頼源。
-- `load.php` — `GET load.php?post=ID` → JSON `{ id, title, content, status }`。
-- `save.php` — JSON ボディ `{ post, title, content }` の `POST save.php` →
-  ブロックマークアップを `b2posts.post_content` へ書き込む。
+- `load.php` — `GET load.php?post=ID` → JSON
+  `{ id, title, content, status, category, categories }`。`category` は
+  投稿の単一の `b2posts.post_category` の cat_ID、`categories` はサイド
+  バーのセレクタ用に `b2categories` 全件(`{ id, name }`)。
+- `save.php` — JSON ボディ `{ post, title, content, status, category }` の
+  `POST save.php` → ブロックマークアップを `b2posts.post_content` へ
+  書き込み、`post_status` / `post_category` を保存する。`status` は
+  ホワイトリスト(`publish` / `draft` / `private`)、`category` は
+  `b2categories` に存在するか検証する。
 - `editor.php` — 起動ページ。`editor.php?post=ID` がバンドルを読み込み、
   その投稿に対してエディタをマウントする HTML シェルを配信する。
 
@@ -201,9 +215,16 @@ EN:
 - Loading a 0.71 post into a modern block editor (`parse()`).
 - Editing with the core **static** blocks — paragraph, heading, list, quote,
   image (client-side), separator, etc.
-- The block toolbar (`BlockTools`) and the block inspector sidebar
-  (`BlockInspector`).
-- Saving block markup back into 0.71's `post_content` (`serialize()`).
+- **Per-block toolbars** — the fixed `BlockToolbar` shows the controls of the
+  currently selected block.
+- **Document Overview** — a toggleable list-view panel (the block outline),
+  plus a `BlockBreadcrumb` under the canvas.
+- **Settings sidebar** — a *Post* panel with a Status control
+  (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
+  and a *Block* panel with `BlockInspector` for the selected block's
+  attributes.
+- Saving block markup, `post_status` and `post_category` back into 0.71's
+  `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
 - Cookie-based auth and the `b2edit.php`-equivalent ownership check.
 
@@ -212,9 +233,15 @@ JA:
 - 0.71 の投稿をモダンなブロックエディタへ読み込む(`parse()`)。
 - 標準の **静的** ブロックでの編集 — 段落・見出し・リスト・引用・画像
   (クライアント側)・区切りなど。
-- ブロックツールバー(`BlockTools`)とブロックインスペクタのサイドバー
-  (`BlockInspector`)。
-- ブロックマークアップを 0.71 の `post_content` へ保存し戻す(`serialize()`)。
+- **各ブロックのツールバー** — 固定の `BlockToolbar` が現在選択中ブロック
+  の操作子を表示する。
+- **ドキュメント概観** — 切り替え可能なリストビューパネル(ブロックの
+  アウトライン)と、キャンバス下の `BlockBreadcrumb`。
+- **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
+  Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
+  ブロックの属性を出す `BlockInspector` の *Block* パネル。
+- ブロックマークアップ・`post_status`・`post_category` を 0.71 の
+  `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。
 - クッキーベース認証と `b2edit.php` 相当の所有者チェック。
 

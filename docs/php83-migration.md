@@ -2921,3 +2921,109 @@ JA: React アプリを再ビルドし(`npm run build` -> `src/block-editor/asset
 フロントエンドが引き続き描画する。`composer phpcs` / `phpstan` / `test` は
 0 / 0 / 94 のまま。ブロックエディタは依然として明示的な実験であり、
 `wp-admin/b2edit.php` を置き換えるものではない。
+
+## Issue #79: Build out the block-editor UI / ブロックエディタ UI を拡充する
+
+EN: The block editor at `src/block-editor/` mounted `@wordpress/block-editor`
+but was missing standard editing chrome. Issue #79 adds the three pieces of UI
+a real block editor needs -- a Document Overview, a settings sidebar and
+per-block toolbars -- and extends the JSON backend so the post's status and
+category round-trip.
+
+JA: `src/block-editor/` のブロックエディタは `@wordpress/block-editor` を
+マウントしていたが、標準的な編集 UI を欠いていた。Issue #79 は本格的な
+ブロックエディタに必要な 3 つの UI -- ドキュメント概観・設定サイドバー・
+各ブロックのツールバー -- を追加し、投稿のステータスとカテゴリーが往復する
+よう JSON バックエンドを拡張する。
+
+### Frontend (`app/src/Editor.jsx`) / フロントエンド
+
+EN:
+- **Per-block toolbars.** The component imported `BlockTools` / `BlockToolbar`
+  but never rendered the toolbar. With `hasFixedToolbar` set, `<BlockToolbar>`
+  is now rendered directly in a fixed bar above the editor body, and a
+  `Popover.Slot` is kept so the toolbar's dropdowns (block switcher, Options
+  menu) appear. The toolbar shows the controls of the currently selected
+  block.
+- **Document Overview.** A toggleable left panel hosts the block outline /
+  list view. `ListView` is exported under the `__experimentalListView` name in
+  `@wordpress/block-editor` 15.19.0, so it is imported with an alias. A
+  `BlockBreadcrumb` is pinned beneath the canvas.
+- **Settings sidebar.** A *Post* panel with a Status `SelectControl`
+  (`publish` / `draft` / `private`, the same enumeration 0.71's
+  `b2edit.form.php` offers) and a Category `SelectControl` populated from the
+  `b2categories` list; and a *Block* panel that hosts `BlockInspector` for the
+  selected block's attributes.
+
+JA:
+- **各ブロックのツールバー。** コンポーネントは `BlockTools` /
+  `BlockToolbar` を import しながらツールバーを描画していなかった。
+  `hasFixedToolbar` を設定したうえで `<BlockToolbar>` をエディタ本体上部の
+  固定バーへ直接描画し、ツールバーのドロップダウン(ブロック切替・Options
+  メニュー)が出るよう `Popover.Slot` を維持する。ツールバーは現在選択中
+  ブロックの操作子を表示する。
+- **ドキュメント概観。** ブロックのアウトライン / リストビューを載せた、
+  切り替え可能な左パネル。`ListView` は `@wordpress/block-editor` 15.19.0
+  では `__experimentalListView` 名で公開されるため、別名で import する。
+  キャンバスの下に `BlockBreadcrumb` を固定する。
+- **設定サイドバー。** Status の `SelectControl`(`publish` / `draft` /
+  `private`、0.71 の `b2edit.form.php` が提供するのと同じ列挙)と
+  `b2categories` 一覧で埋めた Category の `SelectControl` を持つ *Post*
+  パネル、および選択ブロックの属性を出す `BlockInspector` を載せた *Block*
+  パネル。
+
+### Backend (`api/load.php`, `api/save.php`) / バックエンド
+
+EN:
+- `load.php`'s response gains `status`, `category` (the single
+  `b2posts.post_category` cat_ID) and `categories` -- the whole `b2categories`
+  table as `{ id, name }` -- so the sidebar's selectors have their data in the
+  initial load. `b2categories` has just two columns (`cat_ID`, `cat_name`),
+  confirmed against `wp-admin/wp-install.php`.
+- `save.php` accepts `status` and `category`. `status` is validated against a
+  fixed whitelist; `category` is `(int)`-cast and verified to exist in
+  `b2categories` (via `COUNT(*)`, so 0.71's `wpdb::get_var()` raises no
+  undefined-offset warning for a no-match query) before the `UPDATE`. The
+  existing cookie auth, the `b2edit.php`-equivalent ownership check and the
+  `(int)`-cast / `wpdb::escape()` SQL hardening are unchanged.
+
+JA:
+- `load.php` の応答に `status`・`category`(単一の `b2posts.post_category`
+  の cat_ID)・`categories`(`b2categories` 全体を `{ id, name }` で)を
+  追加し、サイドバーのセレクタが初回読み込みでデータを持つようにする。
+  `b2categories` は `cat_ID`・`cat_name` の 2 カラムのみで、
+  `wp-admin/wp-install.php` で確認した。
+- `save.php` は `status` と `category` を受け取る。`status` は固定ホワイト
+  リストで検証し、`category` は `(int)` キャストのうえ `UPDATE` 前に
+  `b2categories` に存在するか確認する(`COUNT(*)` を使うため、不一致
+  クエリでも 0.71 の `wpdb::get_var()` が未定義オフセット警告を出さない)。
+  既存のクッキー認証・`b2edit.php` 相当の所有者チェック・`(int)` キャスト
+  / `wpdb::escape()` の SQL 堅牢化は変更しない。
+
+### Verification / 検証
+
+EN: Rebuilt the React app and verified end to end in a headless Chromium
+against a throwaway Docker stack (a distinct `be79` Compose project on ports
+8081 / 3307, so the user's stack on 8080 / 3306 was untouched). On a freshly
+created test post: the block toolbar shows the selected block's controls (the
+block switcher + Options for a paragraph), the Document Overview list view
+lists the blocks, and the settings sidebar shows the Post panel (Status +
+Category selectors, pre-filled from `load.php`) and the Block panel (the
+paragraph's Typography / Advanced inspector). A save round trip persisted
+`post_status`, `post_category` and the block content to `b2posts`, and the
+0.71 front end (`index.php?p=N`) still rendered the post with its category.
+`composer phpcs` / `phpstan` / `test` stay at 0 / 0 / 94 -- `src/block-editor/`
+remains excluded from phpcs / phpstan as prototype code.
+
+JA: React アプリを再ビルドし、使い捨ての Docker スタック(ポート 8081 /
+3307 の独立した `be79` Compose プロジェクト。ユーザーの 8080 / 3306 の
+スタックには触れない)に対しヘッドレス Chromium で端から端まで検証した。
+新規作成したテスト投稿で: ブロックツールバーは選択ブロックの操作子
+(段落ならブロック切替 + Options)を表示し、ドキュメント概観のリスト
+ビューはブロックを列挙し、設定サイドバーは Post パネル(`load.php` から
+事前入力された Status + Category セレクタ)と Block パネル(段落の
+Typography / Advanced インスペクタ)を表示する。保存の往復は
+`post_status`・`post_category`・ブロック内容を `b2posts` へ保存し、0.71 の
+フロントエンド(`index.php?p=N`)は投稿をカテゴリー付きで引き続き描画した。
+`composer phpcs` / `phpstan` / `test` は 0 / 0 / 94 のまま -- `src/block-editor/`
+は試作コードとして phpcs / phpstan の対象外のまま。
