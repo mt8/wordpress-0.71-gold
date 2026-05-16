@@ -314,17 +314,17 @@
 			// If the output is an object then return object using the row offset..
 			if ( $output == OBJECT )
 			{
-				return $this->last_result[$y]?$this->last_result[$y]:null;
+				return isset($this->last_result[$y])?$this->last_result[$y]:null;
 			}
 			// If the output is an associative array then return row as such..
 			elseif ( $output == ARRAY_A )
 			{
-				return $this->last_result[$y]?get_object_vars($this->last_result[$y]):null;
+				return isset($this->last_result[$y])?get_object_vars($this->last_result[$y]):null;
 			}
 			// If the output is an numerical array then return row as such..
 			elseif ( $output == ARRAY_N )
 			{
-				return $this->last_result[$y]?array_values(get_object_vars($this->last_result[$y])):null;
+				return isset($this->last_result[$y])?array_values(get_object_vars($this->last_result[$y])):null;
 			}
 			// If invalid output type was specified..
 			else
