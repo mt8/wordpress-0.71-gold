@@ -1,7 +1,7 @@
 	<?php if (!empty($pb)) { ?>
 
 	<?php // Do not delete these lines
-	if (basename($HTTP_SERVER_VARS["SCRIPT_FILENAME"]) == "b2pingbacks.php")
+	if (basename($_SERVER["SCRIPT_FILENAME"]) == "b2pingbacks.php")
 		die ("please, do not load this page directly");
 	$queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<pingback />%' ORDER BY comment_date";
 	$resultc = mysql_query($queryc); if ($resultc) {

@@ -34,25 +34,25 @@
 	
 } else {
 
-if (!empty($HTTP_GET_VARS['tb_id'])) {
+if (!empty($_GET['tb_id'])) {
 	// trackback is done by a GET
-	$tb_id = $HTTP_GET_VARS['tb_id'];
-	$tb_url = $HTTP_GET_VARS['url'];
-	$title = $HTTP_GET_VARS['title'];
-	$excerpt = $HTTP_GET_VARS['excerpt'];
-	$blog_name = $HTTP_GET_VARS['blog_name'];
-} elseif (!empty($HTTP_POST_VARS['url'])) {
+	$tb_id = $_GET['tb_id'];
+	$tb_url = $_GET['url'];
+	$title = $_GET['title'];
+	$excerpt = $_GET['excerpt'];
+	$blog_name = $_GET['blog_name'];
+} elseif (!empty($_POST['url'])) {
 	// trackback is done by a POST
 	$request_array = 'HTTP_POST_VARS';
-	$tb_id = explode('/', $HTTP_SERVER_VARS['REQUEST_URI']);
+	$tb_id = explode('/', $_SERVER['REQUEST_URI']);
 	$tb_id = $tb_id[count($tb_id)-1];
-	$tb_url = $HTTP_POST_VARS['url'];
-	$title = $HTTP_POST_VARS['title'];
-	$excerpt = $HTTP_POST_VARS['excerpt'];
-	$blog_name = $HTTP_POST_VARS['blog_name'];
+	$tb_url = $_POST['url'];
+	$title = $_POST['title'];
+	$excerpt = $_POST['excerpt'];
+	$blog_name = $_POST['blog_name'];
 }
 
-if ((strlen(''.$tb_id)) && (empty($HTTP_GET_VARS['__mode'])) && (strlen(''.$tb_url))) {
+if ((strlen(''.$tb_id)) && (empty($_GET['__mode'])) && (strlen(''.$tb_url))) {
 
 	@header('Content-Type: text/xml');
 
@@ -87,7 +87,7 @@ if ((strlen(''.$tb_id)) && (empty($HTTP_GET_VARS['__mode'])) && (strlen(''.$tb_u
 	$comment_post_ID = $tb_id;
 	$autobr = 1;
 
-	$user_ip = $HTTP_SERVER_VARS['REMOTE_ADDR'];
+	$user_ip = $_SERVER['REMOTE_ADDR'];
 	$user_domain = gethostbyaddr($user_ip);
 	$time_difference = get_settings('time_difference');
 	$now = date('Y-m-d H:i:s',(time() + ($time_difference * 3600)));
@@ -121,14 +121,14 @@ if ((strlen(''.$tb_id)) && (empty($HTTP_GET_VARS['__mode'])) && (strlen(''.$tb_u
 			$recipient = $authordata["user_email"];
 			$subject = "trackback on post #$comment_post_ID \"".$postdata["Title"]."\"";
 
-			@mail($recipient, $subject, $notify_message, "From: wordpress@".$HTTP_SERVER_VARS['SERVER_NAME']."\r\n"."X-Mailer: WordPress $b2_version - PHP/" . phpversion());
+			@mail($recipient, $subject, $notify_message, "From: wordpress@".$_SERVER['SERVER_NAME']."\r\n"."X-Mailer: WordPress $b2_version - PHP/" . phpversion());
 			
 		}
 
 		trackback_response(0);
 	}
 
-}/* elseif (empty($HTTP_GET_VARS['__mode'])) {
+}/* elseif (empty($_GET['__mode'])) {
 
 	header('Content-type: application/xml');
 	echo "<?xml version=\"1.0\" encoding=\"iso-8859-1\"?".">\n<response>\n<error>1</error>\n";

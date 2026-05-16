@@ -21,18 +21,18 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
-$author = trim($HTTP_POST_VARS["author"]);
-$email = trim($HTTP_POST_VARS["email"]);
-$url = trim($HTTP_POST_VARS["url"]);
-$comment = trim($HTTP_POST_VARS["comment"]);
+$author = trim($_POST["author"]);
+$email = trim($_POST["email"]);
+$url = trim($_POST["url"]);
+$comment = trim($_POST["comment"]);
 $original_comment = $comment;
-$comment_autobr = $HTTP_POST_VARS["comment_autobr"];
-$comment_post_ID = $HTTP_POST_VARS["comment_post_ID"];
+$comment_autobr = $_POST["comment_autobr"];
+$comment_post_ID = $_POST["comment_post_ID"];
 
 $commentstatus = $wpdb->get_var("SELECT comment_status FROM $tableposts WHERE ID = $comment_post_ID");
 
@@ -48,7 +48,7 @@ if ($comment == 'comment' || $comment == '') {
 	exit;
 }
 
-$user_ip = $HTTP_SERVER_VARS['REMOTE_ADDR'];
+$user_ip = $_SERVER['REMOTE_ADDR'];
 $user_domain = gethostbyaddr($user_ip);
 $time_difference = get_settings("time_difference");
 $now = date("Y-m-d H:i:s",(time() + ($time_difference * 3600)));
@@ -126,7 +126,7 @@ if ($ok) {
 	header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 	header('Cache-Control: no-cache, must-revalidate');
 	header('Pragma: no-cache');
-	$location = (!empty($HTTP_POST_VARS['redirect_to'])) ? $HTTP_POST_VARS['redirect_to'] : $HTTP_SERVER_VARS["HTTP_REFERER"];
+	$location = (!empty($_POST['redirect_to'])) ? $_POST['redirect_to'] : $_SERVER["HTTP_REFERER"];
 	header("Location: $location");
 
 } else {

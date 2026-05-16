@@ -6,14 +6,14 @@ $b2varstoreset = array('action','standalone','redirect','profile');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -25,12 +25,12 @@ case 'promote':
 	$standalone = 1;
 	require_once('b2header.php');
 
-	if (empty($HTTP_GET_VARS["prom"])) {
+	if (empty($_GET["prom"])) {
 		header('Location: b2team.php');
 	}
 
-	$id = $HTTP_GET_VARS["id"];
-	$prom = $HTTP_GET_VARS["prom"];
+	$id = $_GET["id"];
+	$prom = $_GET["prom"];
 
 	$user_data = get_userdata($id);
 	$usertopromote_level = $user_data->user_level;
@@ -55,7 +55,7 @@ case 'delete':
 	$standalone = 1;
 	require_once('b2header.php');
 
-	$id = $HTTP_GET_VARS["id"];
+	$id = $_GET["id"];
 
 	if (!$id) {
 		header('Location: b2team.php');

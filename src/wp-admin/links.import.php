@@ -32,7 +32,7 @@ include_once("../wp-links/links.php");
 
 $title = 'Import Blogroll';
 
-$step = $HTTP_GET_VARS['step'];
+$step = $_GET['step'];
 if (!$step) $step = 0;
 ?>
 <?php
@@ -92,11 +92,11 @@ switch ($step) {
 
      <h3>Importing...</h3>
 <?php
-                $cat_id = $HTTP_GET_VARS['cat_id'];
+                $cat_id = $_GET['cat_id'];
                 if (($cat_id == '') || ($cat_id == 0)) {
                     $cat_id  = 1;
                 }
-                $opml_url = $HTTP_GET_VARS['opml_url'];
+                $opml_url = $_GET['opml_url'];
                 if ($opml_url == '') {
                     echo "<p>You need to supply your OPML url. Press back on your browser and try again</p>\n";
                 }

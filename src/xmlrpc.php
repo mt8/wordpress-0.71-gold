@@ -896,7 +896,7 @@ function pingback_ping($m) {
 	// original code by Mort (http://mort.mine.nu:8080)
 	global $tableposts, $tablecomments, $comments_notify, $wpdb;
 	global $siteurl, $blogfilename, $b2_version, $use_pingback;
-	global $HTTP_SERVER_VARS;
+	global $_SERVER;
 
 	if (!$use_pingback) {
 		return new xmlrpcresp(new xmlrpcval('Sorry, this weblog does not allow you to pingback its posts.'));
@@ -1041,7 +1041,7 @@ function pingback_ping($m) {
 						$recipient = $authordata['user_email'];
 						$subject = "pingback on post #$post_ID \"".$postdata['Title'].'"';
 
-						@mail($recipient, $subject, $notify_message, "From: b2@".$HTTP_SERVER_VARS['SERVER_NAME']."\r\n"."X-Mailer: b2 $b2_version - PHP/" . phpversion());
+						@mail($recipient, $subject, $notify_message, "From: b2@".$_SERVER['SERVER_NAME']."\r\n"."X-Mailer: b2 $b2_version - PHP/" . phpversion());
 						
 					}
 				} else {

@@ -410,9 +410,9 @@ function user_pass_ok($user_login,$user_pass) {
 }
 
 function get_currentuserinfo() { // a bit like get_userdata(), on steroids
-	global $HTTP_COOKIE_VARS, $user_login, $userdata, $user_level, $user_ID, $user_nickname, $user_email, $user_url, $user_pass_md5;
+	global $_COOKIE, $user_login, $userdata, $user_level, $user_ID, $user_nickname, $user_email, $user_url, $user_pass_md5;
 	// *** retrieving user's data from cookies and db - no spoofing
-	$user_login = $HTTP_COOKIE_VARS['wordpressuser'];
+	$user_login = $_COOKIE['wordpressuser'];
 	$userdata = get_userdatabylogin($user_login);
 	$user_level = $userdata->user_level;
 	$user_ID = $userdata->ID;
@@ -640,7 +640,7 @@ function gzip_compression() {
 		if($phpver >= "4.0.4pl1") {
 			if(extension_loaded("zlib")) { ob_start("ob_gzhandler"); }
 		} else if($phpver > "4.0") {
-			if(strstr($HTTP_SERVER_VARS['HTTP_ACCEPT_ENCODING'], 'gzip')) {
+			if(strstr($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
 				if(extension_loaded("zlib")) { $do_gzip_compress = TRUE; ob_start(); ob_implicit_flush(0); header("Content-Encoding: gzip");  }
 			}
 		} //end gzip compression - that piece of script courtesy of the phpBB dev team
@@ -649,7 +649,7 @@ function gzip_compression() {
 }
 
 function alert_error($msg) { // displays a warning box with an error message (original by KYank)
-	global $$HTTP_SERVER_VARS;
+	global $$_SERVER;
 	?>
 	<html>
 	<head>
@@ -663,7 +663,7 @@ function alert_error($msg) { // displays a warning box with an error message (or
 	<body>
 	<!-- this is for non-JS browsers (actually we should never reach that code, but hey, just in case...) -->
 	<?php echo $msg; ?><br />
-	<a href="<?php echo $HTTP_SERVER_VARS["HTTP_REFERER"]; ?>">go back</a>
+	<a href="<?php echo $_SERVER["HTTP_REFERER"]; ?>">go back</a>
 	</body>
 	</html>
 	<?php

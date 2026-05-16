@@ -91,7 +91,7 @@ function targetopener(blah, closeme, closeonly) {
 	<td valign="top" style="background-color: transparent; <?php if ($is_gecko || $is_macIE) { ?>background-image: url('../b2-img/bgbookmarklet3.gif');<?php } elseif ($is_winIE) { ?>background-color: #cccccc; filter: alpha(opacity:60);<?php } ?>;">
 <?php
 
-if (!$HTTP_POST_VARS["submit"]) {
+if (!$_POST["submit"]) {
 	$i = explode(" ",$fileupload_allowedtypes);
 	$i = implode(", ",array_slice($i, 1, count($i)-2));
 	?>
@@ -123,16 +123,16 @@ if (!$HTTP_POST_VARS["submit"]) {
 
 <?php  //Makes sure they choose a file
 
-//print_r($HTTP_POST_FILES);
+//print_r($_FILES);
 //die();
 
-if (!empty($HTTP_POST_VARS)) { //$img1_name != "") {
+if (!empty($_POST)) { //$img1_name != "") {
 
-	$imgalt = (isset($HTTP_POST_VARS['imgalt'])) ? $HTTP_POST_VARS['imgalt'] : $imgalt;
+	$imgalt = (isset($_POST['imgalt'])) ? $_POST['imgalt'] : $imgalt;
 
-	$img1_name = (strlen($imgalt)) ? $HTTP_POST_VARS['imgalt'] : $HTTP_POST_FILES['img1']['name'];
-	$img1_type = (strlen($imgalt)) ? $HTTP_POST_VARS['img1_type'] : $HTTP_POST_FILES['img1']['type'];
-	$imgdesc = str_replace('"', '&amp;quot;', $HTTP_POST_VARS['imgdesc']);
+	$img1_name = (strlen($imgalt)) ? $_POST['imgalt'] : $_FILES['img1']['name'];
+	$img1_type = (strlen($imgalt)) ? $_POST['img1_type'] : $_FILES['img1']['type'];
+	$imgdesc = str_replace('"', '&amp;quot;', $_POST['imgdesc']);
 
 	$imgtype = explode(".",$img1_name);
 	$imgtype = " ".$imgtype[count($imgtype)-1]." ";
@@ -143,10 +143,10 @@ if (!empty($HTTP_POST_VARS)) { //$img1_name != "") {
 
 	if (strlen($imgalt)) {
 		$pathtofile = $fileupload_realpath."/".$imgalt;
-		$img1 = $HTTP_POST_VARS['img1'];
+		$img1 = $_POST['img1'];
 	} else {
 		$pathtofile = $fileupload_realpath."/".$img1_name;
-		$img1 = $HTTP_POST_FILES['img1']['tmp_name'];
+		$img1 = $_FILES['img1']['tmp_name'];
 	}
 
 	// makes sure not to upload duplicates, rename duplicates

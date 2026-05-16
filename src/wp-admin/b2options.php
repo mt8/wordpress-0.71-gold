@@ -13,23 +13,23 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action','standalone');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -41,14 +41,14 @@ case "update":
 	$standalone = 1;
 	include ("./b2header.php");
 
-	$newposts_per_page=addslashes($HTTP_POST_VARS["newposts_per_page"]);
-	$newwhat_to_show=addslashes($HTTP_POST_VARS["newwhat_to_show"]);
-	$newarchive_mode=addslashes($HTTP_POST_VARS["newarchive_mode"]);
-	$newtime_difference=addslashes($HTTP_POST_VARS["newtime_difference"]);
-	//no longer use this? $newautobr=addslashes($HTTP_POST_VARS["newautobr"]);
+	$newposts_per_page=addslashes($_POST["newposts_per_page"]);
+	$newwhat_to_show=addslashes($_POST["newwhat_to_show"]);
+	$newarchive_mode=addslashes($_POST["newarchive_mode"]);
+	$newtime_difference=addslashes($_POST["newtime_difference"]);
+	//no longer use this? $newautobr=addslashes($_POST["newautobr"]);
     $newautobr = 0;
-	$newtime_format=addslashes($HTTP_POST_VARS["newtime_format"]);
-	$newdate_format=addslashes($HTTP_POST_VARS["newdate_format"]);
+	$newtime_format=addslashes($_POST["newtime_format"]);
+	$newdate_format=addslashes($_POST["newdate_format"]);
 	
 	$query = "UPDATE $tablesettings SET posts_per_page=$newposts_per_page, what_to_show='$newwhat_to_show', archive_mode='$newarchive_mode', time_difference=$newtime_difference, AutoBR=$newautobr, time_format='$newtime_format', date_format='$newdate_format' WHERE ID = 1";
 	$result = mysql_query($query);
