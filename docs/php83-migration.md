@@ -2682,3 +2682,35 @@ JA: フックは 3 つのコミットで検証した: phpcs 違反のあるフ�
 ブロック)、phpcs はクリーンだが未定義関数を呼ぶファイル(phpstan が
 ブロック)、クリーンなファイル(コミット成功)。`src/` のランタイムコードは
 変更していない -- 本 Issue は開発ツールの追加のみである。
+
+## Issue #64: Remove the unused, buggy user_pass_ok() / 未使用かつ不具合のある user_pass_ok() を削除
+
+EN: `user_pass_ok()` in `b2-include/b2functions.php` ended with
+`return ( $user_pass == $userdata['user_pass'] );` -- array access on
+`$userdata`, which on the uncached path is a stdClass object returned by
+`get_userdatabylogin()` (`$wpdb->get_row()`), raising "Cannot use object of
+type stdClass as array" on PHP 8. The bug was found while expanding the
+PHPUnit suite (Issue #59) and filed as Issue #64.
+
+The function had no callers anywhere in `src/` -- its only caller was the
+XML-RPC server, removed in Issue #44 -- and it still did a plaintext password
+comparison rather than `password_verify()` (flagged by Issue #34). Rather than
+fix dead, insecure code, the function was removed entirely, together with its
+PHPUnit test (`testUserPassOkComparesAgainstTheCachedPassword`, which only
+exercised the working cache path). The suite goes from 95 to 94 tests; phpcs
+and PHPStan remain at 0.
+
+JA: `b2-include/b2functions.php` の `user_pass_ok()` は末尾が
+`return ( $user_pass == $userdata['user_pass'] );` で、`$userdata` への配列
+アクセスだった。非キャッシュ経路では `$userdata` は `get_userdatabylogin()`
+(`$wpdb->get_row()`)が返す stdClass オブジェクトであり、PHP 8 では
+「Cannot use object of type stdClass as array」になる。本バグは PHPUnit
+スイート拡充(Issue #59)中に発見し Issue #64 として起票した。
+
+本関数は `src/` のどこからも呼ばれておらず -- 唯一の呼び出し元だった XML-RPC
+サーバーは Issue #44 で撤去済み -- かつ `password_verify()` ではなく平文の
+パスワード比較のままだった(Issue #34 が指摘)。デッドかつ安全でないコードを
+修正するのではなく、関数を専用の PHPUnit テスト
+(`testUserPassOkComparesAgainstTheCachedPassword`。動作するキャッシュ経路
+のみを検証していた)ごと完全に削除した。スイートは 95 から 94 テストに減少。
+phpcs と PHPStan は 0 件のまま。

@@ -418,16 +418,6 @@ function get_lastpostdate() {
 	return $lastpostdate;
 }
 
-function user_pass_ok( $user_login, $user_pass ) {
-	global $cache_userdata, $use_cache;
-	if ( ( empty( $cache_userdata[ $user_login ] ) ) or ( ! $use_cache ) ) {
-		$userdata = get_userdatabylogin( $user_login );
-	} else {
-		$userdata = $cache_userdata[ $user_login ];
-	}
-	return ( $user_pass == $userdata['user_pass'] );
-}
-
 function get_currentuserinfo() {
 	// a bit like get_userdata(), on steroids
 	global $_COOKIE, $user_login, $userdata, $user_level, $user_ID, $user_nickname, $user_email, $user_url, $user_pass_md5;

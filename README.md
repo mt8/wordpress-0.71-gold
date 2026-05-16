@@ -86,7 +86,7 @@ level 0 で実行する。husky の `pre-commit` フックが `lint-staged`(stag
 composer test      # PHPUnit
 ```
 
-EN: A PHPUnit suite (**95 tests**) covers the unit-testable parts of the
+EN: A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
 2003-era code in `tests/`:
 
 - **Pure helpers** — text formatting, escaping, date/URL/number helpers in
@@ -98,7 +98,7 @@ EN: A PHPUnit suite (**95 tests**) covers the unit-testable parts of the
   unit-testable without a live MySQL server.
 - **The CSRF helpers** added in Issue #33.
 
-JA: PHPUnit スイート(**95 テスト**)が、2003 年当時のコードのうち単体テスト
+JA: PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのうち単体テスト
 可能な部分を `tests/` で網羅する:
 
 - **純粋なヘルパー** — `b2functions.php` と `b2template.functions.php` の
