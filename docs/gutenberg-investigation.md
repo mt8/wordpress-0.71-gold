@@ -31,6 +31,20 @@ API)を事実上いずれも備えていない。Gutenberg を 0.71 へ「移植
 ベース内に再構築する必要があり、その時点で 0.71 のものは何も残らない。よって
 これは移植作業ではなく、モダン WordPress のゼロからの再実装である。
 
+EN: **However**, this verdict is about porting *Gutenberg the application*
+(the `wp-admin` post editor). A different approach — embedding WordPress's
+`@wordpress/block-editor` package as a *library* behind a small custom
+WordPress-0.71 backend — **is** feasible, and is an officially supported
+pattern. See "An alternative: a custom block editor" below; a prototype of
+that approach is tracked in Issue #65.
+
+JA: **ただし**、この判定は *アプリケーションとしての Gutenberg*(`wp-admin` の
+投稿エディタ)を移植することについてのものである。別のアプローチ — WordPress
+の `@wordpress/block-editor` パッケージを *ライブラリ* として、小さなカスタム
+WordPress 0.71 バックエンドの背後に組み込む — **は**実現可能であり、公式に
+サポートされたパターンである。後述の「代替案: カスタムブロックエディタ」を
+参照。このアプローチの試作は Issue #65 で追跡する。
+
 ## What Gutenberg actually is / Gutenberg の実体
 
 EN: Gutenberg is developed as an independent project: a **monorepo of 80+
@@ -226,6 +240,65 @@ WordPress 0.71 ではない。Issue #55 の wp-env の結論と精神的に同�
 工学的結論は、Gutenberg は本質的にモダン WordPress に強く結びついており、
 2003 年の b2/cafelog コードベースへは移植できない、というものである。
 
+## An alternative: a custom block editor / 代替案: カスタムブロックエディタ
+
+EN: Porting Gutenberg-the-application is not feasible (above), but the block
+editing *experience* can still be brought to WordPress 0.71 a different way.
+`@wordpress/block-editor` is published as a standalone library, and WordPress
+officially documents building a *custom* block editor with it — embedded in
+any application and backed by any data source ("Building a custom block
+editor", Block Editor Handbook; reference repo `getdave/standalone-block-editor`).
+
+Under an "implement the missing parts ourselves" policy, the work splits into
+two very different sizes:
+
+- **Re-create core's four pillars so the full Gutenberg runs** — this is the
+  from-scratch reimplementation of modern WordPress described above. Not
+  realistic.
+- **Build a custom block editor with `@wordpress/block-editor` + a thin 0.71
+  backend** — bounded and feasible. What must be implemented ourselves shrinks
+  to: a small React app that mounts `@wordpress/block-editor` and
+  `@wordpress/block-library` (the core *static* blocks register themselves
+  client-side, inside the npm packages); a couple of JSON endpoints in
+  WordPress 0.71's PHP to load and save a post's content; and one page that
+  boots the bundle. The REST API, the Plugin API and the `wp-includes/`
+  bootstrap do **not** need to be reimplemented.
+
+Block content is stored as block-markup HTML in 0.71's existing `post_content`
+column, and the 0.71 front end renders it normally because the `<!-- wp:* -->`
+delimiters are HTML comments. Caveats: this adds a Node/React build subsystem
+and is a substantial new feature well beyond "port 0.71 to PHP 8.3"; only
+static blocks work (0.71 has no PHP rendering for dynamic blocks); and the
+result is a decoupled hybrid — a modern editor over 2003 storage. A prototype
+is tracked in **Issue #65**.
+
+JA: アプリケーションとしての Gutenberg の移植は実現不可能(上記)だが、ブロック
+編集の *体験* 自体は別の方法で WordPress 0.71 にもたらせる。`@wordpress/block-editor`
+は単独のライブラリとして公開されており、WordPress はそれを使って *カスタムの*
+ブロックエディタを、任意のアプリケーションに組み込み、任意のデータソースを
+バックエンドにして構築する方法を公式に文書化している(Block Editor Handbook
+「Building a custom block editor」、参考実装 `getdave/standalone-block-editor`)。
+
+「足りない部分を自前で実装する」方針のもとでは、作業規模は大きく 2 つに分かれる:
+
+- **コアの 4 本柱を再現して Gutenberg 本体を動かす** — 上述のモダン WordPress
+  のゼロからの再実装であり、現実的でない。
+- **`@wordpress/block-editor` + 薄い 0.71 バックエンドでカスタムブロック
+  エディタを作る** — 範囲が限定され、実現可能。自前で実装すべきものは次まで
+  縮小する: `@wordpress/block-editor` と `@wordpress/block-library` を
+  マウントする小さな React アプリ(標準の *静的* ブロックは npm パッケージ内で
+  クライアント側に自己登録される);投稿内容を読み書きする WordPress 0.71 側
+  PHP の JSON エンドポイント数本;バンドルを起動するページ 1 枚。REST API・
+  Plugin API・`wp-includes/` ブートストラップを再実装する必要は **ない**。
+
+ブロック内容はブロックマークアップ HTML として 0.71 の既存 `post_content`
+カラムに保存され、`<!-- wp:* -->` 区切りは HTML コメントであるため 0.71 の
+フロントエンドは通常どおり描画する。注意点: これは Node/React のビルド
+サブシステムを追加し、「0.71 を PHP 8.3 へ移植」を大きく超える新機能である;
+動作するのは静的ブロックのみ(0.71 に動的ブロック用の PHP レンダリングは
+無い);結果は疎結合のハイブリッド — 2003 年のストレージの上のモダンエディタ
+である。試作は **Issue #65** で追跡する。
+
 ## Sources / 出典
 
 - [Block API Reference — Block Editor Handbook](https://developer.wordpress.org/block-editor/reference-guides/block-api/) — "the block editor is dependent on the WordPress REST API".
@@ -239,3 +312,5 @@ WordPress 0.71 ではない。Issue #55 の wp-env の結論と精神的に同�
 - [WP_Hook: Next Generation Actions and Filters — Make WordPress Core](https://make.wordpress.org/core/2016/09/08/wp_hook-next-generation-actions-and-filters/) — Plugin API (actions/filters) introduced in WordPress 1.2 (2004).
 - `docs/docker-environment.md` (this repo, Issue #55) — the parallel wp-env feasibility finding.
 - `src/` (this repo) — WordPress 0.71-gold source: `b2-include/` (no `wp-includes/`), `b2edit.form.php` plain `<textarea>` editor, `b2template.functions.php` primitive `add_filter`/`apply_filters`, single `wp-admin/b2quicktags.js`.
+- [Building a custom block editor — Block Editor Handbook](https://developer.wordpress.org/block-editor/how-to-guides/platform/custom-block-editor/) — WordPress's official guide to building a custom block editor on `@wordpress/block-editor`.
+- [getdave/standalone-block-editor](https://github.com/getdave/standalone-block-editor) — reference implementation of a standalone custom block-editor instance.
