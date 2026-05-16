@@ -1,0 +1,349 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Deprecated in PHP 8\.0\: Required parameter \$rss_url follows optional parameter \$blog_ID\.$#'
+			identifier: parameter.requiredAfterOptional
+			count: 1
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Instantiated class xmlrpc_client not found\.$#'
+			identifier: class.notFound
+			count: 5
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Instantiated class xmlrpcmsg not found\.$#'
+			identifier: class.notFound
+			count: 6
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Instantiated class xmlrpcval not found\.$#'
+			identifier: class.notFound
+			count: 15
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Undefined variable\: \$host_start$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Undefined variable\: \$querycount$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/b2-include/b2functions.php
+
+		-
+			message: '#^Regex pattern is invalid\: The /e modifier is no longer supported, use preg_replace_callback instead in pattern\: /\\%%u\(\[0\-9A\-F\]\{4,4\}\)/e$#'
+			identifier: regexp.pattern
+			count: 2
+			path: src/b2-include/b2template.functions.php
+
+		-
+			message: '#^Undefined variable\: \$post$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/b2-include/b2template.functions.php
+
+		-
+			message: '#^Undefined variable\: \$postdata$#'
+			identifier: variable.undefined
+			count: 2
+			path: src/b2-include/b2template.functions.php
+
+		-
+			message: '#^Undefined variable\: \$querycount$#'
+			identifier: variable.undefined
+			count: 4
+			path: src/b2-include/b2template.functions.php
+
+		-
+			message: '#^Undefined variable\: \$tags$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/b2-include/b2template.functions.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&OElig;'' \(''&OElig;'', ''&OElig;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&Scaron;'' \(''&Scaron;'', ''&Scaron;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&Yuml;'' \(''&Yuml;'', ''&Yuml;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&bull;'' \(''&bull;'', ''&bull;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&circ;'' \(''&circ;'', ''&circ;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&gt;'' \(''&gt;'', ''&gt;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&ldquo;'' \(''&ldquo;'', ''&ldquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&lsaquo;'' \(''&lsaquo;'', ''&lsaquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&lsquo;'' \(''&lsquo;'', ''&lsquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&lt;'' \(''&lt;'', ''&lt;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&mdash;'' \(''&mdash;'', ''&mdash;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&minus;'' \(''&minus;'', ''&minus;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&ndash;'' \(''&ndash;'', ''&ndash;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&oelig;'' \(''&oelig;'', ''&oelig;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&rdquo;'' \(''&rdquo;'', ''&rdquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&rsaquo;'' \(''&rsaquo;'', ''&rsaquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&rsquo;'' \(''&rsquo;'', ''&rsquo;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&scaron;'' \(''&scaron;'', ''&scaron;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''&trade;'' \(''&trade;'', ''&trade;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''\:\)'' \(''\:\)'', ''\:\)''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Array has 3 duplicate keys with value ''&tilde;'' \(''&tilde;'', ''&tilde;'', ''&tilde;''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2-include/b2vars.php
+
+		-
+			message: '#^Deprecated in PHP 8\.0\: Required parameter \$url follows optional parameter \$title\.$#'
+			identifier: parameter.requiredAfterOptional
+			count: 1
+			path: src/b2-include/textile.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$col_info\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$dbh\.$#'
+			identifier: property.notFound
+			count: 8
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$func_call\.$#'
+			identifier: property.notFound
+			count: 4
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$insert_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$last_query\.$#'
+			identifier: property.notFound
+			count: 3
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$last_result\.$#'
+			identifier: property.notFound
+			count: 13
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$num_rows\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$result\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Access to an undefined property wpdb\:\:\$rows_affected\.$#'
+			identifier: property.notFound
+			count: 1
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Argument \#3 \(\$case_insensitive\) is ignored since declaration of case\-insensitive constants is no longer supported\.$#'
+			identifier: argument.unused
+			count: 3
+			path: src/b2-include/wp-db.php
+
+		-
+			message: '#^Function mktime invoked with 0 parameters, 1\-6 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: src/b2calendar.php
+
+		-
+			message: '#^Array has 2 duplicate keys with value ''\:\)'' \(''\:\)'', ''\:\)''\)\.$#'
+			identifier: array.duplicateKey
+			count: 1
+			path: src/b2config.php
+
+		-
+			message: '#^Function dbconnect not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/b2mail.php
+
+		-
+			message: '#^Function rss_update not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/b2mail.php
+
+		-
+			message: '#^Regex pattern is invalid\: The /e modifier is no longer supported, use preg_replace_callback instead in pattern\: /\\%%u\(\[0\-9A\-F\]\{4,4\}\)/e$#'
+			identifier: regexp.pattern
+			count: 1
+			path: src/blog.header.php
+
+		-
+			message: '#^Function mysql_doh not found\.$#'
+			identifier: function.notFound
+			count: 2
+			path: src/wp-admin/b2-2-wp.php
+
+		-
+			message: '#^Regex pattern is invalid\: The /e modifier is no longer supported, use preg_replace_callback instead in pattern\: /\\%%u\(\[0\-9A\-F\]\{4,4\}\)/e$#'
+			identifier: regexp.pattern
+			count: 2
+			path: src/wp-admin/b2bookmarklet.php
+
+		-
+			message: '#^Path in require_once\(\) "b2config\.php" is not a file or it does not exist\.$#'
+			identifier: requireOnce.fileNotFound
+			count: 1
+			path: src/wp-links/links.weblogs.com.php
+
+		-
+			message: '#^Function dbconnect not found\.$#'
+			identifier: function.notFound
+			count: 13
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Function rss_update not found\.$#'
+			identifier: function.notFound
+			count: 4
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Function xmlrpc_debugmsg not found\.$#'
+			identifier: function.notFound
+			count: 1
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Instantiated class xmlrpc_server not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Instantiated class xmlrpcresp not found\.$#'
+			identifier: class.notFound
+			count: 65
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Instantiated class xmlrpcval not found\.$#'
+			identifier: class.notFound
+			count: 66
+			path: src/xmlrpc.php
+
+		-
+			message: '#^Undefined variable\: \$agesorter$#'
+			identifier: variable.undefined
+			count: 1
+			path: src/xmlrpc.php
