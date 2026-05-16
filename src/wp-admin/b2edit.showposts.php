@@ -280,8 +280,9 @@ if ( 'ASC' == $i ) {
 						echo "&m=$m";
 					}
 					echo "'>Edit</a>";
-					// EN: Append the CSRF token to the delete link (verified by b2edit.php).
-					// JA: 削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
+					// Link to open the post in the block editor (Issue #89).
+					echo " - <a href='../block-editor/api/editor.php?post=$id'>Block editor</a>";
+					// Append the CSRF token to the delete link (verified by b2edit.php).
 					echo " - <a href='b2edit.php?action=delete&amp;post=$id&amp;_b2csrf=" . b2_csrf_token( 'delete-post' ) . "' onclick=\"return confirm('You are about to delete this post \'" . $post->post_title . "\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete</a> ";
 				}
 				if ( 'private' == $post->post_status ) {
