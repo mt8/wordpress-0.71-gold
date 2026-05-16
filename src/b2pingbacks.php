@@ -12,7 +12,7 @@
 <h2>Pingbacks</h2>
 
 <ol id="pingbacks">
-	<?php /* this line is b2's motor, do not delete it */ $wxcvbn_pb=0; while($rowc = mysql_fetch_object($resultc)) { $wxcvbn_pb++; $commentdata = get_commentdata($rowc->comment_ID); ?>
+	<?php /* this line is b2's motor, do not delete it */ $wxcvbn_pb=0; while($rowc = mysqli_fetch_object($resultc)) { $wxcvbn_pb++; $commentdata = get_commentdata($rowc->comment_ID); ?>
 	
 
 <a name="pb<?php comment_ID() ?>"></a>

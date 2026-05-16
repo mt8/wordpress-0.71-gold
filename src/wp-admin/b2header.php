@@ -18,7 +18,7 @@ get_currentuserinfo();
 $request = "SELECT * FROM $tablesettings";
 $result = mysql_query($request);
 $querycount++;
-while($row = mysql_fetch_object($result)) {
+while($row = mysqli_fetch_object($result)) {
 	$posts_per_page=$row->posts_per_page;
 	$what_to_show=$row->what_to_show;
 	$archive_mode=$row->archive_mode;

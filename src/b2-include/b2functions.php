@@ -393,7 +393,7 @@ function get_lastpostdate() {
 		$sql = "SELECT * FROM $tableposts WHERE $showcatzero post_date <= '$now' ORDER BY post_date DESC LIMIT 1";
 		$result = mysql_query($sql) or die("Your SQL query: <br />$sql<br /><br />MySQL said:<br />".mysql_error());
 		++$querycount;
-		$myrow = mysql_fetch_object($result);
+		$myrow = mysqli_fetch_object($result);
 		$lastpostdate = $myrow->post_date;
 		$cache_lastpostdate = $lastpostdate;
 //		echo $lastpostdate;
@@ -539,7 +539,7 @@ function get_commentdata($comment_ID,$no_cache=0) { // less flexible, but saves 
 		$query="SELECT * FROM $tablecomments WHERE comment_ID = $comment_ID";
 		$result=mysql_query($query);
 		++$querycount;
-		$myrow = mysql_fetch_array($result);
+		$myrow = mysqli_fetch_array($result);
 	} else {
 		$myrow['comment_ID']=$postc->comment_ID;
 		$myrow['comment_post_ID']=$postc->comment_post_ID;
@@ -567,7 +567,7 @@ function get_catname($cat_ID) {
 		$sql = "SELECT * FROM $tablecategories";
 		$result = mysql_query($sql) or die('Oops, couldn\'t query the db for categories.');
 		$querycount;
-		while ($post = mysql_fetch_object($result)) {
+		while ($post = mysqli_fetch_object($result)) {
 			$cache_catnames[$post->cat_ID] = $post->cat_name;
 		}
 	}
@@ -587,7 +587,7 @@ function dropdown_categories($blog_ID=1) {
 	++$querycount;
 	$width = ($mode=="sidebar") ? "100%" : "170px";
 	echo '<select name="post_category" style="width:'.$width.';" tabindex="2" id="category">';
-	while($post = mysql_fetch_object($result)) {
+	while($post = mysqli_fetch_object($result)) {
 		echo "<option value=\"".$post->cat_ID."\"";
 		if ($post->cat_ID == $postdata["Category"])
 			echo " selected";

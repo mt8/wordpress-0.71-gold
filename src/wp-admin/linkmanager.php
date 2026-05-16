@@ -203,7 +203,7 @@ switch ($action) {
       " WHERE link_id = $link_id";
 
     $result = mysql_query($sql) or die("Couldn't execute query.".mysql_error());
-    if ($row = mysql_fetch_object($result)) {
+    if ($row = mysqli_fetch_object($result)) {
       $link_url = $row->link_url;
       $link_name = stripslashes($row->link_name);
       $link_image = $row->link_image;
@@ -289,7 +289,7 @@ switch ($action) {
     $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
     $result = mysql_query($query) or die("Couldn't execute query. ".mysql_error());
     echo "        <select name=\"category\" size=\"1\">\n";
-    while($row = mysql_fetch_object($result)) {
+    while($row = mysqli_fetch_object($result)) {
       echo "          <option value=\"".$row->cat_id."\"";
       if ($row->cat_id == $link_category)
         echo " selected";
@@ -383,7 +383,7 @@ switch ($action) {
     if ($cat_id == 'All')
       echo " selected";
     echo "> All</option>\n";
-    while($row = mysql_fetch_object($result)) {
+    while($row = mysqli_fetch_object($result)) {
       echo "          <option value=\"".$row->cat_id."\"";
       if ($row->cat_id == $cat_id)
         echo " selected";
@@ -552,7 +552,7 @@ LINKS;
     $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
     $result = mysql_query($query) or die("Couldn't execute query. ".mysql_error());
     echo "        <select name=\"category\" size=\"1\">\n";
-    while($row = mysql_fetch_object($result)) {
+    while($row = mysqli_fetch_object($result)) {
       echo "          <option value=\"".$row->cat_id."\"";
       if ($row->cat_id == $cat_id)
         echo " selected";

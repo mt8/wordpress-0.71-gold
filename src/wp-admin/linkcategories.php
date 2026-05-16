@@ -154,7 +154,7 @@ switch ($action) {
 $query = "SELECT cat_id, cat_name, auto_toggle FROM $tablelinkcategories ORDER BY cat_id";
 $result = mysql_query($query) or die("Couldn't execute query. ".mysql_error());
     echo "        <select name=\"cat_id\">\n";
-    while($row = mysql_fetch_object($result)) {
+    while($row = mysqli_fetch_object($result)) {
         echo "          <option value=\"".$row->cat_id."\"";
         if ($row->cat_id == $cat_id)
             echo ' selected';

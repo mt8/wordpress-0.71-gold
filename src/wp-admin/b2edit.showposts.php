@@ -151,7 +151,7 @@ if ($i == "ASC")
 		$arc_sql="SELECT DISTINCT YEAR(post_date), MONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
 		$arc_result=mysql_query($arc_sql) or die($arc_sql."<br />".mysql_error());
-		while($arc_row = mysql_fetch_array($arc_result)) {
+		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year  = $arc_row["YEAR(post_date)"];
 			$arc_month = $arc_row["MONTH(post_date)"];
 			echo "<option value=\"$arc_year".zeroise($arc_month,2)."\">";
@@ -164,7 +164,7 @@ if ($i == "ASC")
 		$arc_sql="SELECT DISTINCT YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
 		$arc_result=mysql_query($arc_sql) or die($arc_sql."<br />".mysql_error());
-		while($arc_row = mysql_fetch_array($arc_result)) {
+		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year  = $arc_row["YEAR(post_date)"];
 			$arc_month = $arc_row["MONTH(post_date)"];
 			$arc_dayofmonth = $arc_row["DAYOFMONTH(post_date)"];
@@ -184,7 +184,7 @@ if ($i == "ASC")
 		$querycount++;
 		$arc_result=mysql_query($arc_sql) or die($arc_sql."<br />".mysql_error());
 		$arc_w_last = '';
-		while($arc_row = mysql_fetch_array($arc_result)) {
+		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year = $arc_row["YEAR(post_date)"];
 			$arc_w = $arc_row["WEEK(post_date)"];
 			if ($arc_w != $arc_w_last) {
@@ -204,7 +204,7 @@ if ($i == "ASC")
 		$requestarc = " SELECT ID,post_date,post_title FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
 		$resultarc = mysql_query($requestarc);
-		while($row=mysql_fetch_object($resultarc)) {
+		while($row=mysqli_fetch_object($resultarc)) {
 			if ($row->post_date != "0000-00-00 00:00:00") {
 				echo "<option value=\"".$row->ID."\">";
 				if (strip_tags($row->post_title)) {
