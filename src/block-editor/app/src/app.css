@@ -1,10 +1,12 @@
 /*
- * EN: Layout styles for the WordPress 0.71 custom block-editor prototype
- *     (Issue #65). The block UI itself is styled by the bundled @wordpress/*
- *     stylesheets; this file only arranges the surrounding chrome.
- * JA: WordPress 0.71 カスタムブロックエディタ試作(Issue #65)のレイアウト
- *     スタイル。ブロック UI 自体はバンドルした @wordpress/* スタイルシートが
- *     担当する。本ファイルは周囲の枠だけを整える。
+ * EN: Layout styles for the WordPress 0.71 custom block editor. The block UI
+ *     itself is styled by the bundled @wordpress/* stylesheets; this file only
+ *     arranges the surrounding chrome -- the top bar, the fixed block toolbar,
+ *     the Document Overview panel, the canvas and the settings sidebar.
+ * JA: WordPress 0.71 カスタムブロックエディタのレイアウトスタイル。ブロック
+ *     UI 自体はバンドルした @wordpress/* スタイルシートが担当する。本ファイル
+ *     は周囲の枠 -- 上部バー・固定ブロックツールバー・ドキュメント概観
+ *     パネル・キャンバス・設定サイドバー -- だけを整える。
  */
 .be-app {
 	display: flex;
@@ -31,7 +33,7 @@
 
 .be-badge {
 	font-size: 0.75rem;
-	background: #b32d2e;
+	background: #3858e9;
 	padding: 0.1rem 0.5rem;
 	border-radius: 3px;
 }
@@ -66,16 +68,43 @@
 	min-height: 0;
 }
 
+/*
+ * EN: The Document Overview panel -- the block outline / list view.
+ * JA: ドキュメント概観パネル -- ブロックのアウトライン / リストビュー。
+ */
+.be-overview {
+	width: 280px;
+	border-right: 1px solid #ddd;
+	overflow: auto;
+	background: #fff;
+}
+
 .be-canvas {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.be-canvas .block-editor-writing-flow {
 	flex: 1;
 	padding: 2rem;
 	overflow: auto;
 }
 
+/*
+ * EN: The block breadcrumb pinned to the bottom of the canvas.
+ * JA: キャンバス下部に固定したブロックのパンくず。
+ */
+.be-breadcrumb {
+	border-top: 1px solid #ddd;
+	background: #fff;
+	padding: 0.25rem 0.5rem;
+}
+
 .be-sidebar {
 	width: 280px;
 	border-left: 1px solid #ddd;
-	padding: 1rem;
 	overflow: auto;
 	background: #fff;
 }

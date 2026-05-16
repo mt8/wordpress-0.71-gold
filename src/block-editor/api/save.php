@@ -7,11 +7,19 @@
  *     writes the block markup into WordPress 0.71's existing post_content
  *     column. Because the `<!-- wp:* -->` delimiters are HTML comments, the
  *     0.71 front end keeps rendering the post normally. Usage: POST save.php
+ *
+ *     Issue #79 also accepts "status" (publish / draft / private) and
+ *     "category" (a single cat_ID), persisting them to post_status and
+ *     post_category so the editor's settings sidebar round-trips.
  * JA: Issue #65 の実験的試作。JSON ボディ
  *     { "post": ID, "content": "<!-- wp:* --> ...", "title": "..." } を受け取り、
  *     ブロックマークアップを WordPress 0.71 の既存 post_content カラムへ
  *     書き込む。`<!-- wp:* -->` 区切りは HTML コメントなので、0.71 の
  *     フロントエンドは投稿を通常どおり描画し続ける。使い方: POST save.php
+ *
+ *     Issue #79 では "status"(publish / draft / private)と "category"
+ *     (単一の cat_ID)も受け取り、post_status / post_category へ保存して
+ *     エディタの設定サイドバーが往復できるようにする。
  *
  * @package wordpress-0.71-gold
  */
@@ -33,11 +41,28 @@ if ( ! is_array( $data ) ) {
 	be_json( 400, array( 'error' => 'invalid_json' ) );
 }
 
-// EN: Cast the post id to int -- it is used unquoted in SQL (Issue #31 style).
-// JA: 投稿 ID を整数にキャスト -- SQL でクォート無しで使う(Issue #31 流)。
-$post_id = isset( $data['post'] ) ? (int) $data['post'] : 0;
-$content = isset( $data['content'] ) ? (string) $data['content'] : '';
-$title   = isset( $data['title'] ) ? (string) $data['title'] : '';
+// EN: Cast the post id / category to int -- they are used unquoted in SQL
+//     (Issue #31 style). The category is a single cat_ID: WordPress 0.71
+//     posts belong to exactly one category (b2posts.post_category).
+// JA: 投稿 ID / カテゴリーを整数にキャスト -- SQL でクォート無しで使う
+//     (Issue #31 流)。カテゴリーは単一の cat_ID。WordPress 0.71 の投稿は
+//     ちょうど 1 つのカテゴリーに属する(b2posts.post_category)。
+$post_id  = isset( $data['post'] ) ? (int) $data['post'] : 0;
+$content  = isset( $data['content'] ) ? (string) $data['content'] : '';
+$title    = isset( $data['title'] ) ? (string) $data['title'] : '';
+$category = isset( $data['category'] ) ? (int) $data['category'] : 0;
+
+// EN: post_status is a fixed enumeration in 0.71's post editor (b2edit.form.php
+//     offers exactly publish / draft / private). Reject anything else rather
+//     than write an unknown value into the column.
+// JA: post_status は 0.71 の投稿エディタでは固定の列挙値(b2edit.form.php は
+//     publish / draft / private のみ提供)。未知の値をカラムへ書かず拒否する。
+$allowed_statuses = array( 'publish', 'draft', 'private' );
+$status           = isset( $data['status'] ) ? (string) $data['status'] : 'publish';
+
+if ( ! in_array( $status, $allowed_statuses, true ) ) {
+	be_json( 400, array( 'error' => 'invalid_status' ) );
+}
 
 if ( $post_id <= 0 ) {
 	be_json( 400, array( 'error' => 'invalid_post_id' ) );
@@ -62,17 +87,34 @@ if ( (int) $post['Author_ID'] !== (int) $current_user->ID
 	be_json( 403, array( 'error' => 'forbidden' ) );
 }
 
+// EN: The chosen category must exist in b2categories. cat_ID is cast to int,
+//     so the lookup is safe; rejecting an unknown id keeps post_category
+//     referentially sane. COUNT(*) always returns exactly one row, so 0.71's
+//     get_var() has no undefined-offset edge case for a no-match query.
+// JA: 選ばれたカテゴリーは b2categories に存在しなければならない。cat_ID は
+//     整数にキャスト済みで照合は安全。未知の ID を拒否し post_category の
+//     参照整合性を保つ。COUNT(*) は常にちょうど 1 行を返すため、不一致
+//     クエリでも 0.71 の get_var() に未定義オフセットの落とし穴がない。
+$category_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $tablecategories WHERE cat_ID = $category" );
+
+if ( $category_count < 1 ) {
+	be_json( 400, array( 'error' => 'invalid_category' ) );
+}
+
 // EN: Escape for SQL the same way 0.71 does -- wpdb::escape() wraps
 //     mysqli_real_escape_string(). No autobr / format_to_post() here: block
 //     markup must be stored verbatim, byte-for-byte, or parse() breaks.
+//     status is from a validated whitelist and category is (int)-cast.
 // JA: 0.71 と同じ方法で SQL 用にエスケープ -- wpdb::escape() は
 //     mysqli_real_escape_string() をラップする。ここでは autobr /
 //     format_to_post() を使わない。ブロックマークアップはバイト単位で
-//     そのまま保存しないと parse() が壊れるためである。
+//     そのまま保存しないと parse() が壊れるためである。status は検証済み
+//     ホワイトリスト由来、category は (int) キャスト済み。
 $escaped_content = $wpdb->escape( $content );
 $escaped_title   = $wpdb->escape( $title );
+$escaped_status  = $wpdb->escape( $status );
 
-$query = "UPDATE $tableposts SET post_content = '$escaped_content', post_title = '$escaped_title' WHERE ID = $post_id";
+$query = "UPDATE $tableposts SET post_content = '$escaped_content', post_title = '$escaped_title', post_status = '$escaped_status', post_category = $category WHERE ID = $post_id";
 
 $result = $wpdb->query( $query );
 
@@ -83,9 +125,11 @@ if ( false === $result ) {
 be_json(
 	200,
 	array(
-		'ok'      => true,
-		'id'      => $post_id,
-		'content' => $content,
-		'title'   => $title,
+		'ok'       => true,
+		'id'       => $post_id,
+		'content'  => $content,
+		'title'    => $title,
+		'status'   => $status,
+		'category' => $category,
 	)
 );

@@ -34,7 +34,8 @@ EN: A small, self-contained React app with its **own `package.json`** (it does
 not touch the repository root's npm setup). It uses:
 
 - `@wordpress/block-editor` — the block-editing UI (`BlockEditorProvider`,
-  `BlockList`, `BlockTools`, `BlockInspector`).
+  `BlockList`, `BlockTools`, `BlockToolbar`, `BlockInspector`,
+  `BlockBreadcrumb` and the list view).
 - `@wordpress/block-library` — the core *static* blocks. They register
   themselves **client-side** via `registerCoreBlocks()`; no server-side
   `register_block_type()` is needed, which is exactly why this works on 0.71.
@@ -52,7 +53,8 @@ JA: 独自の **`package.json`** を持つ、小さく自己完結した React �
 (リポジトリルートの npm 設定には触れない)。使用パッケージ:
 
 - `@wordpress/block-editor` — ブロック編集 UI(`BlockEditorProvider`・
-  `BlockList`・`BlockTools`・`BlockInspector`)。
+  `BlockList`・`BlockTools`・`BlockToolbar`・`BlockInspector`・
+  `BlockBreadcrumb`・リストビュー)。
 - `@wordpress/block-library` — 標準の *静的* ブロック。`registerCoreBlocks()`
   で **クライアント側**に自己登録する。サーバー側の `register_block_type()`
   は不要であり、これこそが 0.71 でも動作する理由である。
@@ -74,9 +76,15 @@ EN: Three small PHP files, served by the existing Docker blog:
   connection, and reuses 0.71's own cookie auth (`wordpressuser` /
   `wordpresspass`, the `b2users` table) — the same trust source as
   `b2verifauth.php`.
-- `load.php` — `GET load.php?post=ID` → JSON `{ id, title, content, status }`.
+- `load.php` — `GET load.php?post=ID` → JSON
+  `{ id, title, content, status, category, categories }`. `category` is the
+  post's single `b2posts.post_category` cat_ID; `categories` is the full
+  `b2categories` list (`{ id, name }`) for the sidebar selector.
 - `save.php` — `POST save.php` with a JSON body
-  `{ post, title, content }` → writes the block markup into `b2posts.post_content`.
+  `{ post, title, content, status, category }` → writes the block markup into
+  `b2posts.post_content` and persists `post_status` / `post_category`.
+  `status` is whitelisted (`publish` / `draft` / `private`) and `category` is
+  verified to exist in `b2categories`.
 - `editor.php` — the boot page. `editor.php?post=ID` serves an HTML shell that
   loads the bundle and mounts the editor for that post.
 
@@ -90,9 +98,15 @@ JA: 既存の Docker ブログが配信する 3 + 1 個の小さな PHP ファ�
   接続を再利用し、0.71 自身のクッキー認証(`wordpressuser` /
   `wordpresspass`、`b2users` テーブル)を再利用する — `b2verifauth.php` と
   同じ信頼源。
-- `load.php` — `GET load.php?post=ID` → JSON `{ id, title, content, status }`。
-- `save.php` — JSON ボディ `{ post, title, content }` の `POST save.php` →
-  ブロックマークアップを `b2posts.post_content` へ書き込む。
+- `load.php` — `GET load.php?post=ID` → JSON
+  `{ id, title, content, status, category, categories }`。`category` は
+  投稿の単一の `b2posts.post_category` の cat_ID、`categories` はサイド
+  バーのセレクタ用に `b2categories` 全件(`{ id, name }`)。
+- `save.php` — JSON ボディ `{ post, title, content, status, category }` の
+  `POST save.php` → ブロックマークアップを `b2posts.post_content` へ
+  書き込み、`post_status` / `post_category` を保存する。`status` は
+  ホワイトリスト(`publish` / `draft` / `private`)、`category` は
+  `b2categories` に存在するか検証する。
 - `editor.php` — 起動ページ。`editor.php?post=ID` がバンドルを読み込み、
   その投稿に対してエディタをマウントする HTML シェルを配信する。
 
@@ -128,6 +142,64 @@ JA: ブロック内容はブロックマークアップ HTML として 0.71 の�
 あるため、0.71 のフロントエンドは通常どおり描画する。ブロック区切りの無い
 レガシーな 0.71 投稿は `parse()` により 1 つのクラシック(freeform)ブロック
 として解析されるため、既存の投稿はデータ欠落なく開ける。
+
+## Text-selection fix / テキスト選択の修正
+
+EN: Selecting text inside a paragraph block used to show **no highlight** in
+Chromium / Firefox — the text was selected (typing replaced it) but invisible.
+
+The cause is a CSS-minifier interaction. `@wordpress/block-editor`'s
+`content.css` hides the native highlight on the block canvas with a deliberate
+**Safari-only** hack — a single comma-separated selector list:
+
+```css
+_::-webkit-full-page-media, _:future,
+:root .block-editor-block-list__layout::selection { background-color: transparent }
+```
+
+`_::-webkit-full-page-media` is a pseudo-element only Safari recognises. A
+browser that cannot parse one selector in a list drops the **whole** rule, so
+Chromium / Firefox normally discard this rule entirely and keep the highlight.
+
+Vite's default (esbuild) CSS minifier "optimises" that rule into **separate**
+rules — one selector each. The standalone
+`:root .block-editor-block-list__layout::selection { background: transparent }`
+rule is then valid in Chromium / Firefox, applies, and hides the highlight.
+
+The fix is a small Vite plugin (`repairSelectionHack` in `vite.config.js`)
+that runs after minification and rejoins the split rules back into the
+original guarded comma-separated list, so the hack is Safari-only again.
+
+A second part of the same issue: the paragraph's **text-alignment** toolbar
+control (and other typography controls) are gated behind editor *settings*.
+`Editor.jsx` now passes a `settings` object (`EDITOR_SETTINGS`) with the
+`__experimentalFeatures` feature flags to `BlockEditorProvider`.
+
+JA: 段落ブロック内のテキストを選択しても Chromium / Firefox では
+**ハイライトが表示されなかった** — テキストは選択されている(入力で
+置き換わる)が見えない状態だった。
+
+原因は CSS minifier との相互作用である。`@wordpress/block-editor` の
+`content.css` は、意図的な **Safari 限定** ハック — 1 つのカンマ区切り
+セレクタリスト(上記)— でブロックキャンバスのネイティブハイライトを
+隠している。`_::-webkit-full-page-media` は Safari だけが認識する擬似要素
+である。リスト内に解釈できないセレクタが 1 つでもあるとブラウザはルール
+**全体** を破棄するため、Chromium / Firefox は通常このルールを丸ごと捨て、
+ハイライトを保つ。
+
+Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの **別々の**
+ルールへ「最適化」する。単独になった
+`:root .block-editor-block-list__layout::selection { background: transparent }`
+は Chromium / Firefox でも有効なため適用され、ハイライトを隠してしまう。
+
+修正は小さな Vite プラグイン(`vite.config.js` の `repairSelectionHack`)で
+ある。minify 後に走り、分割されたルールを元のガード付きカンマ区切り
+リストへ結合し直す。これによりハックは再び Safari 限定となる。
+
+同じ Issue のもう一部分: 段落の **テキスト配置** ツールバー操作子(その他の
+文字組み操作子も)はエディタの *設定* によって出し分けられる。`Editor.jsx`
+は `__experimentalFeatures` の機能フラグを持つ `settings` オブジェクト
+(`EDITOR_SETTINGS`)を `BlockEditorProvider` へ渡すようになった。
 
 ## Build / ビルド
 
@@ -201,9 +273,20 @@ EN:
 - Loading a 0.71 post into a modern block editor (`parse()`).
 - Editing with the core **static** blocks — paragraph, heading, list, quote,
   image (client-side), separator, etc.
-- The block toolbar (`BlockTools`) and the block inspector sidebar
-  (`BlockInspector`).
-- Saving block markup back into 0.71's `post_content` (`serialize()`).
+- **Visible text selection** — drag-selecting or shift-arrow-selecting text in
+  a block shows the native highlight (see *Text-selection fix* below).
+- **Per-block toolbars** — the floating `BlockTools` toolbar shows the
+  controls of the currently selected block, including **Bold / Italic / Link**
+  (from `@wordpress/format-library`) and the paragraph's **text-alignment**
+  control.
+- **Document Overview** — a toggleable list-view panel (the block outline),
+  plus a `BlockBreadcrumb` under the canvas.
+- **Settings sidebar** — a *Post* panel with a Status control
+  (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
+  and a *Block* panel with `BlockInspector` for the selected block's
+  attributes (Typography, Dimensions, ...).
+- Saving block markup, `post_status` and `post_category` back into 0.71's
+  `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
 - Cookie-based auth and the `b2edit.php`-equivalent ownership check.
 
@@ -212,9 +295,20 @@ JA:
 - 0.71 の投稿をモダンなブロックエディタへ読み込む(`parse()`)。
 - 標準の **静的** ブロックでの編集 — 段落・見出し・リスト・引用・画像
   (クライアント側)・区切りなど。
-- ブロックツールバー(`BlockTools`)とブロックインスペクタのサイドバー
-  (`BlockInspector`)。
-- ブロックマークアップを 0.71 の `post_content` へ保存し戻す(`serialize()`)。
+- **テキスト選択の可視化** — ブロック内のテキストをドラッグ選択 / Shift +
+  矢印で選択するとネイティブのハイライトが表示される(下記
+  *テキスト選択の修正* を参照)。
+- **各ブロックのツールバー** — フローティングの `BlockTools` ツールバーが
+  現在選択中ブロックの操作子を表示する。**太字 / 斜体 / リンク**
+  (`@wordpress/format-library`)や段落の **テキスト配置** 操作子を含む。
+- **ドキュメント概観** — 切り替え可能なリストビューパネル(ブロックの
+  アウトライン)と、キャンバス下の `BlockBreadcrumb`。
+- **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
+  Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
+  ブロックの属性(Typography・Dimensions など)を出す `BlockInspector` の
+  *Block* パネル。
+- ブロックマークアップ・`post_status`・`post_category` を 0.71 の
+  `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。
 - クッキーベース認証と `b2edit.php` 相当の所有者チェック。
 
