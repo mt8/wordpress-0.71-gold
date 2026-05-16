@@ -2847,3 +2847,77 @@ JA: `block-editor-prototype/node_modules/` とビルド成果物
 `phpstan.neon.dist` 内に注記済み。`composer phpcs`(41 ファイル)と
 `composer phpstan` は 0 件のまま、`composer test` は不変(94 テスト)。
 既存のブログとページには手を加えていない。
+
+## Issue #76: Adopt the block editor into src/block-editor / ブロックエディタを src/block-editor へ取り込む
+
+EN: The block editor prototype (Issue #65 / PR #70) was verified working
+locally and adopted. Its code had been split across three locations -- the
+React app at the repository root (`block-editor-prototype/`), the PHP backend
+(`src/block-editor-api/`), and the git-ignored build output
+(`src/block-editor-assets/`) -- and was consolidated under a single
+`src/block-editor/` directory.
+
+JA: ブロックエディタ試作(Issue #65 / PR #70)はローカルで動作を確認して
+取り込んだ。コードはリポジトリ直下の React アプリ(`block-editor-prototype/`)、
+PHP バックエンド(`src/block-editor-api/`)、git 管理外のビルド成果物
+(`src/block-editor-assets/`)の 3 箇所に分かれていたが、単一の
+`src/block-editor/` ディレクトリ配下に集約した。
+
+### New layout / 新しい構成
+
+| Was / 旧 | Now / 新 |
+|---|---|
+| `block-editor-prototype/` (repo root) | `src/block-editor/app/` |
+| `src/block-editor-api/` | `src/block-editor/api/` |
+| `src/block-editor-assets/` (git-ignored) | `src/block-editor/assets/` (git-ignored) |
+
+### Path updates / パス更新
+
+EN:
+- `api/bootstrap.php`: the `b2config.php` require is now
+  `__DIR__ . '/../../b2config.php'` (the file moved one directory level
+  deeper). `b2config.php` derives `$abspath` from `$siteurl` and
+  `DOCUMENT_ROOT`, not the script location, so nothing else in the backend
+  needed to change.
+- `api/editor.php`: the asset / manifest URLs point at `../assets/`, and the
+  front-end link is `../../index.php`.
+- `app/vite.config.js`: the build `outDir` is `../assets`.
+- `app/src/main.jsx`: the Vite-dev fallback endpoints point at
+  `/src/block-editor/api/`.
+- `.gitignore`, `phpcs.xml.dist`, `phpstan.neon.dist`: the ignore / exclude
+  entries now cover the whole `src/block-editor/` directory. `api/` stays
+  excluded from phpcs / phpstan as prototype code; `app/` and `assets/` are
+  JavaScript, not PHP.
+
+JA:
+- `api/bootstrap.php`: `b2config.php` の require を
+  `__DIR__ . '/../../b2config.php'` に変更(ファイルが 1 階層深くなったため)。
+  `b2config.php` は `$abspath` を `$siteurl` と `DOCUMENT_ROOT` から導出し、
+  スクリプト位置には依存しないため、バックエンドの他は変更不要だった。
+- `api/editor.php`: asset / manifest の URL を `../assets/` に、フロントエンド
+  リンクを `../../index.php` に変更。
+- `app/vite.config.js`: ビルドの `outDir` を `../assets` に変更。
+- `app/src/main.jsx`: Vite dev 用フォールバックのエンドポイントを
+  `/src/block-editor/api/` に変更。
+- `.gitignore`・`phpcs.xml.dist`・`phpstan.neon.dist`: ignore / 除外設定を
+  `src/block-editor/` ディレクトリ全体に対応させた。`api/` は試作コードとして
+  phpcs / phpstan の対象外のまま。`app/` と `assets/` は PHP ではなく
+  JavaScript。
+
+### Verification / 検証
+
+EN: Rebuilt the React app (`npm run build` -> `src/block-editor/assets/`) and
+re-ran the local round trip against the relocated API: `editor.php` serves the
+bundle, `load.php` returns JSON (401 without auth, 404 for a missing post), and
+a `save.php` round trip stores block markup that the 0.71 front end still
+renders. `composer phpcs` / `phpstan` / `test` stay at 0 / 0 / 94. The block
+editor is still a clearly-labelled experiment; it does not replace
+`wp-admin/b2edit.php`.
+
+JA: React アプリを再ビルドし(`npm run build` -> `src/block-editor/assets/`)、
+移転後の API に対してローカルのラウンドトリップを再実行した: `editor.php` は
+バンドルを配信し、`load.php` は JSON を返し(無認証時は 401、存在しない投稿は
+404)、`save.php` のラウンドトリップはブロックマークアップを保存して 0.71 の
+フロントエンドが引き続き描画する。`composer phpcs` / `phpstan` / `test` は
+0 / 0 / 94 のまま。ブロックエディタは依然として明示的な実験であり、
+`wp-admin/b2edit.php` を置き換えるものではない。
