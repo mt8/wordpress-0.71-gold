@@ -1,4 +1,7 @@
+# Claude Code -- project instructions and local state (agent worktrees etc.)
+# / Claude Code -- プロジェクト指示とローカル状態(エージェント worktree 等)
 CLAUDE.md
+.claude/
 
 # Composer / static analysis / test tooling
 /vendor/
