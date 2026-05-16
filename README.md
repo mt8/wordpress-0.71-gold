@@ -6,13 +6,19 @@ EN: An experimental project that takes the **oldest WordPress release —
 JA: **最古の WordPress リリース 0.71-gold(2003 年)** を改修し、
 **PHP 8.3 + MySQL 8** で動作させる実験プロジェクト。
 
-> EN: This is a study / restoration project. WordPress 0.71-gold is 2003-era
-> b2/cafelog code; it is modernised just enough to run on a current PHP/MySQL
-> stack, not rewritten.
+> ⚠️ **EN: This is purely an experimental / study project — it is NOT intended
+> for production use.** WordPress 0.71-gold is 2003-era b2/cafelog code; even
+> with the changes in this repository it remains an obsolete platform and must
+> not be used to run a real website or handle real data. The purpose is to
+> explore running historical code on a current PHP/MySQL stack — it is
+> modernised just enough to run, not rewritten.
 >
-> JA: 学習・復元を目的としたプロジェクト。WordPress 0.71-gold は 2003 年当時の
-> b2/cafelog コードであり、現行の PHP/MySQL 環境で動作する範囲で近代化して
-> いる(全面的な書き直しはしていない)。
+> ⚠️ **JA: これはあくまでも実験・学習目的のプロジェクトであり、本番利用は
+> 想定していません。** WordPress 0.71-gold は 2003 年当時の b2/cafelog コード
+> で、本リポジトリの変更を加えても旧式のプラットフォームであることに変わりは
+> なく、実運用のサイトや実データに使用してはいけません。目的は歴史的なコードを
+> 現行の PHP/MySQL 環境で動かす検証であり、動作する範囲で近代化しているのみ、
+> 全面的な書き直しはしていない。
 
 ## Requirements / 必要環境
 
