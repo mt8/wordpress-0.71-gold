@@ -1,3 +1,8 @@
+#!/usr/bin/env sh
+# EN: Committed executable (mode 100755) with a shebang so the hook fires
+#     whether git invokes it directly or via husky's wrapper (Issue #83).
+# JA: 実行権限付き(モード 100755)＋シバンでコミットし、git が直接実行しても
+#     husky のラッパー経由でもフックが発火するようにする(Issue #83)。
 # EN: husky pre-commit hook -- run lint-staged (phpcs / phpstan on staged
 #     src/ PHP files). Skip gracefully when the dev tooling is not installed
 #     (e.g. a fresh git worktree without `composer install` / `npm install`),
