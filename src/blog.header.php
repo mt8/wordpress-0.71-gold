@@ -58,7 +58,7 @@ $distinct = '';
 
 if ($pagenow != 'b2edit.php') { timer_start(); }
 
-if ($showposts) {
+if (!empty($showposts)) {
     $showposts = (int)$showposts;
 	$posts_per_page = $showposts;
 }
@@ -263,7 +263,7 @@ $where .= ' AND (post_status = "publish"';
 //     未設定時(intval は 0)に "'' != intval($user_ID)" が真となり不正な SQL 片を
 //     生成していた。intval($user_ID) は実在の(非ゼロの)user id でのみ真となり、
 //     PHP 7 / 8 の双方で本来の意図に一致する。
-if (intval($user_ID)) $where .= " OR post_author = $user_ID AND post_status != 'draft')"; else $where .= ')';
+if (intval($user_ID ?? 0)) $where .= " OR post_author = $user_ID AND post_status != 'draft')"; else $where .= ')';
 $request = " SELECT $distinct * FROM $tableposts WHERE 1=1".$where." ORDER BY post_$orderby $limits";
 
 
