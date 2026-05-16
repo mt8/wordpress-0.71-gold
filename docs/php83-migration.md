@@ -143,3 +143,76 @@ JA: `wp-db.php` の `define('OBJECT', ..., true)` は PHP 8.3 で `E_WARNING` �
 非 fatal であり、後続 Issue に先送りする。`POP3` 旧式コンストラクタ、その他の
 廃止関数(`get_magic_quotes_gpc()` 等)、MySQL 8 の SQL 互換性、ページ全体の
 描画も後続 Issue で扱う。
+
+---
+
+## Issue #7: Get the WordPress installer running on PHP 8.3 + MySQL 8 / WordPress インストーラを PHP 8.3 + MySQL 8 で動作させる
+
+EN: First concrete, verifiable milestone — running `wp-admin/wp-install.php`
+end to end. Reading it found exactly two blockers.
+
+JA: 最初の具体的・検証可能なマイルストーン — `wp-admin/wp-install.php` を一通り
+動作させる。精査の結果、障壁は 2 点だった。
+
+### Changes / 変更内容
+
+#### `src/b2-include/mysql-shim.php` — MySQL 8 `sql_mode`
+
+EN: WordPress 0.71's installer SQL relies on the permissive 2003-era MySQL
+behavior — `DATETIME` columns defaulting to `'0000-00-00 00:00:00'`, `''`
+inserted into integer columns, zero-date and malformed-date literals in the
+seed `INSERT`s. MySQL 8's default `sql_mode` (`STRICT_TRANS_TABLES`,
+`NO_ZERO_DATE`, `NO_ZERO_IN_DATE`, ...) rejects all of these.
+
+The shim's `mysql_connect()` now issues `SET SESSION sql_mode=''` immediately
+after a successful connection, so MySQL 8 accepts the legacy SQL. Because every
+connection (the `wpdb` class and all direct `mysql_*` callers) is opened through
+the shim, the compatibility applies everywhere.
+
+JA: WordPress 0.71 のインストーラ SQL は 2003 年頃の MySQL の寛容な挙動に依存
+する — `DATETIME` 列の既定値 `'0000-00-00 00:00:00'`、整数列への `''` の挿入、
+初期データ `INSERT` 中のゼロ日付・不正日付リテラル。MySQL 8 の既定 `sql_mode`
+(`STRICT_TRANS_TABLES`, `NO_ZERO_DATE`, `NO_ZERO_IN_DATE` 等)はこれらをすべて
+拒否する。
+
+シムの `mysql_connect()` は接続成功直後に `SET SESSION sql_mode=''` を発行し、
+MySQL 8 が旧 SQL を受け入れるようにした。全接続(`wpdb` クラスおよびすべての
+直接 `mysql_*` 呼び出し)がシム経由で開かれるため、互換性は全体に適用される。
+
+#### `src/wp-admin/wp-install.php` — `$HTTP_GET_VARS`
+
+EN: Line 5 read the installer step from `$HTTP_GET_VARS['step']`. That
+superglobal was removed in PHP 5.4, so `$step` was always null and the installer
+could not advance past step 0. Changed to `$_GET['step']`.
+
+JA: 5 行目はインストーラのステップを `$HTTP_GET_VARS['step']` から読んでいた。
+このスーパーグローバルは PHP 5.4 で廃止されたため `$step` は常に null となり、
+インストーラは step 0 から進めなかった。`$_GET['step']` に変更した。
+
+### Verification / 検証
+
+EN: In the Docker environment, starting from an empty database,
+`wp-install.php?step=1` and `?step=2` both complete with no SQL errors. All 7
+tables are created with the expected seed rows:
+
+JA: Docker 環境で、空の DB から `wp-install.php?step=1` と `?step=2` がいずれも
+SQL エラーなく完了。7 テーブルすべてが想定どおりの初期データ付きで作成された:
+
+| Table / テーブル | Rows / 行数 |
+|---|---|
+| `b2posts` | 1 (Hello world!) |
+| `b2users` | 1 (admin, level 10) |
+| `b2comments` | 1 (Mr WordPress) |
+| `b2categories` | 1 (General) |
+| `b2settings` | 1 |
+| `b2links` | 4 |
+| `b2linkcategories` | 1 (General) |
+
+### Out of scope / スコープ外
+
+EN: The `$HTTP_*_VARS` superglobals in other files, `get_magic_quotes_gpc()`,
+`ereg`/`each` and other removed functions, and rendering the blog front end /
+admin pages are later Issues.
+
+JA: 他ファイルの `$HTTP_*_VARS`、`get_magic_quotes_gpc()`、`ereg`/`each` 等の
+廃止関数、ブログ表示・管理画面の描画は後続 Issue で扱う。

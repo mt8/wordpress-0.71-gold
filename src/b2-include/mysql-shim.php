@@ -53,6 +53,15 @@ if (!function_exists('mysql_connect')) {
 	function mysql_connect($hostname = null, $username = null, $password = null) {
 		$link = @mysqli_connect($hostname, $username, $password);
 		if ($link instanceof mysqli) {
+			// EN: WordPress 0.71-era SQL (zero-date defaults, '' inserted into
+			//     integer columns, ...) relies on the permissive behavior of
+			//     2003-era MySQL. MySQL 8 defaults to a STRICT sql_mode that
+			//     rejects it, so reset the session sql_mode to empty.
+			// JA: WordPress 0.71 当時の SQL(ゼロ日付のデフォルト値、整数列への
+			//     '' の挿入 等)は 2003 年頃の MySQL の寛容な挙動に依存する。
+			//     MySQL 8 は既定で STRICT な sql_mode のためこれを拒否する。
+			//     互換性のためセッションの sql_mode を空にリセットする。
+			@mysqli_query($link, "SET SESSION sql_mode=''");
 			_mysql_shim_link($link);
 			return $link;
 		}
