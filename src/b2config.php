@@ -11,7 +11,7 @@
 // $blogfilename is the name of the default file for your blog
 // $blogname is the name of your blog
 
-$siteurl = 'http://example.com'; // Double check this, it's very important.
+$siteurl = 'http://localhost:8080'; // Docker local environment URL
 $blogfilename = 'index.php';
 $blogname = "my weblog";
 $blogdescription = "babblings !";
