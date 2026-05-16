@@ -13,11 +13,9 @@ function add_magic_quotes($array) {
     return $array;
 } 
 
-if (!get_magic_quotes_gpc()) {
-    $_GET    = add_magic_quotes($_GET);
-    $_POST   = add_magic_quotes($_POST);
-    $_COOKIE = add_magic_quotes($_COOKIE);
-}
+$_GET    = add_magic_quotes($_GET);
+$_POST   = add_magic_quotes($_POST);
+$_COOKIE = add_magic_quotes($_COOKIE);
 
 $b2varstoreset = array('action','safe_mode','withcomments','c','posts','poststart','postend','content','edited_post_title','comment_error','profile', 'trackback_url', 'excerpt');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {

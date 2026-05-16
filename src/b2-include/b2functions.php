@@ -162,9 +162,7 @@ function mysql2date($dateformatstring, $mysqlstring, $use_b2configmonthsdays = 1
 }
 
 function addslashes_gpc($gpc) {
-	if (!get_magic_quotes_gpc()) {
-		$gpc = addslashes($gpc);
-	}
+	$gpc = addslashes($gpc);
 	return $gpc;
 }
 
