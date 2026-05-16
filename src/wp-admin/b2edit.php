@@ -38,8 +38,12 @@ switch($action) {
     case 'post':
 
         $standalone = 1;
-        require_once('b2header.php');	
-		
+        require_once('b2header.php');
+
+        // EN: CSRF check -- reject a forged request to create a post.
+        // JA: CSRF チェック -- 投稿作成リクエストの偽造を拒否する。
+        b2_csrf_check('post');
+
         $post_pingback = intval($_POST["post_pingback"] ?? 0);
         $content = balanceTags($_POST["content"]);
         $content = format_to_post($content);
@@ -160,7 +164,11 @@ switch($action) {
 
         $standalone = 1;
         require_once("./b2header.php");
-        
+
+        // EN: CSRF check -- reject a forged request to edit a post.
+        // JA: CSRF チェック -- 投稿編集リクエストの偽造を拒否する。
+        b2_csrf_check('editpost');
+
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
@@ -242,6 +250,10 @@ switch($action) {
         $standalone = 1;
         require_once("./b2header.php");
 
+        // EN: CSRF check -- reject a forged GET request to delete a post.
+        // JA: CSRF チェック -- 投稿削除の GET リクエストの偽造を拒否する。
+        b2_csrf_check('delete-post');
+
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
@@ -299,6 +311,10 @@ switch($action) {
         $standalone = 1;
         require_once("./b2header.php");
 
+        // EN: CSRF check -- reject a forged GET request to delete a comment.
+        // JA: CSRF チェック -- コメント削除の GET リクエストの偽造を拒否する。
+        b2_csrf_check('delete-comment');
+
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
@@ -321,6 +337,10 @@ switch($action) {
 
         $standalone = 1;
         require_once("./b2header.php");
+
+        // EN: CSRF check -- reject a forged request to edit a comment.
+        // JA: CSRF チェック -- コメント編集リクエストの偽造を拒否する。
+        b2_csrf_check('editedcomment');
 
         if ($user_level == 0)
             die ("Cheatin' uh ?");

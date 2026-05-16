@@ -40,9 +40,13 @@ case 'addcat':
 	$standalone = 1;
 	require_once('b2header.php');
 
+	// EN: CSRF check -- reject a forged request to add a category.
+	// JA: CSRF チェック -- カテゴリ追加リクエストの偽造を拒否する。
+	b2_csrf_check('addcat');
+
 	if ($user_level < 3)
 		die ('Cheatin&#8217; uh?');
-	
+
 	$cat_name=addslashes($_POST["cat_name"]);
 
 	$query = "INSERT INTO $tablecategories (cat_ID,cat_name) VALUES ('0', '$cat_name')";
@@ -56,6 +60,10 @@ case 'Delete':
 
 	$standalone = 1;
 	require_once('b2header.php');
+
+	// EN: CSRF check -- reject a forged request to delete a category.
+	// JA: CSRF チェック -- カテゴリ削除リクエストの偽造を拒否する。
+	b2_csrf_check('catop');
 
 	$cat_ID = intval($_POST["cat_ID"]);
 	$cat_name = get_catname($cat_ID);
@@ -80,6 +88,11 @@ break;
 case 'Rename':
 
 	require_once ('b2header.php');
+
+	// EN: CSRF check -- reject a forged request to open the rename form.
+	// JA: CSRF チェック -- 名称変更フォーム表示リクエストの偽造を拒否する。
+	b2_csrf_check('catop');
+
 	$cat_name = get_catname($_POST["cat_ID"]);
 	$cat_name = addslashes($cat_name);
 	?>
@@ -90,6 +103,11 @@ case 'Rename':
 	<form name="renamecat" action="b2categories.php" method="post">
 		<strong>New</strong> name:<br />
 		<input type="hidden" name="action" value="editedcat" />
+		<?php
+		// EN: CSRF token for the category rename submit (verified in b2categories.php).
+		// JA: カテゴリ名称変更の送信用 CSRF トークン(b2categories.php で検証)。
+		b2_csrf_field('editedcat');
+		?>
 		<input type="hidden" name="cat_ID" value="<?php echo htmlspecialchars($_POST["cat_ID"]) ?>" />
 		<input type="text" name="cat_name" value="<?php echo $cat_name ?>" /><br />
 		<input type="submit" name="submit" value="Edit it !" class="search" />
@@ -105,9 +123,13 @@ case 'editedcat':
 	$standalone = 1;
 	require_once('b2header.php');
 
+	// EN: CSRF check -- reject a forged request to rename a category.
+	// JA: CSRF チェック -- カテゴリ名称変更リクエストの偽造を拒否する。
+	b2_csrf_check('editedcat');
+
 	if ($user_level < 3)
 		die ('Cheatin&#8217; uh?');
-	
+
 	$cat_name = addslashes($_POST["cat_name"]);
 	// EN: Cast the category id to int -- it is used unquoted in SQL
 	//     (WHERE cat_ID = $cat_ID); addslashes() does not protect it.
@@ -133,6 +155,11 @@ default:
 
 <div class="wrap">
 	<form name="cats" method="post">
+	<?php
+	// EN: CSRF token for the Delete / Rename submit buttons of this form.
+	// JA: このフォームの Delete / Rename ボタン用 CSRF トークン。
+	b2_csrf_field('catop');
+	?>
 	<h3><label for="cat_ID">Edit a category:</label></h3>
 	<p>
 	<?php
@@ -154,7 +181,11 @@ default:
 	
 	<form name="addcat" action="b2categories.php" method="post">
 	<h3><label>Add a category:
-	<input type="text" name="cat_name" /></label><input type="hidden" name="action" value="addcat" /></h3>
+	<input type="text" name="cat_name" /></label><input type="hidden" name="action" value="addcat" /><?php
+	// EN: CSRF token for the add-category submit (verified in b2categories.php).
+	// JA: カテゴリ追加の送信用 CSRF トークン(b2categories.php で検証)。
+	b2_csrf_field('addcat');
+	?></h3>
 	<input type="submit" name="submit" value="Add it!" class="search" />
 	</form>
 </div>

@@ -43,6 +43,14 @@ case 'update':
 
 	get_currentuserinfo();
 
+	// EN: CSRF check -- reject a forged request to update the profile.
+	//     This runs before the password change below, so b2_csrf_token()
+	//     still reads the current 'wordpresspass' cookie.
+	// JA: CSRF チェック -- プロフィール更新リクエストの偽造を拒否する。
+	//     下のパスワード変更より前に実行されるため、b2_csrf_token() は
+	//     現在の 'wordpresspass' クッキーを読む。
+	b2_csrf_check('profile-update');
+
 	/* checking the nickname has been typed */
 	if (empty($_POST["newuser_nickname"])) {
 		die ("<strong>ERROR</strong>: please enter your nickname (can be the same as your login)");
@@ -246,6 +254,11 @@ default:
   <p>
     <input type="hidden" name="action" value="update" />
     <input type="hidden" name="checkuser_id" value="<?php echo $user_ID ?>" />
+    <?php
+    // EN: CSRF token for the profile-update submit (verified in b2profile.php).
+    // JA: プロフィール更新の送信用 CSRF トークン(b2profile.php で検証)。
+    b2_csrf_field('profile-update');
+    ?>
   </p>
   <p><strong>User ID:</strong> <?php echo $profiledata->ID ?> | <strong>Level:</strong> 
     <?php echo $profiledata->user_level ?> | <strong>Posts:</strong> 

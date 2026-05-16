@@ -1149,3 +1149,198 @@ HTML を `b2config.php` で定義された許可タグリスト
 属性レベルの適切なサニタイザは別の後続作業とする。プロジェクト全体の出力
 エンコーディング刷新も同様にスコープ外であり、本 Issue は上記の反射型 XSS の
 箇所に限定する。
+
+## Issue #33: Add CSRF protection to state-changing admin actions / 状態変更を行う管理操作に CSRF 対策を追加
+
+EN: A security audit (Issue #33) found that WordPress 0.71 has no CSRF
+protection at all -- no nonces, no tokens, no origin/referer checks. Worse,
+several state-changing actions (delete post, delete comment, promote/delete
+user) were reachable via **GET**, so a single `<img>` tag on a third-party
+page could trigger them while an admin was logged in (e.g.
+`<img src="http://blog/wp-admin/b2edit.php?action=delete&post=1">` deletes
+post 1). Every admin POST form (options, profile, post create/edit) was
+equally unprotected.
+
+WordPress 0.71 has no PHP sessions, so a classic per-session token cannot be
+stored. The fix derives the token from the admin authentication cookie
+`wordpresspass` instead: `b2_csrf_token($action)` returns
+`substr(md5($action . '|' . $cookie . '|b2-csrf-v1'), 0, 20)`. A cross-site
+attacker performing CSRF cannot read that cookie (it is sent by the browser
+but not exposed to a foreign-origin script), so cannot compute a valid token,
+so cannot forge a state-changing request. A distinct `$action` string scopes
+each token to a single operation, so a token leaked for one action cannot be
+replayed against another.
+
+JA: セキュリティ監査(Issue #33)で、WordPress 0.71 には CSRF 対策が一切無い
+ことが判明した — nonce もトークンも origin/referer チェックも無い。さらに
+状態を変更する操作のいくつか(投稿削除・コメント削除・ユーザー昇格/削除)が
+**GET** で実行でき、管理者がログイン中なら第三者ページに置いた `<img>`
+タグ一つで発火した(例: `<img src="http://blog/wp-admin/b2edit.php?action=delete&post=1">`
+は投稿 1 を削除する)。管理画面の POST フォーム(オプション・プロフィール・
+投稿の作成/編集)も同様に無防備だった。
+
+WordPress 0.71 には PHP セッションが無いため、従来のセッション単位トークンを
+保存できない。本修正では代わりに管理者の認証クッキー `wordpresspass` から
+トークンを生成する。`b2_csrf_token($action)` は
+`substr(md5($action . '|' . $cookie . '|b2-csrf-v1'), 0, 20)` を返す。CSRF を
+行うクロスサイトの攻撃者はそのクッキーを読めない(ブラウザは送信するが、
+別オリジンのスクリプトには公開されない)ため、正しいトークンを計算できず、
+状態変更リクエストを偽造できない。`$action` 文字列ごとにトークンを 1 つの
+操作へ限定するため、ある操作で漏れたトークンを別の操作へ転用できない。
+
+### Changes / 変更内容
+
+EN:
+1. `b2-include/b2functions.php`: add three helper functions, loaded by every
+   admin page via `b2header.php` -- `b2_csrf_token($action)` (compute the
+   token), `b2_csrf_field($action)` (print a hidden `_b2csrf` input for POST
+   forms), `b2_csrf_check($action)` (verify `$_REQUEST['_b2csrf']`; `die()`
+   with "Security check failed" if missing or wrong).
+2. `wp-admin/b2edit.php`: `b2_csrf_check()` at the start of the `post`,
+   `editpost`, `delete`, `deletecomment`, `editedcomment` handlers
+   (token actions `post` / `editpost` / `delete-post` / `delete-comment` /
+   `editedcomment`).
+3. `wp-admin/b2edit.form.php`: emit `b2_csrf_field($form_action)` in the
+   shared post/comment form (so the token is scoped to `post` / `editpost` /
+   `editedcomment`), and append the token to the "Delete this post" GET link.
+4. `wp-admin/b2edit.showposts.php`: append the token to the Delete (post) and
+   Delete (comment) GET links in the post/comment list.
+5. `wp-admin/b2team.php`: `b2_csrf_check()` in the `promote` and `delete`
+   handlers (`promote-user` / `delete-user`) and append the token to the
+   promote/demote/delete GET links in both user lists.
+6. `wp-admin/b2categories.php`: `b2_csrf_check()` in the `addcat`, `Delete`,
+   `Rename` and `editedcat` handlers (`addcat` / `catop` / `editedcat`), and
+   `b2_csrf_field()` in the `cats`, `addcat` and `renamecat` forms.
+7. `wp-admin/b2options.php`: `b2_csrf_check('options-update')` in the
+   `update` handler and `b2_csrf_field()` in the options form.
+8. `wp-admin/b2profile.php`: `b2_csrf_check('profile-update')` in the
+   `update` handler (before the password is changed, so the token is still
+   computed against the current cookie) and `b2_csrf_field()` in the profile
+   form.
+9. `wp-admin/linkmanager.php`: `b2_csrf_check()` in the `Add`, `editlink`
+   (Save) and `Delete` handlers (`link-add` / `link-edit` / `link-list`), and
+   `b2_csrf_field()` in the `editlink`, `links` and `addlink` forms.
+
+JA:
+1. `b2-include/b2functions.php`: `b2header.php` 経由で全管理ページに読み込まれ
+   る 3 つのヘルパー関数を追加 -- `b2_csrf_token($action)`(トークン計算)、
+   `b2_csrf_field($action)`(POST フォーム用に隠し `_b2csrf` 入力を出力)、
+   `b2_csrf_check($action)`(`$_REQUEST['_b2csrf']` を検証。欠落/不一致なら
+   "Security check failed" で `die()`)。
+2. `wp-admin/b2edit.php`: `post`・`editpost`・`delete`・`deletecomment`・
+   `editedcomment` ハンドラの先頭で `b2_csrf_check()`(トークンアクションは
+   `post` / `editpost` / `delete-post` / `delete-comment` / `editedcomment`)。
+3. `wp-admin/b2edit.form.php`: 共有の投稿/コメントフォームで
+   `b2_csrf_field($form_action)` を出力(トークンを `post` / `editpost` /
+   `editedcomment` に限定)し、「Delete this post」GET リンクにトークンを付与。
+4. `wp-admin/b2edit.showposts.php`: 投稿/コメント一覧の Delete(投稿)・
+   Delete(コメント)GET リンクにトークンを付与。
+5. `wp-admin/b2team.php`: `promote`・`delete` ハンドラで `b2_csrf_check()`
+   (`promote-user` / `delete-user`)、両ユーザー一覧の昇格/降格/削除 GET
+   リンクにトークンを付与。
+6. `wp-admin/b2categories.php`: `addcat`・`Delete`・`Rename`・`editedcat`
+   ハンドラで `b2_csrf_check()`(`addcat` / `catop` / `editedcat`)、`cats`・
+   `addcat`・`renamecat` フォームで `b2_csrf_field()`。
+7. `wp-admin/b2options.php`: `update` ハンドラで
+   `b2_csrf_check('options-update')`、オプションフォームで `b2_csrf_field()`。
+8. `wp-admin/b2profile.php`: `update` ハンドラで
+   `b2_csrf_check('profile-update')`(パスワード変更前に実行されるため、
+   トークンは現在のクッキーで計算される)、プロフィールフォームで
+   `b2_csrf_field()`。
+9. `wp-admin/linkmanager.php`: `Add`・`editlink`(Save)・`Delete` ハンドラで
+   `b2_csrf_check()`(`link-add` / `link-edit` / `link-list`)、`editlink`・
+   `links`・`addlink` フォームで `b2_csrf_field()`。
+
+### Verification / 検証
+
+EN:
+- `php -l` -> **0 syntax errors** across all 9 changed files.
+- `composer phpcs` -> **0 violations** (52 files).
+- `composer phpstan` -> **0 errors** (run with `--memory-limit=1G`; the
+  default 128 MB limit is exhausted by the codebase regardless of this fix).
+- `b2-include/b2functions.php` is Latin-1 encoded; the three functions were
+  appended byte-safely. The original 20 Latin-1 high-byte lines are untouched
+  (only new UTF-8 bilingual comments were added).
+- End-to-end in the Docker environment, logged in as `admin`: each protected
+  operation was exercised twice -- once with a valid `_b2csrf` token read from
+  the real admin HTML (must succeed) and once forged without a token (must be
+  rejected). All passed:
+  - Create post -> valid: HTTP 302, row inserted; forged: "Security check
+    failed", 0 rows.
+  - Edit post -> valid: HTTP 302, title updated; forged: rejected.
+  - Delete post (GET link) -> valid: HTTP 302, row removed; forged: rejected,
+    post survived.
+  - Add category -> valid: HTTP 302, row inserted; forged: rejected.
+  - Delete category -> valid: HTTP 302, row removed; forged: rejected,
+    category survived.
+  - Rename -> editedcat chain -> valid: HTTP 302, name updated.
+  - Save options -> valid: HTTP 302, settings written; forged: rejected,
+    `posts_per_page` unchanged.
+  - Save profile -> valid: HTTP 200 "Profile updated!", row written; forged:
+    rejected, nickname unchanged.
+  - Edit comment (`editedcomment`) -> valid: HTTP 302, written; forged:
+    rejected. Delete comment (GET) forged -> rejected, comment survived.
+  - Link add / edit (Save) / delete -> valid: HTTP 302, DB changed; forged:
+    rejected, DB unchanged.
+- The blog front end and the admin pages load with **0 PHP warnings /
+  fatals**. All test posts/categories/links were cleaned up; the original
+  "Hello world!" post and the five default categories are intact.
+
+JA:
+- `php -l` -> 変更した全 9 ファイルで **構文エラー 0**。
+- `composer phpcs` -> **検出 0 件**(52 ファイル)。
+- `composer phpstan` -> **エラー 0 件**(`--memory-limit=1G` で実行。既定の
+  128 MB 上限は本修正と無関係にコードベース全体で枯渇する)。
+- `b2-include/b2functions.php` は Latin-1 エンコード。3 つの関数はバイト安全に
+  追記した。元の Latin-1 高位バイト行 20 行は無変更(新規 UTF-8 二言語
+  コメントを追加しただけ)。
+- Docker 環境で `admin` としてログインし、各保護対象操作をエンドツーエンドで
+  2 回ずつ実行した — 実際の管理画面 HTML から読み取った有効な `_b2csrf`
+  トークン付き(成功するべき)と、トークン無しの偽造(拒否されるべき)。
+  すべて合格:
+  - 投稿作成 -> 有効: HTTP 302、行が挿入。偽造: "Security check failed"、
+    0 行。
+  - 投稿編集 -> 有効: HTTP 302、タイトル更新。偽造: 拒否。
+  - 投稿削除(GET リンク)-> 有効: HTTP 302、行が削除。偽造: 拒否、投稿は
+    残存。
+  - カテゴリ追加 -> 有効: HTTP 302、行が挿入。偽造: 拒否。
+  - カテゴリ削除 -> 有効: HTTP 302、行が削除。偽造: 拒否、カテゴリは残存。
+  - Rename -> editedcat の連鎖 -> 有効: HTTP 302、名称更新。
+  - オプション保存 -> 有効: HTTP 302、設定が書き込み。偽造: 拒否、
+    `posts_per_page` は不変。
+  - プロフィール保存 -> 有効: HTTP 200 "Profile updated!"、行が書き込み。
+    偽造: 拒否、ニックネームは不変。
+  - コメント編集(`editedcomment`)-> 有効: HTTP 302、書き込み。偽造: 拒否。
+    コメント削除(GET)の偽造 -> 拒否、コメントは残存。
+  - リンク 追加 / 編集(Save)/ 削除 -> 有効: HTTP 302、DB 変更。偽造:
+    拒否、DB は不変。
+- ブログ本体および管理ページが **PHP 警告 / fatal 0** で表示される。テスト用
+  の投稿/カテゴリ/リンクはすべて削除し、元の「Hello world!」投稿と 5 つの
+  既定カテゴリは無傷である。
+
+### Out of scope / スコープ外
+
+EN: The **public comment form** (`b2comments.post.php`, `b2comments.php`,
+`b2edit.showposts.php`'s "Leave Comment" form) is intentionally **not**
+protected. Commenters are anonymous -- they have no `wordpresspass`
+authentication cookie -- so this cookie-derived token scheme does not apply,
+and posting a comment is an action anyone may perform anyway, so it is not a
+CSRF concern. The **logout** link is also left unprotected: forcing a logout
+is low severity (no data is destroyed) and protecting it is not worth the
+churn. Authentication itself was not redesigned. The `Show`-by-category
+filter in `linkmanager.php` and `linkcategories.php` (link-category
+management) only set a display/cookie filter or live in a separate file and
+are outside the explicit file list for this Issue; they are not
+state-changing writes to core blog data and were left for follow-up.
+
+JA: **公開コメントフォーム**(`b2comments.post.php`・`b2comments.php`・
+`b2edit.showposts.php` の「Leave Comment」フォーム)は意図的に**保護しない**。
+コメント投稿者は匿名であり `wordpresspass` 認証クッキーを持たないため、この
+クッキー由来のトークン方式は適用できない。またコメント投稿はそもそも誰でも
+行える操作であり CSRF の懸念には当たらない。**ログアウト**リンクも未保護の
+ままとした — 強制ログアウトは深刻度が低く(データは失われない)、保護に見合
+わない。認証そのものは再設計していない。`linkmanager.php` のカテゴリ別
+`Show` フィルタや `linkcategories.php`(リンクカテゴリ管理)は表示/クッキー
+フィルタを設定するだけ、あるいは別ファイルにあり本 Issue の明示的なファイル
+一覧外であって、ブログ中核データへの状態変更書き込みではないため、後続作業と
+した。

@@ -39,6 +39,10 @@ case "update":
 	$standalone = 1;
 	include ("./b2header.php");
 
+	// EN: CSRF check -- reject a forged request to change blog options.
+	// JA: CSRF チェック -- ブログオプション変更リクエストの偽造を拒否する。
+	b2_csrf_check('options-update');
+
 	$newposts_per_page=addslashes($_POST["newposts_per_page"]);
 	$newwhat_to_show=addslashes($_POST["newwhat_to_show"]);
 	$newarchive_mode=addslashes($_POST["newarchive_mode"]);
@@ -70,6 +74,11 @@ default:
 	
 			<form name="form" action="b2options.php" method="post">
 			<input type="hidden" name="action" value="update" />
+			<?php
+			// EN: CSRF token for the options-update submit (verified in b2options.php).
+			// JA: オプション更新の送信用 CSRF トークン(b2options.php で検証)。
+			b2_csrf_field('options-update');
+			?>
 	
 <div class="wrap">
 			
