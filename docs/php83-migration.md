@@ -3027,3 +3027,97 @@ Typography / Advanced インスペクタ)を表示する。保存の往復は
 フロントエンド(`index.php?p=N`)は投稿をカテゴリー付きで引き続き描画した。
 `composer phpcs` / `phpstan` / `test` は 0 / 0 / 94 のまま -- `src/block-editor/`
 は試作コードとして phpcs / phpstan の対象外のまま。
+
+### Text-selection bug fix / テキスト選択バグの修正
+
+EN: After Issue #79's UI work, a follow-up bug surfaced: selecting text inside
+a paragraph block showed **no highlight** in Chromium / Firefox. The text was
+selected (typing replaced it; the selection range existed in the DOM) but the
+browser painted no visible highlight.
+
+**Root cause.** `@wordpress/block-editor`'s `content.css` hides the native
+selection highlight on the block canvas with a deliberate, Safari-only CSS
+hack -- a single comma-separated selector list:
+
+```css
+_::-webkit-full-page-media, _:future,
+:root .block-editor-block-list__layout::selection { background-color: transparent }
+```
+
+`_::-webkit-full-page-media` is a pseudo-element only Safari recognises. A
+browser that cannot parse one selector of a top-level selector *list* drops
+the **entire** rule, so Chromium / Firefox normally discard this rule and keep
+the native highlight. Vite's default (esbuild) CSS minifier, however,
+"optimises" that rule into **separate** rules -- one selector each. The
+standalone `:root .block-editor-block-list__layout::selection { background:
+transparent }` rule is then valid in Chromium / Firefox, applies, and hides
+the highlight on every paragraph block. (Browser inspection confirmed the
+selection range was correct -- 280x18 px -- with no visible highlight, while a
+plain `contenteditable` injected into the same page highlighted normally.)
+
+**Fix.** A small Vite plugin -- `repairSelectionHack` in
+`src/block-editor/app/vite.config.js` -- runs after minification
+(`generateBundle`) and rejoins the split rules back into the original guarded
+comma-separated list, so the hack is Safari-only again and the highlight works
+in Chromium / Firefox. CSS minification stays on; the CSS size is unchanged.
+
+A second part of the same fix: the paragraph's **text-alignment** toolbar
+control (and other typography controls) are gated behind editor *settings* --
+`useSettings()` reads them from `settings.__experimentalFeatures`, populated
+from `theme.json` in a real WordPress install. The standalone editor passed no
+`settings` prop, so the alignment control never rendered. `Editor.jsx` now
+passes an `EDITOR_SETTINGS` object with the `__experimentalFeatures` feature
+flags to `BlockEditorProvider`.
+
+**Verification.** Rebuilt the app and verified in headless Chromium against a
+throwaway Docker stack (a distinct `be79sel` Compose project on ports 8091 /
+3317). On a test paragraph block: drag-select and shift-arrow selection now
+show the highlight; the floating block toolbar shows Bold / Italic / Link and
+the text-alignment control; Bold / Italic apply `<strong>` / `<em>`; the
+Document Overview toggle works; the settings sidebar shows the Post and Block
+panels; and a save round trip persisted content / status / category, with the
+0.71 front end rendering the post. `composer phpcs` / `phpstan` / `test` stay
+at 0 / 0 / 94.
+
+JA: Issue #79 の UI 作業の後、後続のバグが判明した: 段落ブロック内の
+テキストを選択しても Chromium / Firefox では **ハイライトが表示されない**。
+テキストは選択されている(入力で置き換わり、選択範囲も DOM に存在する)が、
+ブラウザが可視ハイライトを描画しなかった。
+
+**根本原因。** `@wordpress/block-editor` の `content.css` は、意図的な
+Safari 限定の CSS ハック -- 1 つのカンマ区切りセレクタリスト(上記)-- で
+ブロックキャンバスのネイティブ選択ハイライトを隠している。
+`_::-webkit-full-page-media` は Safari だけが認識する擬似要素である。
+トップレベルのセレクタ「リスト」内に解釈できないセレクタが 1 つでもあると
+ブラウザはルール **全体** を破棄するため、Chromium / Firefox は通常この
+ルールを捨てネイティブハイライトを保つ。しかし Vite 既定(esbuild)の CSS
+minifier はこのルールをセレクタごとの **別々の** ルールへ「最適化」する。
+単独になった `:root .block-editor-block-list__layout::selection { background:
+transparent }` は Chromium / Firefox でも有効なため適用され、すべての段落
+ブロックでハイライトを隠してしまう。(ブラウザ調査で、選択範囲は正しく
+280x18 px ありながら可視ハイライトが無いこと、同じページに注入した素の
+`contenteditable` は正常にハイライトされることを確認した。)
+
+**修正。** 小さな Vite プラグイン -- `src/block-editor/app/vite.config.js` の
+`repairSelectionHack` -- が minify 後(`generateBundle`)に走り、分割された
+ルールを元のガード付きカンマ区切りリストへ結合し直す。これによりハックは
+再び Safari 限定となり、Chromium / Firefox でハイライトが効く。CSS の
+minify は有効のままで、CSS サイズも変わらない。
+
+同じ修正のもう一部分: 段落の **テキスト配置** ツールバー操作子(その他の
+文字組み操作子も)はエディタの *設定* によって出し分けられる。
+`useSettings()` はそれらを `settings.__experimentalFeatures`(本物の
+WordPress では `theme.json` から供給される)から読み取る。スタンドアロン
+エディタは `settings` prop を渡していなかったため配置操作子が描画されな
+かった。`Editor.jsx` は `__experimentalFeatures` の機能フラグを持つ
+`EDITOR_SETTINGS` オブジェクトを `BlockEditorProvider` へ渡すようになった。
+
+**検証。** アプリを再ビルドし、使い捨ての Docker スタック(ポート 8091 /
+3317 の独立した `be79sel` Compose プロジェクト)に対しヘッドレス Chromium
+で検証した。テスト用の段落ブロックで: ドラッグ選択と Shift + 矢印選択で
+ハイライトが表示され、フローティングのブロックツールバーは太字 / 斜体 /
+リンクとテキスト配置操作子を表示し、太字 / 斜体は `<strong>` / `<em>` を
+適用し、ドキュメント概観の切り替えが動作し、設定サイドバーは Post / Block
+パネルを表示し、保存の往復は内容 / ステータス / カテゴリーを保存して 0.71
+フロントエンドが投稿を描画した。`composer phpcs` / `phpstan` / `test` は
+0 / 0 / 94 のまま。

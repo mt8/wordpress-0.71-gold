@@ -143,6 +143,64 @@ JA: ブロック内容はブロックマークアップ HTML として 0.71 の�
 レガシーな 0.71 投稿は `parse()` により 1 つのクラシック(freeform)ブロック
 として解析されるため、既存の投稿はデータ欠落なく開ける。
 
+## Text-selection fix / テキスト選択の修正
+
+EN: Selecting text inside a paragraph block used to show **no highlight** in
+Chromium / Firefox — the text was selected (typing replaced it) but invisible.
+
+The cause is a CSS-minifier interaction. `@wordpress/block-editor`'s
+`content.css` hides the native highlight on the block canvas with a deliberate
+**Safari-only** hack — a single comma-separated selector list:
+
+```css
+_::-webkit-full-page-media, _:future,
+:root .block-editor-block-list__layout::selection { background-color: transparent }
+```
+
+`_::-webkit-full-page-media` is a pseudo-element only Safari recognises. A
+browser that cannot parse one selector in a list drops the **whole** rule, so
+Chromium / Firefox normally discard this rule entirely and keep the highlight.
+
+Vite's default (esbuild) CSS minifier "optimises" that rule into **separate**
+rules — one selector each. The standalone
+`:root .block-editor-block-list__layout::selection { background: transparent }`
+rule is then valid in Chromium / Firefox, applies, and hides the highlight.
+
+The fix is a small Vite plugin (`repairSelectionHack` in `vite.config.js`)
+that runs after minification and rejoins the split rules back into the
+original guarded comma-separated list, so the hack is Safari-only again.
+
+A second part of the same issue: the paragraph's **text-alignment** toolbar
+control (and other typography controls) are gated behind editor *settings*.
+`Editor.jsx` now passes a `settings` object (`EDITOR_SETTINGS`) with the
+`__experimentalFeatures` feature flags to `BlockEditorProvider`.
+
+JA: 段落ブロック内のテキストを選択しても Chromium / Firefox では
+**ハイライトが表示されなかった** — テキストは選択されている(入力で
+置き換わる)が見えない状態だった。
+
+原因は CSS minifier との相互作用である。`@wordpress/block-editor` の
+`content.css` は、意図的な **Safari 限定** ハック — 1 つのカンマ区切り
+セレクタリスト(上記)— でブロックキャンバスのネイティブハイライトを
+隠している。`_::-webkit-full-page-media` は Safari だけが認識する擬似要素
+である。リスト内に解釈できないセレクタが 1 つでもあるとブラウザはルール
+**全体** を破棄するため、Chromium / Firefox は通常このルールを丸ごと捨て、
+ハイライトを保つ。
+
+Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの **別々の**
+ルールへ「最適化」する。単独になった
+`:root .block-editor-block-list__layout::selection { background: transparent }`
+は Chromium / Firefox でも有効なため適用され、ハイライトを隠してしまう。
+
+修正は小さな Vite プラグイン(`vite.config.js` の `repairSelectionHack`)で
+ある。minify 後に走り、分割されたルールを元のガード付きカンマ区切り
+リストへ結合し直す。これによりハックは再び Safari 限定となる。
+
+同じ Issue のもう一部分: 段落の **テキスト配置** ツールバー操作子(その他の
+文字組み操作子も)はエディタの *設定* によって出し分けられる。`Editor.jsx`
+は `__experimentalFeatures` の機能フラグを持つ `settings` オブジェクト
+(`EDITOR_SETTINGS`)を `BlockEditorProvider` へ渡すようになった。
+
 ## Build / ビルド
 
 EN: Requires Node.js (developed and tested with v24) and npm.
@@ -215,14 +273,18 @@ EN:
 - Loading a 0.71 post into a modern block editor (`parse()`).
 - Editing with the core **static** blocks — paragraph, heading, list, quote,
   image (client-side), separator, etc.
-- **Per-block toolbars** — the fixed `BlockToolbar` shows the controls of the
-  currently selected block.
+- **Visible text selection** — drag-selecting or shift-arrow-selecting text in
+  a block shows the native highlight (see *Text-selection fix* below).
+- **Per-block toolbars** — the floating `BlockTools` toolbar shows the
+  controls of the currently selected block, including **Bold / Italic / Link**
+  (from `@wordpress/format-library`) and the paragraph's **text-alignment**
+  control.
 - **Document Overview** — a toggleable list-view panel (the block outline),
   plus a `BlockBreadcrumb` under the canvas.
 - **Settings sidebar** — a *Post* panel with a Status control
   (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
   and a *Block* panel with `BlockInspector` for the selected block's
-  attributes.
+  attributes (Typography, Dimensions, ...).
 - Saving block markup, `post_status` and `post_category` back into 0.71's
   `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
@@ -233,13 +295,18 @@ JA:
 - 0.71 の投稿をモダンなブロックエディタへ読み込む(`parse()`)。
 - 標準の **静的** ブロックでの編集 — 段落・見出し・リスト・引用・画像
   (クライアント側)・区切りなど。
-- **各ブロックのツールバー** — 固定の `BlockToolbar` が現在選択中ブロック
-  の操作子を表示する。
+- **テキスト選択の可視化** — ブロック内のテキストをドラッグ選択 / Shift +
+  矢印で選択するとネイティブのハイライトが表示される(下記
+  *テキスト選択の修正* を参照)。
+- **各ブロックのツールバー** — フローティングの `BlockTools` ツールバーが
+  現在選択中ブロックの操作子を表示する。**太字 / 斜体 / リンク**
+  (`@wordpress/format-library`)や段落の **テキスト配置** 操作子を含む。
 - **ドキュメント概観** — 切り替え可能なリストビューパネル(ブロックの
   アウトライン)と、キャンバス下の `BlockBreadcrumb`。
 - **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
   Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
-  ブロックの属性を出す `BlockInspector` の *Block* パネル。
+  ブロックの属性(Typography・Dimensions など)を出す `BlockInspector` の
+  *Block* パネル。
 - ブロックマークアップ・`post_status`・`post_category` を 0.71 の
   `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。
