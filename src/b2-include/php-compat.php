@@ -25,3 +25,54 @@ if (!function_exists('get_magic_quotes_gpc')) {
 		return false;
 	}
 }
+
+if (!function_exists('ereg')) {
+	// EN: The POSIX regex functions (ereg/eregi/ereg_replace/eregi_replace) were
+	//     removed in PHP 7.0. They are reimplemented over PCRE below. POSIX ERE
+	//     patterns used by WordPress 0.71 are simple enough to run as PCRE.
+	// JA: POSIX 正規表現関数(ereg/eregi/ereg_replace/eregi_replace)は PHP 7.0 で
+	//     廃止された。以下で PCRE 上に再実装する。WordPress 0.71 が使う POSIX ERE
+	//     パターンは十分単純で、そのまま PCRE として動作する。
+
+	/**
+	 * EN: Wrap a POSIX ERE pattern as a PCRE pattern. The pattern is delimited
+	 *     with "~"; any "~" inside the pattern is escaped first.
+	 * JA: POSIX ERE パターンを PCRE パターンとして包む。デリミタは "~" とし、
+	 *     パターン中の "~" は先にエスケープする。
+	 */
+	function _ereg_to_pcre($pattern, $flags = '') {
+		return '~' . str_replace('~', '\\~', (string) $pattern) . '~' . $flags;
+	}
+
+	function ereg($pattern, $string, &$regs = null) {
+		$matched = @preg_match(_ereg_to_pcre($pattern), (string) $string, $m);
+		if (func_num_args() > 2) {
+			$regs = $m;
+		}
+		// EN: POSIX ereg() returned the match length (>= 1) or false.
+		// JA: POSIX の ereg() は一致長(1 以上)または false を返した。
+		return $matched ? (strlen($m[0]) ?: 1) : false;
+	}
+
+	function eregi($pattern, $string, &$regs = null) {
+		$matched = @preg_match(_ereg_to_pcre($pattern, 'i'), (string) $string, $m);
+		if (func_num_args() > 2) {
+			$regs = $m;
+		}
+		return $matched ? (strlen($m[0]) ?: 1) : false;
+	}
+
+	function ereg_replace($pattern, $replacement, $string) {
+		$result = @preg_replace(_ereg_to_pcre($pattern), $replacement, (string) $string);
+		// EN: On a pattern PCRE rejects, preg_replace() returns null; fall back
+		//     to the unmodified string so the caller does not get null.
+		// JA: PCRE が拒否するパターンでは preg_replace() が null を返す。呼び出し
+		//     側に null を渡さないよう、未変更の文字列にフォールバックする。
+		return ($result === null) ? (string) $string : $result;
+	}
+
+	function eregi_replace($pattern, $replacement, $string) {
+		$result = @preg_replace(_ereg_to_pcre($pattern, 'i'), $replacement, (string) $string);
+		return ($result === null) ? (string) $string : $result;
+	}
+}
