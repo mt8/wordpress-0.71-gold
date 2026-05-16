@@ -1881,3 +1881,179 @@ JA: `php -l` は変更した両ファイル(`b2team.php`・`b2edit.php`)で通�
 "Security check failed" で拒否され、新しいレベルゲートが Issue #33 の CSRF
 チェックの隣(後ろ)に位置し、それを壊していないことを確認した。
 フロントエンド(`/`・`?p=1`)と管理画面は PHP 警告/fatal 0 で表示される。
+
+## Issue #36: File upload security / ファイルアップロードのセキュリティ
+
+EN: A security audit (Issue #36) found that `wp-admin/b2upload.php` built the
+destination path directly from the user-supplied file name and saved the file
+with `move_uploaded_file()` (or `rename()`), with two distinct flaws:
+
+1. **Path traversal** -- the saved file name came straight from
+   `$_FILES['img1']['name']` (or `$_POST['imgalt']`) with no sanitisation,
+   and `$pathtofile = $fileupload_realpath."/".$img1_name`. A name such as
+   `../../../../var/www/html/shell.php` would write the uploaded file
+   anywhere the web server could reach -- including the document root.
+
+2. **Loose extension check** -- the type test was a substring `preg_match`:
+   `preg_match('~'.strtolower($imgtype).'~', strtolower($fileupload_allowedtypes))`.
+   That matches a *substring*, so a file whose extension is not in the
+   allow-list could still pass (e.g. an extension that happens to be a
+   substring of an allowed one), and the test looked at a `.`-split segment
+   rather than the genuine final extension.
+
+If a script file (`.php`, `.phtml`, ...) landed in a web-served directory
+this is remote code execution. The only thing preventing exploitation today
+is `$use_fileupload = 0` in `b2config.php` -- a config default, not a code
+control. The fix hardens the code so it is safe even when uploads are enabled.
+
+JA: セキュリティ監査(Issue #36)で、`wp-admin/b2upload.php` が保存先パスを
+ユーザー指定のファイル名から直接組み立て、`move_uploaded_file()`(または
+`rename()`)で保存していることが判明した。2 つの欠陥があった:
+
+1. **パストラバーサル** -- 保存ファイル名が `$_FILES['img1']['name']`(または
+   `$_POST['imgalt']`)からサニタイズ無しでそのまま使われ、
+   `$pathtofile = $fileupload_realpath."/".$img1_name` となっていた。
+   `../../../../var/www/html/shell.php` のような名前は、Web サーバーが届く
+   任意の場所(ドキュメントルートを含む)にファイルを書き込めた。
+
+2. **緩い拡張子チェック** -- 型判定が部分一致の `preg_match` だった:
+   `preg_match('~'.strtolower($imgtype).'~', strtolower($fileupload_allowedtypes))`。
+   これは*部分文字列*に一致するため、許可リストに無い拡張子でも通過しうる
+   (許可拡張子の部分文字列になっている場合など)。さらに、本来の最終拡張子
+   ではなく `.` で分割した一要素を見ていた。
+
+スクリプトファイル(`.php`・`.phtml` など)が Web 公開ディレクトリに置かれ
+れば、これはリモートコード実行である。現状で悪用を防いでいるのは
+`b2config.php` の `$use_fileupload = 0` のみ — 設定の既定値であって、コード
+上の対策ではない。本修正はコードを堅牢化し、アップロードを有効化しても
+安全になるようにする。
+
+### Changes / 変更内容
+
+EN: All changes are confined to `wp-admin/b2upload.php`.
+
+1. **File-name sanitisation (path-traversal defence)**: before the name is
+   used in any path, apply `basename()` to strip directory components, then
+   `preg_replace` to keep only the safe set `[A-Za-z0-9._-]` (other
+   characters become `_`), collapse repeated dots and trim leading/trailing
+   dots. An empty result is rejected with `die('Invalid file name.')`. The
+   sanitised name is also written back to `$imgalt`, so the alternate-name
+   upload path is hardened identically.
+
+2. **Strict extension whitelist**: the extension is taken as the final
+   `.`-separated segment of the *sanitised* name, lower-cased, and matched
+   with `in_array(..., true)` against the allow-list built from
+   `$fileupload_allowedtypes` (default ` jpg gif png `). A name with no
+   extension, or whose final extension is not whitelisted, is rejected with a
+   clear message and no file is moved. Because only the *final* extension
+   decides, `evil.php.jpg` is treated as `jpg` (allowed) and `shell.php` as
+   `php` (rejected) -- a `.php` file can never be accepted.
+
+3. **Destination containment check (defence in depth)**: before any write,
+   `realpath()` of the destination directory is compared for exact equality
+   with `realpath($fileupload_realpath)`; a mismatch aborts with
+   `die('Invalid upload destination.')`.
+
+4. The existing `MAX_FILE_SIZE` hidden field and PHP's size handling are
+   unchanged. Both `move_uploaded_file()` sites and the `rename()` path are
+   covered, because they all consume the now-sanitised `$img1_name` /
+   `$imgalt` / `$pathtofile`.
+
+5. The misleading source comment `//Path to your images directory, chmod the
+   dir to 777` was softened: a comment now notes that the upload directory
+   only needs to be writable by the web server user (e.g. 0755/0775) and that
+   `chmod 777` is not required and should be avoided. Comment only -- no
+   behaviour change.
+
+JA: 変更はすべて `wp-admin/b2upload.php` に限定する。
+
+1. **ファイル名のサニタイズ(パストラバーサル対策)**: パスに使う前に
+   `basename()` でディレクトリ部分を除去し、`preg_replace` で安全な文字種
+   `[A-Za-z0-9._-]` のみを残す(それ以外は `_` に置換)。連続するドットを
+   1 つにまとめ、先頭・末尾のドットを除去する。結果が空なら
+   `die('Invalid file name.')` で拒否する。サニタイズ後の名前は `$imgalt`
+   にも書き戻し、代替名のアップロード経路も同様に堅牢化する。
+
+2. **厳格な拡張子ホワイトリスト**: 拡張子は*サニタイズ後*の名前を `.` で
+   分割した最終要素を小文字化して取得し、`$fileupload_allowedtypes`
+   (既定 ` jpg gif png `)から作った許可リストと `in_array(..., true)` で
+   厳密一致させる。拡張子が無い名前、または最終拡張子が許可リストに無い名前
+   は明確なメッセージで拒否し、ファイルは移動しない。判定するのは*最終*
+   拡張子のみなので、`evil.php.jpg` は `jpg`(許可)、`shell.php` は `php`
+   (拒否)として扱われ、`.php` ファイルが受理されることは決してない。
+
+3. **保存先の封じ込めチェック(多層防御)**: 書き込み前に、保存先
+   ディレクトリの `realpath()` と `realpath($fileupload_realpath)` が完全に
+   一致するか比較し、一致しなければ `die('Invalid upload destination.')` で
+   中止する。
+
+4. 既存の `MAX_FILE_SIZE` 隠しフィールドと PHP のサイズ処理は変更しない。
+   2 つの `move_uploaded_file()` 箇所と `rename()` 経路はすべてサニタイズ
+   済みの `$img1_name` / `$imgalt` / `$pathtofile` を使うため、いずれも
+   保護される。
+
+5. 誤解を招くソースコメント `//Path to your images directory, chmod the dir
+   to 777` を緩和した。アップロードディレクトリは Web サーバーのユーザーが
+   書き込めればよく(例 0755/0775)、`chmod 777` は不要で避けるべきである
+   旨をコメントで記した。コメントのみで、挙動は変更しない。
+
+### Notes / 注記
+
+EN: `move_uploaded_file()` already only accepts a path that PHP itself
+recorded as a valid HTTP upload, but it does not constrain the *destination*;
+the destination is exactly what this fix sanitises and contains. MIME
+verification by file content (as the audit also suggested) was deliberately
+left out of scope -- the extension whitelist plus name sanitisation is the
+load-bearing control here, and content sniffing on a 2003-era code path would
+add fragility without removing the RCE risk that the extension check already
+closes. `$use_fileupload` stays `0` by default; the fix is a hardening of the
+code regardless of that switch.
+
+JA: `move_uploaded_file()` は PHP 自身が正当な HTTP アップロードとして記録
+したパスしか受け付けないが、*保存先*は制約しない。保存先こそが本修正で
+サニタイズ・封じ込めする対象である。監査が併せて提案したファイル内容に
+よる MIME 検証は意図的にスコープ外とした — ここで効くのは拡張子ホワイト
+リストと名前サニタイズであり、2003 年頃のコード経路で内容判定を行うと、
+拡張子チェックが既に塞いでいる RCE リスクを減らさないまま脆さを増やす。
+`$use_fileupload` は既定の `0` のまま。本修正はそのスイッチに関わらず
+コードを堅牢化するものである。
+
+### Verification / 検証
+
+EN: `php -l wp-admin/b2upload.php` passes with 0 syntax errors.
+`composer phpcs` reports 0 violations (41 files). `composer phpstan
+--memory-limit=1G` reports 0 errors (the default 128 MB OOMs on this
+repository -- a pre-existing, unrelated constraint). Functional test against
+the Docker environment: `b2config.php` was temporarily set to
+`$use_fileupload = 1` with `$fileupload_realpath` pointed at a throwaway
+directory (a local-only change, reverted afterwards and not committed), the
+web container restarted to clear OPcache, and admin logged in. Three uploads
+were submitted with curl multipart:
+(a) a normal `test.gif` -- accepted, landed in the upload directory;
+(b) a file named `../../../../tmp/escaped.gif` -- the traversal was
+neutralised, `basename()` reduced it to `escaped.gif` and it landed inside
+the upload directory; the filesystem confirmed nothing was written outside
+(`/tmp/escaped.gif`, `/escaped.gif`, `/var/www/escaped.gif` all absent);
+(c) `shell.php` -- rejected with "File shell.php of type .php is not allowed.",
+no file written. After the test `b2config.php` was reverted
+(`git checkout`) and the temp directory removed. The front end (`/`) and the
+admin (`b2edit.php`) load with HTTP 200 and 0 PHP warnings/fatals.
+
+JA: `php -l wp-admin/b2upload.php` は構文エラー 0 で通る。`composer phpcs`
+は違反 0 件(41 ファイル)。`composer phpstan --memory-limit=1G` はエラー
+0 件(既定の 128 MB はこのリポジトリで OOM する — 既知の無関係な制約)。
+Docker 環境での機能テスト: `b2config.php` を一時的に `$use_fileupload = 1`
+にし、`$fileupload_realpath` を使い捨てディレクトリに向け(ローカル限定の
+変更で、後で元に戻しコミットしない)、OPcache を消すため web コンテナを
+再起動し、admin でログインした。curl のマルチパートで 3 件のアップロードを
+送信した:
+(a) 通常の `test.gif` -- 受理され、アップロードディレクトリに保存された;
+(b) `../../../../tmp/escaped.gif` という名前のファイル -- トラバーサルは
+無効化され、`basename()` により `escaped.gif` に縮約されてアップロード
+ディレクトリ内に保存された。ファイルシステム上、外部
+(`/tmp/escaped.gif`・`/escaped.gif`・`/var/www/escaped.gif`)には何も
+書き込まれていないことを確認した;
+(c) `shell.php` -- "File shell.php of type .php is not allowed." で拒否され、
+ファイルは書き込まれなかった。テスト後、`b2config.php` を
+(`git checkout` で)元に戻し、一時ディレクトリを削除した。フロントエンド
+(`/`)と管理画面(`b2edit.php`)は HTTP 200・PHP 警告/fatal 0 で表示される。
