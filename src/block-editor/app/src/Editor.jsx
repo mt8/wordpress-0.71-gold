@@ -2,7 +2,7 @@
  * EN: The custom block editor component for the WordPress 0.71 block editor.
  *     It mounts @wordpress/block-editor's BlockEditorProvider with the full
  *     editing chrome added in Issue #79:
- *       - a fixed per-block toolbar (BlockTools + BlockToolbar),
+ *       - a per-block toolbar (the floating toolbar rendered by BlockTools),
  *       - a Document Overview panel (ListView, the block outline),
  *       - a settings sidebar with a Post panel (post_status + post_category)
  *         and a Block panel (block attributes via BlockInspector).
@@ -12,7 +12,7 @@
  * JA: WordPress 0.71 ブロックエディタのカスタムコンポーネント。
  *     @wordpress/block-editor の BlockEditorProvider をマウントし、
  *     Issue #79 で追加した完全な編集 UI を備える:
- *       - 固定の各ブロックツールバー(BlockTools + BlockToolbar)、
+ *       - 各ブロックツールバー(BlockTools が描画するフローティングツールバー)、
  *       - ドキュメント概観パネル(ListView、ブロックアウトライン)、
  *       - 設定サイドバー(Post パネル = post_status + post_category、
  *         Block パネル = BlockInspector によるブロック属性)。
@@ -26,7 +26,6 @@ import {
 	BlockEditorProvider,
 	BlockList,
 	BlockTools,
-	BlockToolbar,
 	BlockInspector,
 	BlockBreadcrumb,
 	WritingFlow,
@@ -53,9 +52,9 @@ import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
  * JA: 0.71 自身のエディタ(b2edit.form.php)が提供する投稿ステータス選択肢。
  */
 const STATUS_OPTIONS = [
-	{ value: 'publish', label: 'Publish / 公開' },
-	{ value: 'draft', label: 'Draft / 下書き' },
-	{ value: 'private', label: 'Private / 非公開' },
+	{ value: 'publish', label: 'Publish' },
+	{ value: 'draft', label: 'Draft' },
+	{ value: 'private', label: 'Private' },
 ];
 
 /**
@@ -146,7 +145,7 @@ export function Editor( { config } ) {
 			} )
 			.then( () => {
 				setStatus( 'ready' );
-				setMessage( 'Saved. / 保存しました。' );
+				setMessage( 'Saved.' );
 			} )
 			.catch( ( err ) => {
 				setStatus( 'error' );
@@ -164,8 +163,7 @@ export function Editor( { config } ) {
 	if ( status === 'loading' ) {
 		return (
 			<div className="be-state">
-				Loading post #{ config.postId }&hellip; / 投稿
-				#{ config.postId } を読み込み中&hellip;
+				Loading post #{ config.postId }&hellip;
 			</div>
 		);
 	}
@@ -194,7 +192,7 @@ export function Editor( { config } ) {
 						}
 						aria-pressed={ showOverview }
 					>
-						Document Overview / ドキュメント概観
+						Document Overview
 					</Button>
 				</div>
 				<div className="be-toolbar-right">
@@ -204,7 +202,7 @@ export function Editor( { config } ) {
 						target="_blank"
 						rel="noreferrer"
 					>
-						View on 0.71 front end / 0.71 で表示
+						View on 0.71 front end
 					</a>
 					<Button
 						variant="primary"
@@ -213,8 +211,8 @@ export function Editor( { config } ) {
 						disabled={ status === 'saving' }
 					>
 						{ status === 'saving'
-							? 'Saving… / 保存中…'
-							: 'Save to WordPress 0.71 / 0.71 に保存' }
+							? 'Saving…'
+							: 'Save to WordPress 0.71' }
 					</Button>
 				</div>
 			</header>
@@ -234,7 +232,7 @@ export function Editor( { config } ) {
 				className="be-title"
 				type="text"
 				value={ title }
-				placeholder="Post title / 投稿タイトル"
+				placeholder="Post title"
 				onChange={ ( e ) => setTitle( e.target.value ) }
 			/>
 
@@ -244,37 +242,14 @@ export function Editor( { config } ) {
 						value={ blocks }
 						onInput={ setBlocks }
 						onChange={ setBlocks }
-						settings={ {
-							hasFixedToolbar: true,
-						} }
 					>
-						{ /* EN: The fixed per-block toolbar. With
-						       hasFixedToolbar set, BlockToolbar is rendered
-						       directly in the app chrome and shows the
-						       toolbar of the currently selected block.
-						     JA: 固定の各ブロックツールバー。hasFixedToolbar
-						       を設定したうえで BlockToolbar をアプリの枠に
-						       直接描画し、現在選択中ブロックのツールバーを
-						       表示する。 */ }
-						<div className="be-block-toolbar">
-							<BlockToolbar hideDragHandle />
-						</div>
-
 						<div className="be-body">
 							{ showOverview && (
 								<aside className="be-overview">
-									<Panel
-										header={
-											'Document Overview / ' +
-											'ドキュメント概観'
-										}
-									>
+									<Panel header="Document Overview">
 										<PanelBody>
-											{ /* EN: ListView is the block
-											       outline / list view.
-											     JA: ListView はブロックの
-											       アウトライン / リスト
-											       ビューである。 */ }
+											{ /* EN: ListView is the block outline / list view.
+											     JA: ListView はブロックのアウトライン / リストビュー。 */ }
 											<ListView />
 										</PanelBody>
 									</Panel>
@@ -282,6 +257,12 @@ export function Editor( { config } ) {
 							) }
 
 							<div className="be-canvas">
+								{ /* EN: BlockTools renders the floating per-block
+								       toolbar (bold, alignment, ...) above the
+								       selected block; it needs Popover.Slot.
+								     JA: BlockTools が選択ブロックの上にフローティング
+								       の各ブロックツールバー(太字・配置など)を
+								       描画する。Popover.Slot が必要。 */ }
 								<BlockTools>
 									<WritingFlow>
 										<ObserveTyping>
@@ -301,22 +282,18 @@ export function Editor( { config } ) {
 								       単一の post_category。 */ }
 								<Panel>
 									<PanelBody
-										title="Post / 投稿"
+										title="Post"
 										initialOpen={ true }
 									>
 										<SelectControl
-											label={
-												'Status / ステータス'
-											}
+											label="Status"
 											value={ postStatus }
 											options={ STATUS_OPTIONS }
 											onChange={ setPostStatus }
 											__nextHasNoMarginBottom
 										/>
 										<SelectControl
-											label={
-												'Category / カテゴリー'
-											}
+											label="Category"
 											value={ String(
 												postCategory
 											) }
@@ -343,7 +320,7 @@ export function Editor( { config } ) {
 									     JA: Block パネル -- 選択ブロックの
 									       属性を BlockInspector で表示。 */ }
 									<PanelBody
-										title="Block / ブロック"
+										title="Block"
 										initialOpen={ true }
 									>
 										<BlockInspector />

@@ -62,23 +62,6 @@
 	border-bottom-color: #3858e9;
 }
 
-/*
- * EN: The fixed per-block toolbar. It sits above the body and shows the
- *     toolbar of the currently selected block; it is empty when nothing is
- *     selected.
- * JA: 固定の各ブロックツールバー。本体の上に置かれ、現在選択中ブロックの
- *     ツールバーを表示する。何も選択していないときは空である。
- */
-.be-block-toolbar {
-	border-bottom: 1px solid #ddd;
-	background: #fff;
-	min-height: 0;
-}
-
-.be-block-toolbar:empty {
-	display: none;
-}
-
 .be-body {
 	display: flex;
 	flex: 1;
