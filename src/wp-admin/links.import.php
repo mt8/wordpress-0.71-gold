@@ -40,7 +40,6 @@ if ( ! $step ) {
 <?php
 switch ( $step ) {
 	case 0:
-	{
 		$standalone = 0;
 		include_once 'b2header.php';
 		if ( $user_level < $minadminlevel ) {
@@ -82,12 +81,12 @@ switch ( $step ) {
 
 </div>
 		<?php
-				break;
-	} // end case 0
+		break;
+	// end case 0
 
-	case 1: {
-				$standalone = 0;
-				include_once 'b2header.php';
+	case 1:
+		$standalone = 0;
+		include_once 'b2header.php';
 		if ( $user_level < $minadminlevel ) {
 			die( "Cheatin' uh ?" );
 		}
@@ -134,7 +133,7 @@ switch ( $step ) {
 </div>
 		<?php
 		break;
-	} // end case 1
+	// end case 1
 } // end switch
 ?>
 </body>

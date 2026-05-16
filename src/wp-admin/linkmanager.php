@@ -112,7 +112,6 @@ $links_show_cat_id = isset( $_COOKIE['links_show_cat_id'] ) ? $_COOKIE['links_sh
 
 switch ( $action ) {
 	case 'Add':
-	{
 		$standalone = 1;
 		include_once 'b2header.php';
 
@@ -152,18 +151,17 @@ switch ( $action ) {
 
 		header( 'Location: linkmanager.php' );
 		break;
-	} // end Add
+	// end Add
 
 	case 'editlink':
-	{
-		if ( isset( $submit ) && ( $submit == 'Save' ) ) {
+		if ( isset( $submit ) && ( 'Save' == $submit ) ) {
 
-			if ( isset( $links_show_cat_id ) && ( $links_show_cat_id != '' ) ) {
+			if ( isset( $links_show_cat_id ) && ( '' != $links_show_cat_id ) ) {
 				$cat_id = $links_show_cat_id;
 			}
 
-			if ( ! isset( $cat_id ) || ( $cat_id == '' ) ) {
-				if ( ! isset( $links_show_cat_id ) || ( $links_show_cat_id == '' ) ) {
+			if ( ! isset( $cat_id ) || ( '' == $cat_id ) ) {
+				if ( ! isset( $links_show_cat_id ) || ( '' == $links_show_cat_id ) ) {
 					$cat_id = 'All';
 				}
 			}
@@ -215,10 +213,9 @@ switch ( $action ) {
 		setcookie( 'links_show_cat_id', $links_show_cat_id, time() + 600 );
 		header( 'Location: linkmanager.php' );
 		break;
-	} // end Save
+	// end Save
 
 	case 'Delete':
-	{
 		$standalone = 1;
 		include_once 'b2header.php';
 
@@ -250,10 +247,9 @@ switch ( $action ) {
 		setcookie( 'links_show_cat_id', $links_show_cat_id, time() + 600 );
 		header( 'Location: linkmanager.php' );
 		break;
-	} // end Delete
+	// end Delete
 
 	case 'linkedit':
-	{
 		$standalone = 0;
 		include_once 'b2header.php';
 		if ( $user_level < $minadminlevel ) {
@@ -386,37 +382,33 @@ switch ( $action ) {
 	</table>
 </div>
 		<?php
-			break;
-	} // end linkedit
+		break;
+	// end linkedit
 	case 'Show':
-	{
-		if ( ! isset( $cat_id ) || ( $cat_id == '' ) ) {
-			if ( ! isset( $links_show_cat_id ) || ( $links_show_cat_id == '' ) ) {
+		if ( ! isset( $cat_id ) || ( '' == $cat_id ) ) {
+			if ( ! isset( $links_show_cat_id ) || ( '' == $links_show_cat_id ) ) {
 				$cat_id = 'All';
 			}
 		}
 		$links_show_cat_id = $cat_id;
 		//break; fall through
-	} // end Show
+		// end Show
 	case 'popup':
-	{
 		$link_url  = $_GET['linkurl'];
 		$link_name = $_GET['name'];
 		//break; fall through
-	}
 	default:
-	{
-		if ( isset( $links_show_cat_id ) && ( $links_show_cat_id != '' ) ) {
+		if ( isset( $links_show_cat_id ) && ( '' != $links_show_cat_id ) ) {
 			$cat_id = $links_show_cat_id;
 		}
 
-		if ( ! isset( $cat_id ) || ( $cat_id == '' ) ) {
-			if ( ! isset( $links_show_cat_id ) || ( $links_show_cat_id == '' ) ) {
+		if ( ! isset( $cat_id ) || ( '' == $cat_id ) ) {
+			if ( ! isset( $links_show_cat_id ) || ( '' == $links_show_cat_id ) ) {
 				$cat_id = 'All';
 			}
 		}
 		$links_show_cat_id = $cat_id;
-		if ( ! isset( $order_by ) || ( $order_by == '' ) ) {
+		if ( ! isset( $order_by ) || ( '' == $order_by ) ) {
 			$order_by = 'order_name';
 		}
 		setcookie( 'links_show_cat_id', $links_show_cat_id, time() + 600 );
@@ -719,8 +711,8 @@ LINKS;
 </div>
 		<?php
 		break;
-	} // end default
-} // end case
+	// end default
+} // end switch
 ?>
 
 

@@ -60,7 +60,6 @@ for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 
 switch ( $action ) {
 	case 'addcat':
-	{
 		$standalone = 1;
 		include_once './b2header.php';
 
@@ -79,9 +78,8 @@ switch ( $action ) {
 
 		header( 'Location: linkcategories.php' );
 		break;
-	} // end addcat
+	// end addcat
 	case 'Delete':
-	{
 		$standalone = 1;
 		include_once './b2header.php';
 
@@ -105,9 +103,8 @@ switch ( $action ) {
 
 		header( 'Location: linkcategories.php' );
 		break;
-	} // end delete
+	// end delete
 	case 'Edit':
-	{
 		include_once './b2header.php';
 		$cat_id      = $_POST['cat_id'];
 		$cat_name    = get_linkcatname( $cat_id );
@@ -122,16 +119,15 @@ switch ( $action ) {
 		<input type="hidden" name="action" value="editedcat" />
 		<input type="hidden" name="cat_id" value="<?php echo htmlspecialchars( $_POST['cat_id'] ); ?>" />
 		<input type="text" name="cat_name" value="<?php echo $cat_name; ?>" /><br />
-		<input type="checkbox" name="auto_toggle" value="Y" <?php echo $auto_toggle == 'Y' ? '"checked"' : ''; ?>/> auto-toggle?<br />
+		<input type="checkbox" name="auto_toggle" value="Y" <?php echo 'Y' == $auto_toggle ? '"checked"' : ''; ?>/> auto-toggle?<br />
 		<input type="submit" name="submit" value="Edit it !" class="search" />
 	</form>
 	</p>
 </div>
 		<?php
 		break;
-	} // end Edit
+	// end Edit
 	case 'editedcat':
-	{
 		$standalone = 1;
 		include_once './b2header.php';
 
@@ -148,9 +144,8 @@ switch ( $action ) {
 
 		header( 'Location: linkcategories.php' );
 		break;
-	} // end edit
+	// end edit
 	default:
-	{
 		$standalone = 0;
 		include_once './b2header.php';
 		if ( $user_level < $minadminlevel ) {
@@ -209,8 +204,8 @@ switch ( $action ) {
 </div>
 	<?php
 	break;
-	} // end default
-} // end case
+	// end default
+} // end switch
 ?>
 </table>
 
