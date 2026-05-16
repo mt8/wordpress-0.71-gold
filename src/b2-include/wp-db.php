@@ -1,4 +1,11 @@
 <?php
+
+// EN: Load the ext/mysql -> mysqli compatibility shim before anything else, so
+//     the wpdb class below and every legacy mysql_* call site keep working.
+// JA: 先頭で ext/mysql -> mysqli 互換シムを読み込み、下記の wpdb クラスと
+//     すべてのレガシー mysql_* 呼び出し箇所をそのまま動作させる。
+require_once(__DIR__ . '/mysql-shim.php');
+
 	// ==================================================================
 	//  Author: Justin Vincent (justin@visunet.ie)
 	//	Web: 	http://php.justinvincent.com
@@ -24,7 +31,11 @@
 		// ==================================================================
 		//	DB Constructor - connects to the server and selects a database
 
-		function wpdb($dbuser, $dbpassword, $dbname, $dbhost)
+		// EN: Old-style constructors (method name == class name) are no longer
+		//     recognized as constructors in PHP 8.0; renamed to __construct().
+		// JA: 旧式コンストラクタ(メソッド名 == クラス名)は PHP 8.0 でコンスト
+		//     ラクタとして認識されないため __construct() に改名。
+		function __construct($dbuser, $dbpassword, $dbname, $dbhost)
 		{
 
 			$this->dbh = @mysql_connect($dbhost,$dbuser,$dbpassword);
