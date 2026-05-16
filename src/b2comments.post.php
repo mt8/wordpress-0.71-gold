@@ -20,11 +20,9 @@ function add_magic_quotes($array) {
 	return $array;
 } 
 
-if (!get_magic_quotes_gpc()) {
-	$_GET    = add_magic_quotes($_GET);
-	$_POST   = add_magic_quotes($_POST);
-	$_COOKIE = add_magic_quotes($_COOKIE);
-}
+$_GET    = add_magic_quotes($_GET);
+$_POST   = add_magic_quotes($_POST);
+$_COOKIE = add_magic_quotes($_COOKIE);
 
 $author = trim($_POST["author"]);
 $email = trim($_POST["email"]);
