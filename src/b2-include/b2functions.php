@@ -19,6 +19,7 @@ if (!function_exists('_')) {
 
 /***** Formatting functions *****/
 function wptexturize($text) {
+	$output = '';
 	$textarr = preg_split("/(<.*>)/U", $text, -1, PREG_SPLIT_DELIM_CAPTURE); // capture the tags as well as in between
 	$stop = count($textarr); $next = true; // loop stuff
 	for ($i = 0; $i < $stop; $i++) {
@@ -27,7 +28,7 @@ function wptexturize($text) {
 			$curl = str_replace('<q>', '&#8220;', $curl);
 			$curl = str_replace('</q>', '&#8221;', $curl);
 		}
-		if ('<' != $curl[0] && $next) { // If it's not a tag
+		if ('<' != ($curl[0] ?? '') && $next) { // If it's not a tag
 			$curl = str_replace('---', '&#8212;', $curl);
 			$curl = str_replace('--', '&#8211;', $curl);
 			$curl = str_replace("...", '&#8230;', $curl);
