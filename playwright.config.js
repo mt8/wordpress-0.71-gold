@@ -10,7 +10,7 @@ const { defineConfig, devices } = require( '@playwright/test' );
  *     実行する。先に `docker compose up -d` で起動しておくこと。
  */
 module.exports = defineConfig( {
-	testDir: './e2e',
+	testDir: './tests/e2e',
 
 	// EN: The 2003-era b2/cafelog forms touch a small shared database, so the
 	//     admin specs that create/delete data must not race each other. Run
