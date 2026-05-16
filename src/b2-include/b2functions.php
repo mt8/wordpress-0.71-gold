@@ -807,16 +807,14 @@ function balanceTags( $text, $is_comment = 0 ) {
 		$tagqueue = '';
 
 		// Pop or Push
-		if ( $regex[1][0] == '/' ) { // End Tag
+		if ( '/' == $regex[1][0] ) { // End Tag
 			$tag = strtolower( substr( $regex[1], 1 ) );
 
 			// if too many closing tags
 			if ( $stacksize <= 0 ) {
 				$tag = '';
 				//or close to be safe $tag = '/' . $tag;
-			}
-			// if stacktop value = tag close value then pop
-			elseif ( $tagstack[ $stacksize - 1 ] == $tag ) { // found closing tag
+			} elseif ( $tagstack[ $stacksize - 1 ] == $tag ) { // found closing tag, if stacktop value = tag close value then pop
 				$tag = '</' . $tag . '>'; // Close Tag
 				// Pop
 				array_pop( $tagstack );
