@@ -750,7 +750,7 @@ function pingWeblogs($blog_ID = 1) {
 }
 
 // pings Weblogs.com/rssUpdates
-function pingWeblogsRss($blog_ID = 1, $rss_url) {
+function pingWeblogsRss($blog_ID, $rss_url) {
 	global $use_weblogsrssping, $blogname, $rss_url;
 	if ($blogname != 'my weblog' && $rss_url != 'http://example.com/b2rdf.php' && $use_weblogsrssping) {
 		$client = new xmlrpc_client('/RPC2', 'rssrpc.weblogs.com', 80);
