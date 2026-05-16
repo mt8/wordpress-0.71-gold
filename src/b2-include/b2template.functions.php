@@ -412,6 +412,7 @@ function the_content_rss($more_link_text='(more...)', $stripteaser=0, $more_file
 			$k = count($blah);
 			$use_dotdotdot = 0;
 		}
+		$excerpt = '';
 		for ($i=0; $i<$k; $i++) {
 			$excerpt .= $blah[$i].' ';
 		}
@@ -498,6 +499,7 @@ function the_excerpt_rss($cut = 0, $encode_html = 0) {
 			$k = count($blah);
 			$use_dotdotdot = 0;
 		}
+		$excerpt = '';
 		for ($i=0; $i<$k; $i++) {
 			$excerpt .= $blah[$i].' ';
 		}
@@ -535,6 +537,7 @@ function get_the_excerpt($fakeit = false) {
 			$k = count($blah);
 			$use_dotdotdot = 0;
 		}
+		$excerpt = '';
 		for ($i=0; $i<$k; $i++) {
 			$excerpt .= $blah[$i].' ';
 		}
