@@ -232,7 +232,7 @@ default:
 
 		$userdata = get_userdatabylogin($user_login);
 
-		if ($user_pass_md5 != md5($userdata->user_pass)) {
+		if (!$userdata || $user_pass_md5 != md5($userdata->user_pass)) {
 			return false;
 		} else {
 			return true;
