@@ -1,0 +1,10 @@
+# EN: PHPStan configuration for WordPress 0.71-gold.
+#     WordPress 0.71 IS WordPress core itself (not a plugin/theme), so every
+#     function is defined within src/ and no WordPress core stubs are needed.
+# JA: WordPress 0.71-gold 向けの PHPStan 設定。
+#     WordPress 0.71 は WordPress コア自体(プラグイン/テーマではない)であり、
+#     関数はすべて src/ 内に定義されるため WordPress コアスタブは不要。
+parameters:
+    level: 0
+    paths:
+        - src
