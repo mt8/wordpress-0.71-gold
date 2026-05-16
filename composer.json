@@ -12,7 +12,8 @@
     "scripts": {
         "phpcs": "phpcs",
         "phpstan": "phpstan analyse",
-        "test": "phpunit"
+        "test": "phpunit",
+        "static-export": "php bin/static-export.php"
     },
     "config": {
         "allow-plugins": {
