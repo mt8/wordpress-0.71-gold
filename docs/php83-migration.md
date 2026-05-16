@@ -2333,3 +2333,51 @@ JA: `vendor/bin/phpcs` はエラー 0 件・警告 0 件。`php -l` は変更し
 フロントエンド(`/`・`?cat=2`・`?p=1`)は HTTP 200・PHP 警告/fatal 0 で 20 件の
 投稿を表示し、管理者ログインは成功(HTTP 302)、`wp-admin/b2edit.php`・
 `linkmanager.php`・`linkcategories.php` は警告/fatal 0 で表示される。
+
+---
+
+## Issue #53: Add PHPUnit and a starter test suite / PHPUnit とテストスイートの土台を追加
+
+EN: WordPress 0.71 shipped with no tests. Issue #53 adds PHPUnit (`^12.5`) as a
+dev dependency and a test foundation: `phpunit.xml.dist`, a `tests/` directory
+with a bootstrap, a `composer test` script, and a starter suite.
+
+JA: WordPress 0.71 にはテストが無かった。Issue #53 で PHPUnit(`^12.5`)を
+dev 依存として追加し、テストの土台を整える: `phpunit.xml.dist`、ブートストラップ
+付きの `tests/` ディレクトリ、`composer test` スクリプト、初期スイート。
+
+### Scope / 範囲
+
+EN: WordPress 0.71 is 2003-era procedural code with no test seams -- most of it
+depends on global database state or echoes HTML. The starter suite targets the
+functions that are unit-testable in isolation: pure string / format helpers in
+`b2-include/b2functions.php` and the CSRF token helper added in Issue #33.
+`b2functions.php` loads standalone with no database connection, so
+`tests/bootstrap.php` simply requires it (after setting a dummy
+`$_SERVER['HTTP_USER_AGENT']`, which `wptexturize()` reads).
+
+JA: WordPress 0.71 は 2003 年当時の手続き型コードでテストの接合点が無い
+(多くがグローバルな DB 状態に依存、または HTML を直接出力する)。初期スイートは
+単独で単体テスト可能な関数を対象とする: `b2-include/b2functions.php` の純粋な
+文字列/整形ヘルパーと、Issue #33 で追加した CSRF トークンヘルパー。
+`b2functions.php` は DB 接続なしで単独読み込みできるため、`tests/bootstrap.php`
+はそれを require するだけ(`wptexturize()` が参照するダミーの
+`$_SERVER['HTTP_USER_AGENT']` を設定したうえで)。
+
+### Tests / テスト
+
+| File | Covers / 対象 |
+|---|---|
+| `tests/HelpersTest.php` | `zeroise()`, `is_email()`, `mysql2date()` |
+| `tests/TextFormattingTest.php` | `wptexturize()`, `balanceTags()` |
+| `tests/SecurityTest.php` | `b2_csrf_token()` |
+
+### Verification / 検証
+
+EN: `composer test` runs PHPUnit -- **12 tests, 18 assertions, all passing**.
+phpcs and PHPStan are unchanged: both analyse `src/` only, and `tests/` is new
+code outside their scope.
+
+JA: `composer test` で PHPUnit が走り、**12 テスト・18 アサーション・全合格**。
+phpcs と PHPStan は不変: 両者は `src/` のみを解析し、`tests/` はその対象外の
+新規コードである。

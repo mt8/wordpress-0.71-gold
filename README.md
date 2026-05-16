@@ -76,6 +76,20 @@ standard; PHPStan runs at level 0. See `docs/static-analysis.md`.
 JA: いずれも現在 **0 件**。phpcs は精選した `WordPress-Core` 標準、PHPStan は
 level 0 で実行する。詳細は `docs/static-analysis.md`。
 
+## Tests / テスト
+
+```sh
+composer test      # PHPUnit
+```
+
+EN: A PHPUnit starter suite unit-tests the pure string / format helpers in
+`b2-include/b2functions.php` (`wptexturize`, `balanceTags`, `is_email`,
+`zeroise`, `mysql2date`) and the CSRF token helper. Tests live in `tests/`.
+
+JA: PHPUnit の初期スイートが、`b2-include/b2functions.php` の純粋な文字列/
+整形ヘルパー(`wptexturize`・`balanceTags`・`is_email`・`zeroise`・
+`mysql2date`)と CSRF トークンヘルパーを単体テストする。テストは `tests/`。
+
 ## Project layout / 構成
 
 | Path | Contents / 内容 |
