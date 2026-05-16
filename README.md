@@ -62,15 +62,15 @@ composer test      # PHPUnit
 ```
 
 A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
-2003-era code in `tests/`:
+2003-era code in `tests/phpunit/tests/`:
 
 - **Pure helpers** — text formatting, escaping, date/URL/number helpers in
   `b2functions.php` and `b2template.functions.php`.
 - **The `textile` formatter** in `b2-include/textile.php` (string in, HTML out).
 - **Database-dependent helpers** — `get_postdata()`, `get_userdata()`,
   `get_the_category()`, etc. A test-support fake `$wpdb` stub
-  (`tests/Support/FakeWpdb.php`) plus the table-name globals make these
-  unit-testable without a live MySQL server.
+  (`tests/phpunit/includes/Support/FakeWpdb.php`) plus the table-name globals
+  make these unit-testable without a live MySQL server.
 - **The CSRF helpers** added in Issue #33.
 
 ## E2E tests
@@ -88,13 +88,13 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-A Playwright end-to-end suite (in `e2e/`) drives the real admin and
+A Playwright end-to-end suite (in `tests/e2e/`) drives the real admin and
 front-end pages of the running Docker blog. It covers the admin flows
 (log in; create / edit / delete a post; add / delete a category) and the
 front end (home page, single post `?p=`, category `?cat=`, monthly archive
 `?m=`, and the RSS .92 / RDF 1.0 / RSS 2.0 feeds), and asserts that no PHP
 `Fatal error` / `Warning` / `Deprecated` text appears on any page. Test data
-is seeded and cleaned up by helpers in `e2e/helpers/`; every seeded row carries
+is seeded and cleaned up by helpers in `tests/e2e/helpers/`; every seeded row carries
 an `E2E:` title/name prefix and only those rows are removed, so your existing
 content is never touched and the suite is safe to re-run. The Docker blog must
 be running first. See `docs/php83-migration.md` (Issue #60) for details.
@@ -117,8 +117,8 @@ and no database, so the 2003 codebase is never exposed. See
 | Path | Contents |
 |------|----------|
 | `src/` | The WordPress 0.71-gold source — the actual modified codebase. |
-| `tests/` | PHPUnit unit tests. |
-| `e2e/` | Playwright E2E specs and test-data helpers. |
+| `tests/phpunit/` | PHPUnit unit tests (`tests/`) and support classes (`includes/`). |
+| `tests/e2e/` | Playwright E2E specs and test-data helpers. |
 | `docs/` | Documentation. |
 | `bin/` | Tooling scripts — the static-export script. |
 | `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. |
@@ -221,15 +221,15 @@ composer test      # PHPUnit
 ```
 
 PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのうち単体テスト
-可能な部分を `tests/` で網羅する:
+可能な部分を `tests/phpunit/tests/` で網羅する:
 
 - **純粋なヘルパー** — `b2functions.php` と `b2template.functions.php` の
   テキスト整形・エスケープ・日付/URL/数値ヘルパー。
 - **`textile` フォーマッタ** — `b2-include/textile.php`(文字列入力・HTML 出力)。
 - **DB 依存ヘルパー** — `get_postdata()`・`get_userdata()`・
   `get_the_category()` ほか。テスト補助の偽 `$wpdb` スタブ
-  (`tests/Support/FakeWpdb.php`)とテーブル名グローバルにより、実 MySQL
-  サーバー無しで単体テスト可能にする。
+  (`tests/phpunit/includes/Support/FakeWpdb.php`)とテーブル名グローバルに
+  より、実 MySQL サーバー無しで単体テスト可能にする。
 - **CSRF ヘルパー** — Issue #33 で追加。
 
 ## E2E テスト
@@ -247,13 +247,13 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-Playwright の E2E スイート(`e2e/`)が、稼働中の Docker ブログの実際の
+Playwright の E2E スイート(`tests/e2e/`)が、稼働中の Docker ブログの実際の
 管理画面・フロントエンドのページを操作する。管理画面フロー(ログイン、投稿の
 作成/編集/削除、カテゴリの追加/削除)とフロントエンド(トップ、単一投稿
 `?p=`、カテゴリ `?cat=`、月別アーカイブ `?m=`、RSS .92 / RDF 1.0 / RSS 2.0
 フィード)を対象とし、どのページにも PHP の `Fatal error` / `Warning` /
-`Deprecated` が出ないことを検証する。テストデータは `e2e/helpers/` のヘルパーが
-投入・後始末する。投入する行はすべて `E2E:` というタイトル/名前接頭辞を持ち、
+`Deprecated` が出ないことを検証する。テストデータは `tests/e2e/helpers/` の
+ヘルパーが投入・後始末する。投入する行はすべて `E2E:` というタイトル/名前接頭辞を持ち、
 その行のみを削除するため、既存コンテンツに触れることはなく、再実行しても安全
 である。先に Docker ブログを起動しておくこと。詳細は `docs/php83-migration.md`
 (Issue #60)を参照。
@@ -275,8 +275,8 @@ WordPress 0.71 を、稼働中の PHP アプリケーションとして公開イ
 | パス | 内容 |
 |------|------|
 | `src/` | WordPress 0.71-gold のソース(改修対象の本体)。 |
-| `tests/` | PHPUnit 単体テスト。 |
-| `e2e/` | Playwright E2E spec とテストデータヘルパー。 |
+| `tests/phpunit/` | PHPUnit 単体テスト(`tests/`)と補助クラス(`includes/`)。 |
+| `tests/e2e/` | Playwright E2E spec とテストデータヘルパー。 |
 | `docs/` | ドキュメント。 |
 | `bin/` | ツールスクリプト(静的書き出し)。 |
 | `Dockerfile`, `docker-compose.yml` | ローカルの PHP 8.3 + MySQL 8 環境。 |
