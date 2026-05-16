@@ -10,8 +10,6 @@ require_once ($curpath.'/b2config.php');
 require_once ($curpath.$b2inc.'/b2template.functions.php');
 require_once ($curpath.$b2inc.'/b2vars.php');
 require_once ($curpath.$b2inc.'/b2functions.php');
-require_once ($curpath.$b2inc.'/xmlrpc.inc');
-require_once ($curpath.$b2inc.'/xmlrpcs.inc');
 
 $b2varstoreset = array('m','p','posts','w','c', 'cat','withcomments','s','search','exact', 'sentence','poststart','postend','preview','debug', 'calendar','page','paged','more','tb', 'pb','author','order','orderby');
 
@@ -37,8 +35,7 @@ $b2varstoreset = array('m','p','posts','w','c', 'cat','withcomments','s','search
 @header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT"); // always modified 
 @header("Cache-Control: no-store, no-cache, must-revalidate"); 	// HTTP/1.1 
 @header("Cache-Control: post-check=0, pre-check=0", false); 
-@header("Pragma: no-cache"); 									// HTTP/1.0 
-@header ("X-Pingback: $siteurl/xmlrpc.php");
+@header("Pragma: no-cache"); 									// HTTP/1.0
 
 /* Getting settings from db */
 // EN: $querycount is a global counter incremented by the query helpers below;

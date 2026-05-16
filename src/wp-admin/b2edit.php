@@ -44,7 +44,6 @@ switch($action) {
         // JA: CSRF チェック -- 投稿作成リクエストの偽造を拒否する。
         b2_csrf_check('post');
 
-        $post_pingback = intval($_POST["post_pingback"] ?? 0);
         $content = balanceTags($_POST["content"]);
         $content = format_to_post($content);
         $excerpt = balanceTags($_POST["excerpt"]);
@@ -83,26 +82,6 @@ switch($action) {
         if (isset($sleep_after_edit) && $sleep_after_edit > 0) {
                 sleep($sleep_after_edit);
         }
-        
-        if ($post_status == 'publish') {
-            pingWeblogs($blog_ID);
-            pingCafelog($cafelogID, $post_title, $post_ID);
-            pingBlogs($blog_ID);
-        
-            if ($post_pingback) {
-                pingback($content, $post_ID);
-            }
-
-            if (!empty($_POST['trackback_url'])) {
-                $excerpt = (strlen(strip_tags($content)) > 255) ? substr(strip_tags($content), 0, 252).'...' : strip_tags($content);
-                $excerpt = stripslashes($excerpt);
-                $trackback_urls = explode(',', $_POST['trackback_url']);
-                foreach($trackback_urls as $tb_url) {
-                    $tb_url = trim($tb_url);
-                    trackback($tb_url, stripslashes($post_title), $excerpt, $post_ID);
-                }
-            }
-        } // end if publish
 
         if (!empty($_POST["mode"])) {
             switch($_POST["mode"]) {
@@ -180,12 +159,6 @@ switch($action) {
         $post_ID = (int) $_POST["post_ID"];
         $post_category = intval($_POST["post_category"]);
         $post_autobr = intval($_POST["post_autobr"]);
-        // EN: 'editpost' never read $post_pingback; default to 0 when
-        //     the form omits it (an unchecked checkbox is not sent).
-        // JA: 'editpost' は $post_pingback を読んでいなかった。
-        //     フォームが送らない場合(未チェックのチェックボックスは
-        //     省略される)は 0 とする。
-        $post_pingback = intval($_POST["post_pingback"] ?? 0);
         $content = balanceTags($_POST["content"]);
         $content = format_to_post($content);
         $excerpt = balanceTags($_POST["excerpt"]);
@@ -220,27 +193,6 @@ switch($action) {
             sleep($sleep_after_edit);
         }
 
-        // are we going from draft/private to publishd?
-        if ((($prev_status == 'draft') || ($prev_status == 'private')) && ($post_status == 'publish')) {
-            pingWeblogs($blog_ID);
-            pingCafelog($cafelogID, $post_title, $post_ID);
-            pingBlogs($blog_ID);
-        
-            if ($post_pingback) {
-                pingback($content, $post_ID);
-            }
-
-            if (!empty($_POST['trackback_url'])) {
-                $excerpt = (strlen(strip_tags($content)) > 255) ? substr(strip_tags($content), 0, 252).'...' : strip_tags($content);
-                $excerpt = stripslashes($excerpt);
-                $trackback_urls = explode(',', $_POST['trackback_url']);
-                foreach($trackback_urls as $tb_url) {
-                    $tb_url = trim($tb_url);
-                    trackback($tb_url, stripslashes($post_title), $excerpt, $post_ID);
-                }
-            }
-        } // end if publish
-
         $location = "Location: b2edit.php";
         header ($location);
         break;
@@ -271,117 +223,11 @@ switch($action) {
         if (!$result)
             die("Error in deleting... contact the <a href=\"mailto:$admin_email\">webmaster</a>...");
 
-        $query = "DELETE FROM $tablecomments WHERE comment_post_ID=$post";
-        $result = $wpdb->query($query);
-
         if (isset($sleep_after_edit) && $sleep_after_edit > 0) {
             sleep($sleep_after_edit);
         }
 
-        //pingWeblogs($blog_ID);
-
         header ('Location: b2edit.php');
-
-        break;
-
-    case 'editcomment':
-
-        $standalone = 0;
-        require_once ('b2header.php');
-
-        get_currentuserinfo();
-
-        if ($user_level == 0) {
-            die ('Cheatin&#8217; uh?');
-        }
-
-        // EN: Cast the comment id to int -- it reaches SQL via get_commentdata().
-        // JA: コメント ID を整数にキャスト -- get_commentdata() 経由で SQL に渡る。
-        $comment = (int) $_GET['comment'];
-        $commentdata = get_commentdata($comment, 1) or die('Oops, no comment with this ID. <a href="javascript:history.go(-1)">Go back</a>!');
-        $content = $commentdata['comment_content'];
-        $content = format_to_edit($content);
-
-        include('b2edit.form.php');
-
-        break;
-
-    case "deletecomment":
-
-        $standalone = 1;
-        require_once("./b2header.php");
-
-        // EN: CSRF check -- reject a forged GET request to delete a comment.
-        // JA: CSRF チェック -- コメント削除の GET リクエストの偽造を拒否する。
-        b2_csrf_check('delete-comment');
-
-        if ($user_level == 0)
-            die ("Cheatin' uh ?");
-
-        // EN: Cast the ids to int -- $comment is used unquoted in SQL
-        //     (WHERE comment_ID=$comment); $p is echoed into the redirect URL.
-        // JA: ID を整数にキャスト -- $comment は SQL でクォート無し
-        //     (WHERE comment_ID=$comment)、$p はリダイレクト URL に出力される。
-        $comment = (int) $_GET['comment'];
-        $p = (int) $_GET['p'];
-        $commentdata=get_commentdata($comment) or die("Oops, no comment with this ID. <a href=\"b2edit.php\">Go back</a> !");
-
-        $query = "DELETE FROM $tablecomments WHERE comment_ID=$comment";
-        $result = $wpdb->query($query);
-
-        header ("Location: b2edit.php?p=$p&c=1#comments"); //?a=dc");
-
-        break;
-
-    case "editedcomment":
-
-        $standalone = 1;
-        require_once("./b2header.php");
-
-        // EN: CSRF check -- reject a forged request to edit a comment.
-        // JA: CSRF チェック -- コメント編集リクエストの偽造を拒否する。
-        b2_csrf_check('editedcomment');
-
-        if ($user_level == 0)
-            die ("Cheatin' uh ?");
-
-        // EN: Cast the ids to int -- $comment_ID is used unquoted in SQL
-        //     (WHERE comment_ID=$comment_ID); $comment_post_ID is echoed into
-        //     the redirect URL.
-        // JA: ID を整数にキャスト -- $comment_ID は SQL でクォート無し
-        //     (WHERE comment_ID=$comment_ID)、$comment_post_ID はリダイレクト
-        //     URL に出力される。
-        $comment_ID = (int) $_POST['comment_ID'];
-        $comment_post_ID = (int) $_POST['comment_post_ID'];
-        $newcomment_author = $_POST['newcomment_author'];
-        $newcomment_author_email = $_POST['newcomment_author_email'];
-        $newcomment_author_url = $_POST['newcomment_author_url'];
-        $newcomment_author = addslashes($newcomment_author);
-        $newcomment_author_email = addslashes($newcomment_author_email);
-        $newcomment_author_url = addslashes($newcomment_author_url);
-
-        if (($user_level > 4) && (!empty($_POST["edit_date"]))) {
-            $aa = $_POST["aa"];
-            $mm = $_POST["mm"];
-            $jj = $_POST["jj"];
-            $hh = $_POST["hh"];
-            $mn = $_POST["mn"];
-            $ss = $_POST["ss"];
-            $jj = ($jj > 31) ? 31 : $jj;
-            $hh = ($hh > 23) ? $hh - 24 : $hh;
-            $mn = ($mn > 59) ? $mn - 60 : $mn;
-            $ss = ($ss > 59) ? $ss - 60 : $ss;
-            $datemodif = ", comment_date=\"$aa-$mm-$jj $hh:$mn:$ss\"";
-        } else {
-            $datemodif = "";
-        }
-        $content = balanceTags($content);
-        $content = format_to_post($content);
-
-        $query = "UPDATE $tablecomments SET comment_content=\"$content\", comment_author=\"$newcomment_author\", comment_author_email=\"$newcomment_author_email\", comment_author_url=\"$newcomment_author_url\"".$datemodif." WHERE comment_ID=$comment_ID";
-        $result = $wpdb->query($query);
-
-        header ("Location: b2edit.php?p=$comment_post_ID&c=1#comments"); //?a=ec");
 
         break;
 

@@ -4,17 +4,7 @@
 # JA: WordPress 0.71-gold 向けの PHPStan 設定。
 #     WordPress 0.71 は WordPress コア自体(プラグイン/テーマではない)であり、
 #     関数はすべて src/ 内に定義されるため WordPress コアスタブは不要。
-#
-# EN: The bundled XML-RPC library lives in .inc files, which PHPStan does not
-#     analyse by default; scanFiles makes their classes/functions known to the
-#     analysis without reporting issues inside the third-party library itself.
-# JA: 同梱の XML-RPC ライブラリは .inc ファイルにあり、PHPStan は既定では
-#     解析対象にしない。scanFiles でそのクラス/関数を解析に認識させる
-#     (サードパーティライブラリ自体の問題は報告しない)。
 parameters:
     level: 0
     paths:
         - src
-    scanFiles:
-        - src/b2-include/xmlrpc.inc
-        - src/b2-include/xmlrpcs.inc

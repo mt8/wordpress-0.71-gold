@@ -234,7 +234,7 @@ if ($i == "ASC")
         $posts_per_page = 10;
         start_b2(); ?>
 			<p>
-				<strong><?php the_time('Y/m/d @ H:i:s'); ?></strong> [ <a href="b2edit.php?p=<?php echo $id ?>&c=1"><?php comments_number('no comments', '1 comment', "% comments") ?></a>
+				<strong><?php the_time('Y/m/d @ H:i:s'); ?></strong> [
 				<?php
 				if (($user_level > $authordata->user_level) or ($user_login == $authordata->user_login)) {
 				echo " - <a href='b2edit.php?action=edit&amp;post=$id";
@@ -255,70 +255,6 @@ if ($i == "ASC")
 				the_content();
 				?>
 			</p>
-				<?php
-
-				// comments
-				if (($withcomments) or ($c)) {
-
-					$comments = $wpdb->get_results("SELECT * FROM $tablecomments WHERE comment_post_ID = $id ORDER BY comment_date");
-					if ($comments) {
-					?>
-
-					<h3>Comments</h3>
-				<ol id="comments">
-					<?php
-					foreach ($comments as $comment) {
-						$commentdata = $comment;
-					?>
-				
-					<!-- comment -->
-					<li>
-					<b><?php comment_author() ?> ( <?php comment_author_email_link() ?> / <?php comment_author_url_link() ?> )</b> (IP: <?php comment_author_IP() ?>)
-					<?php comment_text() ?>
-					<?php comment_date('Y/m/d') ?> @ <?php comment_time() ?> 
-					<?php 
-					if (($user_level > $authordata->user_level) or ($user_login == $authordata->user_login)) {
-						echo "[ <a href=\"b2edit.php?action=editcomment&amp;comment=".$commentdata->comment_ID."\">Edit</a>";
-						// EN: Append the CSRF token to the delete-comment link (verified by b2edit.php).
-						// JA: コメント削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
-						echo " - <a href=\"b2edit.php?action=deletecomment&amp;p=".$post->ID."&amp;comment=".$commentdata->comment_ID."&amp;_b2csrf=".b2_csrf_token('delete-comment')."\">Delete</a> ]";
-					}
-					?>
-					</li>
-					<!-- /comment -->
-
-
-					<?php //end of the loop, don't delete
-					}
-					echo '</ol>';
-					if ($comment_error)
-						echo "<p>Error: please fill the required fields (name & comment)</p>";
-					?>
-
-					<h3>Leave Comment</h3>
-
-
-					<!-- form to add a comment -->
-
-					<form action="<?php echo $siteurl.'/b2comments.post.php'?>" method="post">
-						<input type="hidden" name="comment_post_ID" value="<?php echo $id; ?>" />
-						<input type="hidden" name="redirect_to" value="<?php echo htmlspecialchars($_SERVER["REQUEST_URI"]); ?>" />
-						<input type="text" name="author" class="textarea" value="<?php echo $user_nickname ?>" size="20" tabindex="1" /><br />
-						<input type="text" name="email" class="textarea" value="<?php echo $user_email ?>" size="20" tabindex="2" /><br />
-						<input type="text" name="url" class="textarea" value="<?php echo $user_url ?>" size="20" tabindex="3" /><br />
-						<textarea cols="40" rows="4" name="comment" tabindex="4" class="textarea">comment</textarea><br />
-						<input type="submit" name="submit" class="buttonarea" value="ok" tabindex="5" />
-
-					</form>
-
-
-					<!-- /form -->
-
-
-					<?php // if you delete this the sky will fall on your head
-					}
-				}
-				?>
 			<br />
 
 	<?php
