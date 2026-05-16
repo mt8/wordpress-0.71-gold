@@ -1027,3 +1027,125 @@ JA: `mysqli` のプリペアドステートメント/バインドへの全面移
 保存の修正であり、Issue #31 が述べる推奨対応そのものである。クォート付き SQL
 コンテキストで使われる文字列入力は引き続き `addslashes()` のみで保護される。
 その強化は別の後続作業とする。
+
+---
+
+## Issue #32: Escape reflected user input in HTML output / HTML 出力に反映されるユーザー入力をエスケープ
+
+EN: A security audit (Issue #32) found several reflected XSS sites where
+user-controlled data (`$_SERVER` values, `$_POST` fields) is echoed straight
+into an HTML attribute or text node without escaping. An attacker who controls
+the value -- e.g. the `Referer` header, the `PATH_INFO` portion of the URL, or
+a crafted `cat_ID` field -- can break out of the attribute with a `"` and
+inject `<script>`. The escaping was already applied inconsistently: some files
+(`b2comments.php`, `b2commentspopup.php`) wrapped the value in
+`htmlspecialchars()`, while the equivalent admin code did not.
+
+The agreed, behaviour-preserving fix is the one the Issue recommends: wrap each
+reflected value in `htmlspecialchars()` at the point it is echoed. For a
+legitimate value (a real URL, a numeric id) `htmlspecialchars()` is a no-op in
+the browser -- it only encodes `<`, `>`, `"`, `&`, `'`-context-relevant
+characters -- so behaviour is preserved; an injection payload such as
+`x"><script>alert(1)</script>` collapses to inert text
+(`x&quot;&gt;&lt;script&gt;...`).
+
+JA: セキュリティ監査(Issue #32)で、ユーザー制御データ(`$_SERVER` の値、
+`$_POST` のフィールド)がエスケープ無しで HTML 属性やテキストノードに直接
+出力される反射型 XSS の箇所が複数見つかった。値を制御できる攻撃者 — 例えば
+`Referer` ヘッダ、URL の `PATH_INFO` 部分、細工した `cat_ID` フィールド — は
+`"` で属性を抜け出し `<script>` を注入できる。エスケープは既に不統一で、
+一部のファイル(`b2comments.php`・`b2commentspopup.php`)は値を
+`htmlspecialchars()` で包んでいたが、同等の管理画面コードは包んでいなかった。
+
+合意した挙動保存の修正は、Issue が推奨するもの — 反映される各値を出力箇所で
+`htmlspecialchars()` で包む。正当な値(本物の URL、数値 ID)に対して
+`htmlspecialchars()` はブラウザ上で実質無変換であり(`<`・`>`・`"`・`&` 等を
+エンコードするだけ)挙動は保たれる。`x"><script>alert(1)</script>` のような
+インジェクション文字列は無害なテキスト(`x&quot;&gt;&lt;script&gt;...`)に
+縮退する。
+
+### Changes / 変更内容
+
+EN:
+1. `b2-include/b2functions.php`: in `alert_error()`, escape
+   `$_SERVER["HTTP_REFERER"]` in the "go back" link (`<a href="...">`).
+2. `index.php`: escape `$PHP_SELF` (`= $_SERVER['PHP_SELF']`) in the search
+   form `action="..."` attribute.
+3. `wp-admin/b2categories.php`: escape `$_POST["cat_ID"]` in the hidden
+   `cat_ID` field of the rename form.
+4. `wp-admin/linkcategories.php`: escape `$_POST["cat_id"]` in the hidden
+   `cat_id` field of the rename form.
+5. `wp-admin/b2edit.showposts.php`: escape `$_SERVER["REQUEST_URI"]` in the
+   hidden `redirect_to` field -- matching `b2comments.php` and
+   `b2commentspopup.php`, which already escaped the same value.
+
+JA:
+1. `b2-include/b2functions.php`: `alert_error()` の "go back" リンク
+   (`<a href="...">`)で `$_SERVER["HTTP_REFERER"]` をエスケープ。
+2. `index.php`: 検索フォームの `action="..."` 属性で `$PHP_SELF`
+   (`= $_SERVER['PHP_SELF']`)をエスケープ。
+3. `wp-admin/b2categories.php`: 名称変更フォームの隠し `cat_ID` フィールドで
+   `$_POST["cat_ID"]` をエスケープ。
+4. `wp-admin/linkcategories.php`: 名称変更フォームの隠し `cat_id` フィールドで
+   `$_POST["cat_id"]` をエスケープ。
+5. `wp-admin/b2edit.showposts.php`: 隠し `redirect_to` フィールドで
+   `$_SERVER["REQUEST_URI"]` をエスケープ — 同じ値を既にエスケープ済みの
+   `b2comments.php`・`b2commentspopup.php` に合わせる。
+
+### Verification / 検証
+
+EN:
+- `php -l` -> **0 syntax errors** across all 5 changed files.
+- `composer phpcs` -> **0 violations** (52 files).
+- `composer phpstan` -> **0 errors**.
+- `b2-include/b2functions.php` is Latin-1 encoded; it was edited byte-safely
+  and the high-byte line count is unchanged (**20** before and after).
+- In the Docker environment the blog front end and the admin (login +
+  `b2edit.php`, `b2categories.php`, `linkcategories.php`) load with **0 new
+  PHP warnings / fatals**.
+- Escaping sanity check: feeding `x"><script>alert(1)</script>` through
+  `htmlspecialchars()` produces `x&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;`
+  -- the `"` can no longer close the attribute and the `<script>` becomes inert
+  text.
+
+JA:
+- `php -l` -> 変更した全 5 ファイルで **構文エラー 0**。
+- `composer phpcs` -> **検出 0 件**(52 ファイル)。
+- `composer phpstan` -> **エラー 0 件**。
+- `b2-include/b2functions.php` は Latin-1 エンコード。バイト安全に編集し、
+  高位バイトを含む行数は変化なし(前後とも **20**)。
+- Docker 環境で、ブログ本体および管理画面(ログイン + `b2edit.php`・
+  `b2categories.php`・`linkcategories.php`)が **新規 PHP 警告 / fatal 0** で
+  表示される。
+- エスケープの動作確認: `x"><script>alert(1)</script>` を
+  `htmlspecialchars()` に通すと
+  `x&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;` になる — `"` はもう属性を
+  閉じられず、`<script>` は無害なテキストになる。
+
+### Out of scope / スコープ外
+
+EN: Post content rendered by `the_content()` and comment content rendered by
+`comment_text()` are **not** wholesale-escaped. WordPress 0.71 posts are HTML
+by design -- escaping them would break the blog. Comment input is, however,
+already filtered on input: `b2comments.post.php` runs
+`strip_tags($comment, $comment_allowed_tags)`, restricting saved comment HTML
+to the tag allow-list defined in `b2config.php`
+(`<b><i><strong><em><code><blockquote><p><br><strike><a>`). That allow-list
+does not strip dangerous attributes (e.g. `<a href="javascript:...">` or
+`on*=` handlers), so it is a partial -- not complete -- stored-XSS defence; a
+proper attribute-level sanitiser is separate follow-up work. A project-wide
+output-encoding overhaul is likewise out of scope; this Issue is limited to
+the reflected-XSS sites above.
+
+JA: `the_content()` が描画する投稿本文、および `comment_text()` が描画する
+コメント本文は**一括エスケープしない**。WordPress 0.71 の投稿は設計上 HTML で
+あり、エスケープするとブログが壊れる。ただしコメント入力は入力時点で既に
+フィルタされている。`b2comments.post.php` が
+`strip_tags($comment, $comment_allowed_tags)` を実行し、保存されるコメント
+HTML を `b2config.php` で定義された許可タグリスト
+(`<b><i><strong><em><code><blockquote><p><br><strike><a>`)に制限している。
+この許可リストは危険な属性(例: `<a href="javascript:...">` や `on*=`
+ハンドラ)を除去しないため、蓄積型 XSS への防御としては部分的で完全ではない。
+属性レベルの適切なサニタイザは別の後続作業とする。プロジェクト全体の出力
+エンコーディング刷新も同様にスコープ外であり、本 Issue は上記の反射型 XSS の
+箇所に限定する。
