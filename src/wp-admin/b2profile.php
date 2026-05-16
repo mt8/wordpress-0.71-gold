@@ -91,6 +91,9 @@ case 'update':
 	$newuser_url=addslashes($_POST["newuser_url"]);
 	$newuser_idmode=addslashes($_POST["newuser_idmode"]);
 
+	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $user_ID).
+	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $user_ID)で使われる。
+	$user_ID = (int) $user_ID;
 	$query = "UPDATE $tableusers SET user_firstname='$newuser_firstname', ".$updatepassword."user_lastname='$newuser_lastname', user_nickname='$newuser_nickname', user_icq='$newuser_icq', user_email='$newuser_email', user_url='$newuser_url', user_aim='$newuser_aim', user_msn='$newuser_msn', user_yim='$newuser_yim', user_idmode='$newuser_idmode' WHERE ID = $user_ID";
 	$result = $wpdb->query($query);
 	if (!$result) {
