@@ -514,3 +514,54 @@ EN: Warnings on admin pages beyond what the front end exercises, the remaining
 
 JA: ブログ本体が通らない管理画面の警告、残りの `/e` 修飾子、`POP3` 旧式
 コンストラクタは後続 Issue で扱う。
+
+---
+
+## Issue #19: Fix the b2register.php 404 and the login/feed warnings / b2register.php の 404 とログイン・フィードの警告を修正
+
+EN: A Playwright link check found the blog front-end links fully clean, but the
+linked login / register / feed pages still had issues. All are fixed.
+
+JA: Playwright のリンク検査でフロントのリンクは完全にクリーンと確認されたが、
+リンク先のログイン/登録/フィードに問題が残っていた。すべて修正した。
+
+### Changes (per commit) / 変更内容(コミット単位)
+
+EN:
+1. `b2register.php`: the stylesheet `<link>` used `$b2inc/b2.css`
+   (`/b2-include/b2.css`, a 404); point it at `$siteurl/wp-admin/b2.css`, where
+   `b2.css` actually lives (3 occurrences).
+2. `b2login.php`: guard the null user row -- `get_userdatabylogin()` returns
+   null for a non-existent login, so `$userdata->user_pass` / `md5(null)`
+   warned. Short-circuit with `!$userdata`.
+3. `wpdb::get_row()`: use `isset()` for `$this->last_result[$y]` so a query
+   that returned no rows does not raise "array offset on null".
+4. `b2template.functions.php`: initialize `$excerpt` before the two RSS
+   excerpt-building loops.
+5. `b2rdf.php`: remove the dead `$b2_items[] = $row;` -- `$row` was never set
+   and `$b2_items` was never read.
+
+JA:
+1. `b2register.php`: スタイルシートの `<link>` が `$b2inc/b2.css`
+   (`/b2-include/b2.css`、404)を使っていた。`b2.css` の実在場所
+   `$siteurl/wp-admin/b2.css` を指すようにした(3 箇所)。
+2. `b2login.php`: null のユーザー行をガード -- `get_userdatabylogin()` は
+   存在しないログインに null を返すため `$userdata->user_pass` / `md5(null)` が
+   警告していた。`!$userdata` で短絡する。
+3. `wpdb::get_row()`: `$this->last_result[$y]` を `isset()` で判定し、行を
+   返さなかったクエリで「array offset on null」が出ないようにする。
+4. `b2template.functions.php`: RSS 抜粋生成の 2 つのループの前で `$excerpt` を
+   初期化する。
+5. `b2rdf.php`: 不要な `$b2_items[] = $row;` を除去 -- `$row` は未設定で
+   `$b2_items` はどこからも読まれていなかった。
+
+### Verification / 検証
+
+EN: A Playwright pass over the 11 internal links from the front page reports,
+for every link: HTTP 200, no fatal error, **0 PHP warnings**, **0 JS errors**
+(including no 404 for `b2register.php`'s stylesheet). The front end is
+unchanged (still 0 warnings).
+
+JA: フロントページの内部リンク 11 本を Playwright で巡回した結果、全リンクで
+HTTP 200・fatal エラー無し・**PHP 警告 0**・**JS エラー 0**(`b2register.php` の
+スタイルシート 404 も解消)。フロントは不変(引き続き警告 0)。
