@@ -151,7 +151,17 @@ if ($i == "ASC")
 		echo "<select name=\"m\" style=\"width:120px;\">";
 		$arc_sql="SELECT DISTINCT YEAR(post_date), MONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
-		$arc_result=mysqli_query($wpdb->dbh, $arc_sql) or die($arc_sql."<br />".mysqli_error($wpdb->dbh));
+		$arc_result = mysqli_query($wpdb->dbh, $arc_sql);
+		if (!$arc_result) {
+			// EN: Information-disclosure fix (Issue #37). The original code echoed
+			//     the full SQL plus mysqli_error() to the page; keep the technical
+			//     detail in the server log only and show a generic message.
+			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
+			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
+			//     メッセージを表示する。
+			error_log('b2edit.showposts.php SQL error: ' . mysqli_error($wpdb->dbh) . ' -- query: ' . $arc_sql);
+			die('A database error occurred.');
+		}
 		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year  = $arc_row["YEAR(post_date)"];
 			$arc_month = $arc_row["MONTH(post_date)"];
@@ -164,7 +174,17 @@ if ($i == "ASC")
 		$archive_day_date_format = "Y/m/d";
 		$arc_sql="SELECT DISTINCT YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date) FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
-		$arc_result=mysqli_query($wpdb->dbh, $arc_sql) or die($arc_sql."<br />".mysqli_error($wpdb->dbh));
+		$arc_result = mysqli_query($wpdb->dbh, $arc_sql);
+		if (!$arc_result) {
+			// EN: Information-disclosure fix (Issue #37). The original code echoed
+			//     the full SQL plus mysqli_error() to the page; keep the technical
+			//     detail in the server log only and show a generic message.
+			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
+			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
+			//     メッセージを表示する。
+			error_log('b2edit.showposts.php SQL error: ' . mysqli_error($wpdb->dbh) . ' -- query: ' . $arc_sql);
+			die('A database error occurred.');
+		}
 		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year  = $arc_row["YEAR(post_date)"];
 			$arc_month = $arc_row["MONTH(post_date)"];
@@ -183,7 +203,17 @@ if ($i == "ASC")
 		$archive_week_separator = " - ";
 		$arc_sql="SELECT DISTINCT YEAR(post_date), MONTH(post_date), DAYOFMONTH(post_date), WEEK(post_date) FROM $tableposts ORDER BY post_date DESC";
 		$querycount++;
-		$arc_result=mysqli_query($wpdb->dbh, $arc_sql) or die($arc_sql."<br />".mysqli_error($wpdb->dbh));
+		$arc_result = mysqli_query($wpdb->dbh, $arc_sql);
+		if (!$arc_result) {
+			// EN: Information-disclosure fix (Issue #37). The original code echoed
+			//     the full SQL plus mysqli_error() to the page; keep the technical
+			//     detail in the server log only and show a generic message.
+			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
+			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
+			//     メッセージを表示する。
+			error_log('b2edit.showposts.php SQL error: ' . mysqli_error($wpdb->dbh) . ' -- query: ' . $arc_sql);
+			die('A database error occurred.');
+		}
 		$arc_w_last = '';
 		while($arc_row = mysqli_fetch_array($arc_result)) {
 			$arc_year = $arc_row["YEAR(post_date)"];
