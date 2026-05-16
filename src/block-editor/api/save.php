@@ -89,13 +89,15 @@ if ( (int) $post['Author_ID'] !== (int) $current_user->ID
 
 // EN: The chosen category must exist in b2categories. cat_ID is cast to int,
 //     so the lookup is safe; rejecting an unknown id keeps post_category
-//     referentially sane.
+//     referentially sane. COUNT(*) always returns exactly one row, so 0.71's
+//     get_var() has no undefined-offset edge case for a no-match query.
 // JA: 選ばれたカテゴリーは b2categories に存在しなければならない。cat_ID は
 //     整数にキャスト済みで照合は安全。未知の ID を拒否し post_category の
-//     参照整合性を保つ。
-$category_exists = $wpdb->get_var( "SELECT cat_ID FROM $tablecategories WHERE cat_ID = $category" );
+//     参照整合性を保つ。COUNT(*) は常にちょうど 1 行を返すため、不一致
+//     クエリでも 0.71 の get_var() に未定義オフセットの落とし穴がない。
+$category_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM $tablecategories WHERE cat_ID = $category" );
 
-if ( null === $category_exists ) {
+if ( $category_count < 1 ) {
 	be_json( 400, array( 'error' => 'invalid_category' ) );
 }
 
