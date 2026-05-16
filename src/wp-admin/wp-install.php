@@ -307,7 +307,11 @@ CREATE TABLE $tableusers (
 ";
 $q = $wpdb->query($query);
 
-$random_password = substr(md5(uniqid(microtime())),0,6);
+// EN: Fixed password for the local Docker dev environment (login: admin / password).
+//     For a real deployment this should be a generated random password.
+// JA: ローカル Docker 開発環境用の固定パスワード(ログイン: admin / password)。
+//     実運用では生成したランダムパスワードにすべき。
+$random_password = 'password';
 
 $query = "INSERT INTO $tableusers (ID, user_login, user_pass, user_firstname, user_lastname, user_nickname, user_icq, user_email, user_url, user_ip, user_domain, user_browser, dateYMDhour, user_level, user_aim, user_msn, user_yim, user_idmode) VALUES ( '1', 'admin', '$random_password', '', '', 'admin', '0', '$admin_email', '', '127.0.0.1', '127.0.0.1', '', '00-00-0000 00:00:01', '10', '', '', '', 'nickname')";
 $q = $wpdb->query($query);
