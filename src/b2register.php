@@ -123,7 +123,7 @@ case "register":
 <head>
 <title>b2 > Registration complete</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="<?php echo $b2inc; ?>/b2.css" type="text/css">
+<link rel="stylesheet" href="<?php echo $siteurl; ?>/wp-admin/b2.css" type="text/css">
 <style type="text/css">
 <!--
 <?php
@@ -191,7 +191,7 @@ case "disabled":
 <head>
 <title>b2 > Registration Currently Disabled</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="<?php echo $b2inc; ?>/b2.css" type="text/css">
+<link rel="stylesheet" href="<?php echo $siteurl; ?>/wp-admin/b2.css" type="text/css">
 <style type="text/css">
 <!--
 <?php
@@ -254,7 +254,7 @@ default:
 <head>
 <title>b2 > Register form</title>
 <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-<link rel="stylesheet" href="<?php echo $b2inc; ?>/b2.css" type="text/css">
+<link rel="stylesheet" href="<?php echo $siteurl; ?>/wp-admin/b2.css" type="text/css">
 <style type="text/css">
 <!--
 <?php
