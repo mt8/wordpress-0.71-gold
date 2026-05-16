@@ -1,13 +1,13 @@
 <?php
 // EN: this script lives in wp-links/, so b2config.php is one directory up.
 // JA: このスクリプトは wp-links/ にあるため b2config.php は一つ上の階層。
-require_once('../b2config.php');
-require_once($abspath.'/wp-links/links.config.php');
-require_once($abspath.$b2inc.'/b2functions.php');
+require_once '../b2config.php';
+require_once $abspath . '/wp-links/links.config.php';
+require_once $abspath . $b2inc . '/b2functions.php';
 
 // globals to hold state
 $updated_timestamp = 0;
-$all_links = array();
+$all_links         = array();
 
 /**
  ** preload_links()
@@ -17,15 +17,15 @@ $all_links = array();
  ** the db) the ones which have been updated (on weblogs.com).
  **/
 function preload_links() {
-    global $tablelinks, $all_links, $wpdb;
-    $links = $wpdb->get_results("SELECT link_id, link_url FROM $tablelinks WHERE link_visible = 'Y' AND link_url <> ''");
-    foreach ($links as $link) {
-        //echo("link_url $link->link_url ");
-        $link_url = str_replace('www.', '', $link->link_url);
-        $link_url = preg_replace('/(?:index|default)\.[a-z]{2,}/i', '', $link_url);
-        //echo(" now equals $link_url\n");
-        $all_links[$link_url] = array($link->link_id, 0);
-    }
+	global $tablelinks, $all_links, $wpdb;
+	$links = $wpdb->get_results( "SELECT link_id, link_url FROM $tablelinks WHERE link_visible = 'Y' AND link_url <> ''" );
+	foreach ( $links as $link ) {
+		//echo("link_url $link->link_url ");
+		$link_url = str_replace( 'www.', '', $link->link_url );
+		$link_url = preg_replace( '/(?:index|default)\.[a-z]{2,}/i', '', $link_url );
+		//echo(" now equals $link_url\n");
+		$all_links[ $link_url ] = array( $link->link_id, 0 );
+	}
 }
 
 /**
@@ -33,17 +33,17 @@ function preload_links() {
  ** Update in the db the links which have been updated ($all_links[url][1] != 0)
  **/
 function update_links() {
-    global $tablelinks, $all_links, $wpdb;
-    reset($all_links);
-    foreach ($all_links as $id => $val) {
-        if ($val[1]) {
-            //echo("executing: $sql\n");
-            // EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id = ...).
-            // JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id = ...)で使われる。
-            $link_id = (int) $val[0];
-            $wpdb->query("UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $link_id");
-        }
-    } // end while
+	global $tablelinks, $all_links, $wpdb;
+	reset( $all_links );
+	foreach ( $all_links as $id => $val ) {
+		if ( $val[1] ) {
+			//echo("executing: $sql\n");
+			// EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id = ...).
+			// JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id = ...)で使われる。
+			$link_id = (int) $val[0];
+			$wpdb->query( "UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $link_id" );
+		}
+	} // end while
 }
 
 /**
@@ -54,98 +54,101 @@ function update_links() {
  ** otherwise return false (nothing to do)
  **/
 function get_weblogs_updatedfile() {
-    global $weblogs_cache_file, $weblogs_xml_url, $weblogs_cacheminutes;
-    $update = false;
+	global $weblogs_cache_file, $weblogs_xml_url, $weblogs_cacheminutes;
+	$update = false;
 
-    if (file_exists($weblogs_cache_file)) {
-        // is it old?
-        $modtime = filemtime($weblogs_cache_file);
-        if ((time() - $modtime) > ($weblogs_cacheminutes * 60)) {
-            $update = true;
-        }
-    } else { // doesn't exist
-        $update = true;
-    }
+	if ( file_exists( $weblogs_cache_file ) ) {
+		// is it old?
+		$modtime = filemtime( $weblogs_cache_file );
+		if ( ( time() - $modtime ) > ( $weblogs_cacheminutes * 60 ) ) {
+			$update = true;
+		}
+	} else { // doesn't exist
+		$update = true;
+	}
 
-    if ($update) {
-        // get a new copy
-        $contents = implode('', file($weblogs_xml_url)); // file_get_contents not available < 4.3
-        $cachefp = fopen($weblogs_cache_file, "w");
-        fwrite($cachefp, $contents);
-        fclose($cachefp);
-    }
-    return $update;
+	if ( $update ) {
+		// get a new copy
+		$contents = implode( '', file( $weblogs_xml_url ) ); // file_get_contents not available < 4.3
+		$cachefp  = fopen( $weblogs_cache_file, 'w' );
+		fwrite( $cachefp, $contents );
+		fclose( $cachefp );
+	}
+	return $update;
 }
 
 /**
  ** startElement()
  ** Callback function. Called at the start of a new xml tag.
  **/
-function startElement($parser, $tagName, $attrs) {
-    global $updated_timestamp, $all_links;
-    if ($tagName == 'WEBLOGUPDATES') {
-        //convert 'updated' into php date variable
-        $updated_timestamp = strtotime($attrs['UPDATED']);
-        //echo('got timestamp of ' . gmdate('F j, Y, H:i:s', $updated_timestamp) . "\n");
-    } else if ($tagName == 'WEBLOG') {
-        // is this url in our links?
-        //echo("wblogs.com link " .$attrs['URL']);
-        $link_url = str_replace('www.', '', $attrs['URL']);
-        $link_url = preg_replace('/(?:index|default)\.[a-z]{2,}/i', '', $link_url);
-        //echo(" now equals $link_url\n");
-        if (isset($all_links[$link_url])) {
-            $all_links[$link_url][1] = gmdate('YmdHis', $updated_timestamp - $attrs['WHEN']);
-            //echo('set link id ' . $all_links[$link_url][0] . ' to date ' . $all_links[$link_url][1] . "\n");
-        }
-    }
+function startElement( $parser, $tagName, $attrs ) {
+	global $updated_timestamp, $all_links;
+	if ( $tagName == 'WEBLOGUPDATES' ) {
+		//convert 'updated' into php date variable
+		$updated_timestamp = strtotime( $attrs['UPDATED'] );
+		//echo('got timestamp of ' . gmdate('F j, Y, H:i:s', $updated_timestamp) . "\n");
+	} elseif ( $tagName == 'WEBLOG' ) {
+		// is this url in our links?
+		//echo("wblogs.com link " .$attrs['URL']);
+		$link_url = str_replace( 'www.', '', $attrs['URL'] );
+		$link_url = preg_replace( '/(?:index|default)\.[a-z]{2,}/i', '', $link_url );
+		//echo(" now equals $link_url\n");
+		if ( isset( $all_links[ $link_url ] ) ) {
+			$all_links[ $link_url ][1] = gmdate( 'YmdHis', $updated_timestamp - $attrs['WHEN'] );
+			//echo('set link id ' . $all_links[$link_url][0] . ' to date ' . $all_links[$link_url][1] . "\n");
+		}
+	}
 }
 
 /**
  ** endElement()
  ** Callback function. Called at the end of an xml tag.
  **/
-function endElement($parser, $tagName) {
-    // nothing to do.
+function endElement( $parser, $tagName ) {
+	// nothing to do.
 }
 
 
 // get/update the cache file.
-// true return means new copy 
-if (get_weblogs_updatedfile()) {
+// true return means new copy
+if ( get_weblogs_updatedfile() ) {
 
-    //echo('<pre>');
-    // pre-load the links
-    preload_links();
+	//echo('<pre>');
+	// pre-load the links
+	preload_links();
 
-    // Create an XML parser
-    $xml_parser = xml_parser_create();
+	// Create an XML parser
+	$xml_parser = xml_parser_create();
 
-    // Set the functions to handle opening and closing tags
-    xml_set_element_handler($xml_parser, "startElement", "endElement");
+	// Set the functions to handle opening and closing tags
+	xml_set_element_handler( $xml_parser, 'startElement', 'endElement' );
 
-    // Open the XML file for reading
-    $fp = fopen($weblogs_cache_file, "r")
-          or die("Error reading XML data.");
+	// Open the XML file for reading
+	$fp = fopen( $weblogs_cache_file, 'r' )
+			or die( 'Error reading XML data.' );
 
-    // Read the XML file 4KB at a time
-    while ($data = fread($fp, 4096)) {
-        // Parse each 4KB chunk with the XML parser created above
-        xml_parse($xml_parser, $data, feof($fp))
-                // Handle errors in parsing
-                or die(sprintf("XML error: %s at line %d",
-                               xml_error_string(xml_get_error_code($xml_parser)),
-                               xml_get_current_line_number($xml_parser)));
-    }
-    
-    // Close the XML file
-    fclose($fp);
+	// Read the XML file 4KB at a time
+	while ( $data = fread( $fp, 4096 ) ) {
+		// Parse each 4KB chunk with the XML parser created above
+		xml_parse( $xml_parser, $data, feof( $fp ) )
+				// Handle errors in parsing
+				or die(
+					sprintf(
+						'XML error: %s at line %d',
+						xml_error_string( xml_get_error_code( $xml_parser ) ),
+						xml_get_current_line_number( $xml_parser )
+					)
+				);
+	}
 
-    // Free up memory used by the XML parser
-    xml_parser_free($xml_parser);
+	// Close the XML file
+	fclose( $fp );
 
-    // now update the db with latest times
-    update_links();
+	// Free up memory used by the XML parser
+	xml_parser_free( $xml_parser );
 
-    //echo('</pre>');
+	// now update the db with latest times
+	update_links();
+
+	//echo('</pre>');
 } // end if updated cache file
-?>

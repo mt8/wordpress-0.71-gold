@@ -2,9 +2,9 @@
 
 /* new and improved ! now with more querystring stuff ! */
 
-if (!isset($querystring_start)) {
-	$querystring_start = '?';
-	$querystring_equal = '=';
+if ( ! isset( $querystring_start ) ) {
+	$querystring_start     = '?';
+	$querystring_equal     = '=';
 	$querystring_separator = '&amp;';
 }
 
@@ -20,180 +20,182 @@ if (!isset($querystring_start)) {
 /***** About-the-blog tags *****/
 /* Note: these tags go anywhere in the template */
 
-function bloginfo($show='') {
-	$info = get_bloginfo($show);
-	$info = convert_bbcode($info);
-	$info = convert_gmcode($info);
-	$info = convert_smilies($info);
-	$info = apply_filters('bloginfo', $info);
-	echo convert_chars($info, 'html');
+function bloginfo( $show = '' ) {
+	$info = get_bloginfo( $show );
+	$info = convert_bbcode( $info );
+	$info = convert_gmcode( $info );
+	$info = convert_smilies( $info );
+	$info = apply_filters( 'bloginfo', $info );
+	echo convert_chars( $info, 'html' );
 }
 
-function bloginfo_rss($show='') {
-	$info = strip_tags(get_bloginfo($show));
-	echo convert_chars($info, 'unicode');
+function bloginfo_rss( $show = '' ) {
+	$info = strip_tags( get_bloginfo( $show ) );
+	echo convert_chars( $info, 'unicode' );
 }
 
-function bloginfo_unicode($show='') {
-	$info = get_bloginfo($show);
-	echo convert_chars($info, 'unicode');
+function bloginfo_unicode( $show = '' ) {
+	$info = get_bloginfo( $show );
+	echo convert_chars( $info, 'unicode' );
 }
 
-function get_bloginfo($show='') {
+function get_bloginfo( $show = '' ) {
 	global $siteurl, $blogfilename, $blogname, $blogdescription, $siteurl, $admin_email;
-	switch($show) {
-		case "url":
-			$output = $siteurl."/".$blogfilename;
+	switch ( $show ) {
+		case 'url':
+			$output = $siteurl . '/' . $blogfilename;
 			break;
-		case "description":
+		case 'description':
 			$output = $blogdescription;
 			break;
-		case "rdf_url":
-			$output = $siteurl.'/b2rdf.php';
+		case 'rdf_url':
+			$output = $siteurl . '/b2rdf.php';
 			break;
-		case "rss_url":
-			$output = $siteurl.'/b2rss.php';
+		case 'rss_url':
+			$output = $siteurl . '/b2rss.php';
 			break;
-		case "rss2_url":
-			$output = $siteurl.'/b2rss2.php';
+		case 'rss2_url':
+			$output = $siteurl . '/b2rss2.php';
 			break;
-		case "admin_email":
+		case 'admin_email':
 			$output = $admin_email;
 			break;
-		case "name":
+		case 'name':
 		default:
 			$output = $blogname;
 			break;
 	}
-	return($output);
+	return( $output );
 }
 
-function single_post_title($prefix = '', $display = true) {
+function single_post_title( $prefix = '', $display = true ) {
 	global $p;
-	if (intval($p)) {
-		$post_data = get_postdata($p);
-		$title = $post_data['Title'];
-		$title = apply_filters('single_post_title', $title);
-		if ($display) {
-			echo $prefix.strip_tags(stripslashes($title));
+	if ( intval( $p ) ) {
+		$post_data = get_postdata( $p );
+		$title     = $post_data['Title'];
+		$title     = apply_filters( 'single_post_title', $title );
+		if ( $display ) {
+			echo $prefix . strip_tags( stripslashes( $title ) );
 		} else {
-			return strip_tags(stripslashes($title));
+			return strip_tags( stripslashes( $title ) );
 		}
 	}
 }
 
-function single_cat_title($prefix = '', $display = true ) {
+function single_cat_title( $prefix = '', $display = true ) {
 	global $cat;
-	if(!empty($cat) && !(strtoupper($cat) == 'ALL')) {
-		$my_cat_name = get_the_category_by_ID($cat);
-		if(!empty($my_cat_name)) {
-			if ($display)
-				echo $prefix.strip_tags(stripslashes($my_cat_name));
-			else
-				return strip_tags(stripslashes($my_cat_name));
+	if ( ! empty( $cat ) && ! ( strtoupper( $cat ) == 'ALL' ) ) {
+		$my_cat_name = get_the_category_by_ID( $cat );
+		if ( ! empty( $my_cat_name ) ) {
+			if ( $display ) {
+				echo $prefix . strip_tags( stripslashes( $my_cat_name ) );
+			} else {
+				return strip_tags( stripslashes( $my_cat_name ) );
+			}
 		}
 	}
 }
 
-function single_month_title($prefix = '', $display = true ) {
+function single_month_title( $prefix = '', $display = true ) {
 	global $m, $month;
-	if(!empty($m)) {
-		$my_year = substr($m,0,4);
+	if ( ! empty( $m ) ) {
+		$my_year = substr( $m, 0, 4 );
 		// EN: a year-only archive ($m = 'YYYY') has no month part, so
 		//     substr() yields '' and $month[''] misses; default to ''.
 		// JA: 年のみの archive($m='YYYY')は月が無く substr() が '' を返し
 		//     $month[''] が外れるため、'' を既定値にする。
-		$my_month = $month[substr($m,4,2)] ?? '';
-		if ($display)
-			echo $prefix.$my_month.$prefix.$my_year;
-		else
+		$my_month = $month[ substr( $m, 4, 2 ) ] ?? '';
+		if ( $display ) {
+			echo $prefix . $my_month . $prefix . $my_year;
+		} else {
 			return $m;
+		}
 	}
 }
 
-function get_archives($type='', $limit='') {
+function get_archives( $type = '', $limit = '' ) {
 	global $querycount;
 	global $tableposts, $dateformat, $time_difference, $siteurl, $blogfilename;
-    GLOBAL $querystring_start, $querystring_equal, $querystring_separator, $month, $wpdb, $start_of_week;
+	global $querystring_start, $querystring_equal, $querystring_separator, $month, $wpdb, $start_of_week;
 
-    if ('' == $type) {
-        $type = get_settings('archive_mode');
-    }
+	if ( '' == $type ) {
+		$type = get_settings( 'archive_mode' );
+	}
 
-	if ('' != $limit) {
-        $limit = (int) $limit;
+	if ( '' != $limit ) {
+		$limit = (int) $limit;
 		$limit = " LIMIT $limit";
 	}
 	// this is what will separate dates on weekly archive links
 	$archive_week_separator = '&#8211;';
 
 	// archive link url
-	$archive_link_m = $siteurl.'/'.$blogfilename.$querystring_start.'m'.$querystring_equal;	# monthly archive;
-	$archive_link_w = $siteurl.'/'.$blogfilename.$querystring_start.'w'.$querystring_equal;	# weekly archive;
-	$archive_link_p = $siteurl.'/'.$blogfilename.$querystring_start.'p'.$querystring_equal;	# post-by-post archive;
+	$archive_link_m = $siteurl . '/' . $blogfilename . $querystring_start . 'm' . $querystring_equal; # monthly archive;
+	$archive_link_w = $siteurl . '/' . $blogfilename . $querystring_start . 'w' . $querystring_equal; # weekly archive;
+	$archive_link_p = $siteurl . '/' . $blogfilename . $querystring_start . 'p' . $querystring_equal; # post-by-post archive;
 
-    // over-ride general date format ? 0 = no: use the date format set in Options, 1 = yes: over-ride
-    $archive_date_format_over_ride = 0;
+	// over-ride general date format ? 0 = no: use the date format set in Options, 1 = yes: over-ride
+	$archive_date_format_over_ride = 0;
 
-    // options for daily archive (only if you over-ride the general date format)
-    $archive_day_date_format = 'Y/m/d';
+	// options for daily archive (only if you over-ride the general date format)
+	$archive_day_date_format = 'Y/m/d';
 
-    // options for weekly archive (only if you over-ride the general date format)
-    $archive_week_start_date_format = 'Y/m/d';
-    $archive_week_end_date_format   = 'Y/m/d';
+	// options for weekly archive (only if you over-ride the general date format)
+	$archive_week_start_date_format = 'Y/m/d';
+	$archive_week_end_date_format   = 'Y/m/d';
 
-    if (!$archive_date_format_over_ride) {
-        $archive_day_date_format = $dateformat;
-        $archive_week_start_date_format = $dateformat;
-        $archive_week_end_date_format   = $dateformat;
-    }
+	if ( ! $archive_date_format_over_ride ) {
+		$archive_day_date_format        = $dateformat;
+		$archive_week_start_date_format = $dateformat;
+		$archive_week_end_date_format   = $dateformat;
+	}
 
-	$now = date('Y-m-d H:i:s',(time() + ($time_difference * 3600)));
+	$now = date( 'Y-m-d H:i:s', ( time() + ( $time_difference * 3600 ) ) );
 
-	if ('monthly' == $type) {
+	if ( 'monthly' == $type ) {
 		++$querycount;
-		$arcresults = $wpdb->get_results("SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month` FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit);
-		foreach ($arcresults as $arcresult) {
-			echo "<li><a href=\"$archive_link_m$arcresult->year".zeroise($arcresult->month, 2).'">';
-			echo $month[zeroise($arcresult->month, 2)].' '.$arcresult->year;
+		$arcresults = $wpdb->get_results( "SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month` FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit );
+		foreach ( $arcresults as $arcresult ) {
+			echo "<li><a href=\"$archive_link_m$arcresult->year" . zeroise( $arcresult->month, 2 ) . '">';
+			echo $month[ zeroise( $arcresult->month, 2 ) ] . ' ' . $arcresult->year;
 			echo "</a></li>\n";
 		}
-	} elseif ('daily' == $type) {
+	} elseif ( 'daily' == $type ) {
 		++$querycount;
-		$arcresults = $wpdb->get_results("SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, DAYOFMONTH(post_date) AS `dayofmonth` FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit);
-		foreach ($arcresults as $arcresult) {
-			echo "<li><a href=\"$archive_link_m$arcresult->year".zeroise($arcresult->month, 2).zeroise($arcresult->dayofmonth, 2).'">';
-			echo mysql2date($archive_day_date_format, $arcresult->year.'-'.zeroise($arcresult->month,2).'-'.zeroise($arcresult->dayofmonth,2).' 00:00:00');
+		$arcresults = $wpdb->get_results( "SELECT DISTINCT YEAR(post_date) AS `year`, MONTH(post_date) AS `month`, DAYOFMONTH(post_date) AS `dayofmonth` FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit );
+		foreach ( $arcresults as $arcresult ) {
+			echo "<li><a href=\"$archive_link_m$arcresult->year" . zeroise( $arcresult->month, 2 ) . zeroise( $arcresult->dayofmonth, 2 ) . '">';
+			echo mysql2date( $archive_day_date_format, $arcresult->year . '-' . zeroise( $arcresult->month, 2 ) . '-' . zeroise( $arcresult->dayofmonth, 2 ) . ' 00:00:00' );
 			echo "</a></li>\n";
 		}
-	} elseif ('weekly' == $type) {
-		if (!isset($start_of_week)) {
+	} elseif ( 'weekly' == $type ) {
+		if ( ! isset( $start_of_week ) ) {
 			$start_of_week = 1;
 		}
 		++$querycount;
-		$arcresults = $wpdb->get_results("SELECT DISTINCT WEEK(post_date) AS `week`, YEAR(post_date) AS yr, DATE_FORMAT(post_date, '%Y-%m-%d') AS yyyymmdd FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit);
+		$arcresults = $wpdb->get_results( "SELECT DISTINCT WEEK(post_date) AS `week`, YEAR(post_date) AS yr, DATE_FORMAT(post_date, '%Y-%m-%d') AS yyyymmdd FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit );
 		$arc_w_last = '';
-		foreach ($arcresults as $arcresult) {
-			if ($arcresult->week != $arc_w_last) {
-                $arc_year = $arcresult->yr;
-				$arc_w_last = $arcresult->week;
-				$arc_week = get_weekstartend($arcresult->yyyymmdd, $start_of_week);
-				$arc_week_start = date_i18n($archive_week_start_date_format, $arc_week['start']);
-				$arc_week_end = date_i18n($archive_week_end_date_format, $arc_week['end']);
-				echo "<li><a href='$siteurl/$blogfilename$querystring_start"."m$querystring_equal$arc_year$querystring_separator"."w$querystring_equal$arcresult->week'>";
-				echo $arc_week_start.$archive_week_separator.$arc_week_end;
+		foreach ( $arcresults as $arcresult ) {
+			if ( $arcresult->week != $arc_w_last ) {
+				$arc_year       = $arcresult->yr;
+				$arc_w_last     = $arcresult->week;
+				$arc_week       = get_weekstartend( $arcresult->yyyymmdd, $start_of_week );
+				$arc_week_start = date_i18n( $archive_week_start_date_format, $arc_week['start'] );
+				$arc_week_end   = date_i18n( $archive_week_end_date_format, $arc_week['end'] );
+				echo "<li><a href='$siteurl/$blogfilename$querystring_start" . "m$querystring_equal$arc_year$querystring_separator" . "w$querystring_equal$arcresult->week'>";
+				echo $arc_week_start . $archive_week_separator . $arc_week_end;
 				echo "</a></li>\n";
 			}
 		}
-	} elseif ('postbypost' == $type) {
+	} elseif ( 'postbypost' == $type ) {
 		++$querycount;
-		$arcresults = $wpdb->get_results("SELECT ID, post_date, post_title FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit);
-		foreach ($arcresults as $arcresult) {
-			if ($arcresult->post_date != '0000-00-00 00:00:00') {
-				echo "<li><a href=\"$archive_link_p".$arcresult->ID.'">';
-				$arc_title = stripslashes($arcresult->post_title);
-				if ($arc_title) {
-					echo strip_tags($arc_title);
+		$arcresults = $wpdb->get_results( "SELECT ID, post_date, post_title FROM $tableposts WHERE post_date < '$now' AND post_category > 0 AND post_status = 'publish' ORDER BY post_date DESC" . $limit );
+		foreach ( $arcresults as $arcresult ) {
+			if ( $arcresult->post_date != '0000-00-00 00:00:00' ) {
+				echo "<li><a href=\"$archive_link_p" . $arcresult->ID . '">';
+				$arc_title = stripslashes( $arcresult->post_title );
+				if ( $arc_title ) {
+					echo strip_tags( $arc_title );
 				} else {
 					echo $arcresult->ID;
 				}
@@ -209,36 +211,36 @@ function get_archives($type='', $limit='') {
 
 /***** Date/Time tags *****/
 
-function the_date($d='', $before='', $after='', $echo = true) {
+function the_date( $d = '', $before = '', $after = '', $echo = true ) {
 	global $id, $post, $day, $previousday, $dateformat, $newday;
 	$the_date = '';
-	if ($day != $previousday) {
+	if ( $day != $previousday ) {
 		$the_date .= $before;
-		if ($d=='') {
-			$the_date .= mysql2date($dateformat, $post->post_date);
+		if ( $d == '' ) {
+			$the_date .= mysql2date( $dateformat, $post->post_date );
 		} else {
-			$the_date .= mysql2date($d, $post->post_date);
+			$the_date .= mysql2date( $d, $post->post_date );
 		}
-		$the_date .= $after;
+		$the_date   .= $after;
 		$previousday = $day;
 	}
-	$the_date = apply_filters('the_date', $the_date);
-	if ($echo) {
+	$the_date = apply_filters( 'the_date', $the_date );
+	if ( $echo ) {
 		echo $the_date;
 	} else {
 		return $the_date;
 	}
 }
 
-function the_time($d='', $echo = true) {
+function the_time( $d = '', $echo = true ) {
 	global $id, $post, $timeformat;
-	if ($d=='') {
-		$the_time = mysql2date($timeformat, $post->post_date);
+	if ( $d == '' ) {
+		$the_time = mysql2date( $timeformat, $post->post_date );
 	} else {
-		$the_time = mysql2date($d, $post->post_date);
+		$the_time = mysql2date( $d, $post->post_date );
 	}
-	$the_time = apply_filters('the_time', $the_time);
-	if ($echo) {
+	$the_time = apply_filters( 'the_time', $the_time );
+	if ( $echo ) {
 		echo $the_time;
 	} else {
 		return $the_time;
@@ -247,21 +249,21 @@ function the_time($d='', $echo = true) {
 
 function the_weekday() {
 	global $weekday, $id, $post;
-	$the_weekday = $weekday[mysql2date('w', $post->post_date)];
-	$the_weekday = apply_filters('the_weekday', $the_weekday);
+	$the_weekday = $weekday[ mysql2date( 'w', $post->post_date ) ];
+	$the_weekday = apply_filters( 'the_weekday', $the_weekday );
 	echo $the_weekday;
 }
 
-function the_weekday_date($before='',$after='') {
+function the_weekday_date( $before = '', $after = '' ) {
 	global $weekday, $id, $post, $day, $previousweekday;
 	$the_weekday_date = '';
-	if ($day != $previousweekday) {
+	if ( $day != $previousweekday ) {
 		$the_weekday_date .= $before;
-		$the_weekday_date .= $weekday[mysql2date('w', $post->post_date)];
+		$the_weekday_date .= $weekday[ mysql2date( 'w', $post->post_date ) ];
 		$the_weekday_date .= $after;
-		$previousweekday = $day;
+		$previousweekday   = $day;
 	}
-	$the_weekday_date = apply_filters('the_weekday_date', $the_weekday_date);
+	$the_weekday_date = apply_filters( 'the_weekday_date', $the_weekday_date );
 	echo $the_weekday_date;
 }
 
@@ -275,63 +277,90 @@ function the_weekday_date($before='',$after='') {
 function the_author() {
 	global $id, $authordata;
 	$i = $authordata->user_idmode;
-	if ($i == 'nickname')	echo $authordata->user_nickname;
-	if ($i == 'login')	echo $authordata->user_login;
-	if ($i == 'firstname')	echo $authordata->user_firstname;
-	if ($i == 'lastname')	echo $authordata->user_lastname;
-	if ($i == 'namefl')	echo $authordata->user_firstname.' '.$authordata->user_lastname;
-	if ($i == 'namelf')	echo $authordata->user_lastname.' '.$authordata->user_firstname;
-	if (!$i) echo $authordata->user_nickname;
+	if ( $i == 'nickname' ) {
+		echo $authordata->user_nickname;
+	}
+	if ( $i == 'login' ) {
+		echo $authordata->user_login;
+	}
+	if ( $i == 'firstname' ) {
+		echo $authordata->user_firstname;
+	}
+	if ( $i == 'lastname' ) {
+		echo $authordata->user_lastname;
+	}
+	if ( $i == 'namefl' ) {
+		echo $authordata->user_firstname . ' ' . $authordata->user_lastname;
+	}
+	if ( $i == 'namelf' ) {
+		echo $authordata->user_lastname . ' ' . $authordata->user_firstname;
+	}
+	if ( ! $i ) {
+		echo $authordata->user_nickname;
+	}
 }
 
 function the_author_login() {
-	global $id,$authordata;	echo $authordata->user_login;
+	global $id, $authordata;
+	echo $authordata->user_login;
 }
 
 function the_author_firstname() {
-	global $id,$authordata;	echo $authordata->user_firstname;
+	global $id, $authordata;
+	echo $authordata->user_firstname;
 }
 
 function the_author_lastname() {
-	global $id,$authordata;	echo $authordata->user_lastname;
+	global $id, $authordata;
+	echo $authordata->user_lastname;
 }
 
 function the_author_nickname() {
-	global $id,$authordata;	echo $authordata->user_nickname;
+	global $id, $authordata;
+	echo $authordata->user_nickname;
 }
 
 function the_author_ID() {
-	global $id,$authordata;	echo $authordata->ID;
+	global $id, $authordata;
+	echo $authordata->ID;
 }
 
 function the_author_email() {
-	global $id,$authordata;	echo antispambot($authordata->user_email);
+	global $id, $authordata;
+	echo antispambot( $authordata->user_email );
 }
 
 function the_author_url() {
-	global $id,$authordata;	echo $authordata->user_url;
+	global $id, $authordata;
+	echo $authordata->user_url;
 }
 
 function the_author_icq() {
-	global $id,$authordata;	echo $authordata->user_icq;
+	global $id, $authordata;
+	echo $authordata->user_icq;
 }
 
 function the_author_aim() {
-	global $id,$authordata;	echo str_replace(' ', '+', $authordata->user_aim);
+	global $id, $authordata;
+	echo str_replace( ' ', '+', $authordata->user_aim );
 }
 
 function the_author_yim() {
-	global $id,$authordata;	echo $authordata->user_yim;
+	global $id, $authordata;
+	echo $authordata->user_yim;
 }
 
 function the_author_msn() {
-	global $id,$authordata;	echo $authordata->user_msn;
+	global $id, $authordata;
+	echo $authordata->user_msn;
 }
 
 function the_author_posts() {
 	// EN: $post is needed for $post->post_author but was missing from globals.
 	// JA: $post->post_author に必要な $post が global 宣言から漏れていた。
-	global $id,$postdata,$post;	$posts=get_usernumposts($post->post_author);	echo $posts;
+	global $id, $postdata, $post;
+	$posts = get_usernumposts( $post->post_author );
+	echo $posts;
 }
 
 /***** // Author tags *****/
@@ -346,253 +375,271 @@ function the_ID() {
 	echo $id;
 }
 
-function the_title($before='', $after='') {
+function the_title( $before = '', $after = '' ) {
 	$title = get_the_title();
-	$title = convert_bbcode($title);
-	$title = convert_gmcode($title);
-	$title = convert_smilies($title);
-	$title = apply_filters('the_title', $title);
-	if ($title) {
-		echo convert_chars($before.$title.$after, 'html');
+	$title = convert_bbcode( $title );
+	$title = convert_gmcode( $title );
+	$title = convert_smilies( $title );
+	$title = apply_filters( 'the_title', $title );
+	if ( $title ) {
+		echo convert_chars( $before . $title . $after, 'html' );
 	}
 }
 function the_title_rss() {
 	$title = get_the_title();
-	$title = convert_bbcode($title);
-	$title = convert_gmcode($title);
-	$title = strip_tags($title);
-	if (trim($title)) {
-		echo convert_chars($title, 'unicode');
+	$title = convert_bbcode( $title );
+	$title = convert_gmcode( $title );
+	$title = strip_tags( $title );
+	if ( trim( $title ) ) {
+		echo convert_chars( $title, 'unicode' );
 	}
 }
-function the_title_unicode($before='',$after='') {
+function the_title_unicode( $before = '', $after = '' ) {
 	$title = get_the_title();
-	$title = convert_bbcode($title);
-	$title = convert_gmcode($title);
-	$title = apply_filters('the_title_unicode', $title);
-	if (trim($title)) {
-		echo convert_chars($before.$title.$after, 'unicode');
+	$title = convert_bbcode( $title );
+	$title = convert_gmcode( $title );
+	$title = apply_filters( 'the_title_unicode', $title );
+	if ( trim( $title ) ) {
+		echo convert_chars( $before . $title . $after, 'unicode' );
 	}
 }
 function get_the_title() {
 	global $id, $post;
-	$output = stripslashes($post->post_title);
-	$output = apply_filters('the_title', $output);
-	return($output);
+	$output = stripslashes( $post->post_title );
+	$output = apply_filters( 'the_title', $output );
+	return( $output );
 }
 
-function the_content($more_link_text='(more...)', $stripteaser=0, $more_file='') {
-	$content = get_the_content($more_link_text, $stripteaser, $more_file);
-	$content = convert_bbcode($content);
-	$content = convert_gmcode($content);
-	$content = convert_smilies($content);
-	$content = convert_chars($content, 'html');
-	$content = apply_filters('the_content', $content);
+function the_content( $more_link_text = '(more...)', $stripteaser = 0, $more_file = '' ) {
+	$content = get_the_content( $more_link_text, $stripteaser, $more_file );
+	$content = convert_bbcode( $content );
+	$content = convert_gmcode( $content );
+	$content = convert_smilies( $content );
+	$content = convert_chars( $content, 'html' );
+	$content = apply_filters( 'the_content', $content );
 	echo $content;
 }
-function the_content_rss($more_link_text='(more...)', $stripteaser=0, $more_file='', $cut = 0, $encode_html = 0) {
-	$content = get_the_content($more_link_text, $stripteaser, $more_file);
-	$content = convert_bbcode($content);
-	$content = convert_gmcode($content);
-	$content = convert_chars($content, 'unicode');
-	if ($cut && !$encode_html) {
+function the_content_rss( $more_link_text = '(more...)', $stripteaser = 0, $more_file = '', $cut = 0, $encode_html = 0 ) {
+	$content = get_the_content( $more_link_text, $stripteaser, $more_file );
+	$content = convert_bbcode( $content );
+	$content = convert_gmcode( $content );
+	$content = convert_chars( $content, 'unicode' );
+	if ( $cut && ! $encode_html ) {
 		$encode_html = 2;
 	}
-	if ($encode_html == 1) {
-		$content = htmlspecialchars($content);
-		$cut = 0;
-	} elseif ($encode_html == 0) {
-		$content = make_url_footnote($content);
-	} elseif ($encode_html == 2) {
-		$content = strip_tags($content);
+	if ( $encode_html == 1 ) {
+		$content = htmlspecialchars( $content );
+		$cut     = 0;
+	} elseif ( $encode_html == 0 ) {
+		$content = make_url_footnote( $content );
+	} elseif ( $encode_html == 2 ) {
+		$content = strip_tags( $content );
 	}
-	if ($cut) {
-		$blah = explode(' ', $content);
-		if (count($blah) > $cut) {
-			$k = $cut;
+	if ( $cut ) {
+		$blah = explode( ' ', $content );
+		if ( count( $blah ) > $cut ) {
+			$k             = $cut;
 			$use_dotdotdot = 1;
 		} else {
-			$k = count($blah);
+			$k             = count( $blah );
 			$use_dotdotdot = 0;
 		}
 		$excerpt = '';
-		for ($i=0; $i<$k; $i++) {
-			$excerpt .= $blah[$i].' ';
+		for ( $i = 0; $i < $k; $i++ ) {
+			$excerpt .= $blah[ $i ] . ' ';
 		}
-		$excerpt .= ($use_dotdotdot) ? '...' : '';
-		$content = $excerpt;
+		$excerpt .= ( $use_dotdotdot ) ? '...' : '';
+		$content  = $excerpt;
 	}
 	echo $content;
 }
 
-function the_content_unicode($more_link_text='(more...)', $stripteaser=0, $more_file='') {
-	$content = get_the_content($more_link_text, $stripteaser, $more_file);
-	$content = convert_bbcode($content);
-	$content = convert_gmcode($content);
-	$content = convert_smilies($content);
-	$content = convert_chars($content, 'unicode');
-	$content = apply_filters('the_content_unicode', $content);
+function the_content_unicode( $more_link_text = '(more...)', $stripteaser = 0, $more_file = '' ) {
+	$content = get_the_content( $more_link_text, $stripteaser, $more_file );
+	$content = convert_bbcode( $content );
+	$content = convert_gmcode( $content );
+	$content = convert_smilies( $content );
+	$content = convert_chars( $content, 'unicode' );
+	$content = apply_filters( 'the_content_unicode', $content );
 	echo $content;
 }
 
-function get_the_content($more_link_text='(more...)', $stripteaser=0, $more_file='') {
+function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more_file = '' ) {
 	global $id, $post, $more, $c, $withcomments, $page, $pages, $multipage, $numpages;
 	global $_SERVER, $preview;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-    global $pagenow;
+	global $pagenow;
 	$output = '';
-	if ($more_file != '') {
+	if ( $more_file != '' ) {
 		$file = $more_file;
 	} else {
 		$file = $pagenow; //$_SERVER['PHP_SELF'];
 	}
-	$content = $pages[$page-1];
-	$content = explode('<!--more-->', $content);
-	if ((preg_match('/<!--noteaser-->/', $post->post_content) && ((!$multipage) || ($page==1))))
+	$content = $pages[ $page - 1 ];
+	$content = explode( '<!--more-->', $content );
+	if ( ( preg_match( '/<!--noteaser-->/', $post->post_content ) && ( ( ! $multipage ) || ( $page == 1 ) ) ) ) {
 		$stripteaser = 1;
+	}
 	$teaser = $content[0];
-	if (($more) && ($stripteaser))
+	if ( ( $more ) && ( $stripteaser ) ) {
 		$teaser = '';
+	}
 	$output .= $teaser;
-	if (count($content)>1) {
-		if ($more) {
-			$output .= '<a name="more'.$id.'"></a>'.$content[1];
+	if ( count( $content ) > 1 ) {
+		if ( $more ) {
+			$output .= '<a name="more' . $id . '"></a>' . $content[1];
 		} else {
-			$output .= ' <a href="'.$file.$querystring_start.'p'.$querystring_equal.$id.$querystring_separator.'more'.$querystring_equal.'1#more'.$id.'">'.$more_link_text.'</a>';
+			$output .= ' <a href="' . $file . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'more' . $querystring_equal . '1#more' . $id . '">' . $more_link_text . '</a>';
 		}
 	}
-	if ($preview) { // preview fix for javascript bug with foreign languages
-		$output =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $output);
+	if ( $preview ) { // preview fix for javascript bug with foreign languages
+		$output = preg_replace_callback(
+			'/\%u([0-9A-F]{4,4})/',
+			function ( $m ) {
+				return '&#' . base_convert( $m[1], 16, 10 ) . ';';
+			},
+			$output
+		);
 	}
-	return($output);
+	return( $output );
 }
 
 function the_excerpt() {
 	$excerpt = get_the_excerpt();
-	$excerpt = convert_bbcode($excerpt);
-	$excerpt = convert_gmcode($excerpt);
-	$excerpt = convert_smilies($excerpt);
-	$excerpt = convert_chars($excerpt, 'html');
-	$excerpt = apply_filters('the_excerpt', $excerpt);
+	$excerpt = convert_bbcode( $excerpt );
+	$excerpt = convert_gmcode( $excerpt );
+	$excerpt = convert_smilies( $excerpt );
+	$excerpt = convert_chars( $excerpt, 'html' );
+	$excerpt = apply_filters( 'the_excerpt', $excerpt );
 	echo $excerpt;
 }
 
-function the_excerpt_rss($cut = 0, $encode_html = 0) {
-	$output = get_the_excerpt(true);
-	$output = convert_bbcode($output);
-	$output = convert_gmcode($output);
-	$output = convert_chars($output, 'unicode');
-	if ($cut && !$encode_html) {
+function the_excerpt_rss( $cut = 0, $encode_html = 0 ) {
+	$output = get_the_excerpt( true );
+	$output = convert_bbcode( $output );
+	$output = convert_gmcode( $output );
+	$output = convert_chars( $output, 'unicode' );
+	if ( $cut && ! $encode_html ) {
 		$encode_html = 2;
 	}
-	if ($encode_html == 1) {
-		$output = htmlspecialchars($output);
-		$cut = 0;
-	} elseif ($encode_html == 0) {
-		$output = make_url_footnote($output);
-	} elseif ($encode_html == 2) {
-		$output = strip_tags($output);
+	if ( $encode_html == 1 ) {
+		$output = htmlspecialchars( $output );
+		$cut    = 0;
+	} elseif ( $encode_html == 0 ) {
+		$output = make_url_footnote( $output );
+	} elseif ( $encode_html == 2 ) {
+		$output = strip_tags( $output );
 	}
-	if ($cut) {
-		$blah = explode(' ', $output);
-		if (count($blah) > $cut) {
-			$k = $cut;
+	if ( $cut ) {
+		$blah = explode( ' ', $output );
+		if ( count( $blah ) > $cut ) {
+			$k             = $cut;
 			$use_dotdotdot = 1;
 		} else {
-			$k = count($blah);
+			$k             = count( $blah );
 			$use_dotdotdot = 0;
 		}
 		$excerpt = '';
-		for ($i=0; $i<$k; $i++) {
-			$excerpt .= $blah[$i].' ';
+		for ( $i = 0; $i < $k; $i++ ) {
+			$excerpt .= $blah[ $i ] . ' ';
 		}
-		$excerpt .= ($use_dotdotdot) ? '...' : '';
-		$output = $excerpt;
+		$excerpt .= ( $use_dotdotdot ) ? '...' : '';
+		$output   = $excerpt;
 	}
 	echo $output;
 }
 
 function the_excerpt_unicode() {
 	$excerpt = get_the_excerpt();
-	$excerpt = convert_bbcode($excerpt);
-	$excerpt = convert_gmcode($excerpt);
-	$excerpt = convert_smilies($excerpt);
-	$excerpt = convert_chars($excerpt, 'unicode');
-	$excerpt = apply_filters('the_excerpt_unicode', $excerpt);
+	$excerpt = convert_bbcode( $excerpt );
+	$excerpt = convert_gmcode( $excerpt );
+	$excerpt = convert_smilies( $excerpt );
+	$excerpt = convert_chars( $excerpt, 'unicode' );
+	$excerpt = apply_filters( 'the_excerpt_unicode', $excerpt );
 	echo $excerpt;
 }
 
-function get_the_excerpt($fakeit = false) {
+function get_the_excerpt( $fakeit = false ) {
 	global $id, $post;
 	global $_SERVER, $preview;
 	$output = '';
 	$output = $post->post_excerpt;
-    //if we haven't got an excerpt, make one in the style of the rss ones
-    if (($output == '') && $fakeit) {
-        $output = get_the_content();
-        $output = strip_tags($output);
-        $blah = explode(' ', $output);
-        $excerpt_length = 120;
-        if (count($blah) > $excerpt_length) {
-			$k = $excerpt_length;
+	//if we haven't got an excerpt, make one in the style of the rss ones
+	if ( ( $output == '' ) && $fakeit ) {
+		$output         = get_the_content();
+		$output         = strip_tags( $output );
+		$blah           = explode( ' ', $output );
+		$excerpt_length = 120;
+		if ( count( $blah ) > $excerpt_length ) {
+			$k             = $excerpt_length;
 			$use_dotdotdot = 1;
 		} else {
-			$k = count($blah);
+			$k             = count( $blah );
 			$use_dotdotdot = 0;
 		}
 		$excerpt = '';
-		for ($i=0; $i<$k; $i++) {
-			$excerpt .= $blah[$i].' ';
+		for ( $i = 0; $i < $k; $i++ ) {
+			$excerpt .= $blah[ $i ] . ' ';
 		}
-		$excerpt .= ($use_dotdotdot) ? '...' : '';
-		$output = $excerpt;
-    } // end if no excerpt
-	if ($preview) { // preview fix for javascript bug with foreign languages
-		$output =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $output);
+		$excerpt .= ( $use_dotdotdot ) ? '...' : '';
+		$output   = $excerpt;
+	} // end if no excerpt
+	if ( $preview ) { // preview fix for javascript bug with foreign languages
+		$output = preg_replace_callback(
+			'/\%u([0-9A-F]{4,4})/',
+			function ( $m ) {
+				return '&#' . base_convert( $m[1], 16, 10 ) . ';';
+			},
+			$output
+		);
 	}
 	return $output;
 }
 
 
-function link_pages($before='<br />', $after='<br />', $next_or_number='number', $nextpagelink='next page', $previouspagelink='previous page', $pagelink='%', $more_file='') {
+function link_pages( $before = '<br />', $after = '<br />', $next_or_number = 'number', $nextpagelink = 'next page', $previouspagelink = 'previous page', $pagelink = '%', $more_file = '' ) {
 	global $id, $page, $numpages, $multipage, $more;
 	global $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ($more_file != '') {
+	if ( $more_file != '' ) {
 		$file = $more_file;
 	} else {
 		$file = $pagenow;
 	}
-	if (($multipage)) { // && ($more)) {
-		if ($next_or_number=='number') {
+	if ( ( $multipage ) ) { // && ($more)) {
+		if ( $next_or_number == 'number' ) {
 			echo $before;
-			for ($i = 1; $i < ($numpages+1); $i = $i + 1) {
-				$j=str_replace('%',"$i",$pagelink);
-				echo " ";
-				if (($i != $page) || ((!$more) && ($page==1)))
-					echo '<a href="'.$file.$querystring_start.'p'.$querystring_equal.$id.
-					$querystring_separator.'more'.$querystring_equal.'1'.
-					$querystring_separator.'page'.$querystring_equal.$i.'">';
+			for ( $i = 1; $i < ( $numpages + 1 ); $i = $i + 1 ) {
+				$j = str_replace( '%', "$i", $pagelink );
+				echo ' ';
+				if ( ( $i != $page ) || ( ( ! $more ) && ( $page == 1 ) ) ) {
+					echo '<a href="' . $file . $querystring_start . 'p' . $querystring_equal . $id .
+					$querystring_separator . 'more' . $querystring_equal . '1' .
+					$querystring_separator . 'page' . $querystring_equal . $i . '">';
+				}
 				echo $j;
-				if (($i != $page) || ((!$more) && ($page==1)))
+				if ( ( $i != $page ) || ( ( ! $more ) && ( $page == 1 ) ) ) {
 					echo '</a>';
+				}
 			}
 			echo $after;
 		} else {
-			if ($more) {
+			if ( $more ) {
 				echo $before;
-				$i=$page-1;
-				if ($i && $more)
-					echo ' <a href="'.$file.$querystring_start.'p'.$querystring_equal.$id.
-					$querystring_separator.'more'.$querystring_equal.'1'.
-					$querystring_separator.'page'.$querystring_equal.$i.'">'.
-					$previouspagelink.'</a>';
-				$i=$page+1;
-				if ($i<=$numpages && $more)
-					echo ' <a href="'.$file.$querystring_start.'p'.$querystring_equal.$id.
-					$querystring_separator.'more'.$querystring_equal.'1'.
-					$querystring_separator.'page'.$querystring_equal.$i.'">'.
-					$nextpagelink.'</a>';
+				$i = $page - 1;
+				if ( $i && $more ) {
+					echo ' <a href="' . $file . $querystring_start . 'p' . $querystring_equal . $id .
+					$querystring_separator . 'more' . $querystring_equal . '1' .
+					$querystring_separator . 'page' . $querystring_equal . $i . '">' .
+					$previouspagelink . '</a>';
+				}
+				$i = $page + 1;
+				if ( $i <= $numpages && $more ) {
+					echo ' <a href="' . $file . $querystring_start . 'p' . $querystring_equal . $id .
+					$querystring_separator . 'more' . $querystring_equal . '1' .
+					$querystring_separator . 'page' . $querystring_equal . $i . '">' .
+					$nextpagelink . '</a>';
+				}
 				echo $after;
 			}
 		}
@@ -600,80 +647,80 @@ function link_pages($before='<br />', $after='<br />', $next_or_number='number',
 }
 
 
-function previous_post($format='%', $previous='previous post: ', $title='yes', $in_same_cat='no', $limitprev=1, $excluded_categories='') {
+function previous_post( $format = '%', $previous = 'previous post: ', $title = 'yes', $in_same_cat = 'no', $limitprev = 1, $excluded_categories = '' ) {
 	global $tableposts, $id, $post, $siteurl, $blogfilename, $querycount, $wpdb;
 	global $p, $posts, $posts_per_page, $s;
 	global $querystring_start, $querystring_equal, $querystring_separator;
 
-	if(($p) || ($posts_per_page==1)) {
+	if ( ( $p ) || ( $posts_per_page == 1 ) ) {
 
 		$current_post_date = $post->post_date;
-		$current_category = $post->post_category;
+		$current_category  = $post->post_category;
 
 		$sqlcat = '';
-		if ($in_same_cat != 'no') {
+		if ( $in_same_cat != 'no' ) {
 			$sqlcat = " AND post_category = '$current_category' ";
 		}
 
 		$sql_exclude_cats = '';
-		if (!empty($excluded_categories)) {
-			$blah = explode('and', $excluded_categories);
-			foreach($blah as $category) {
-				$category = intval($category);
+		if ( ! empty( $excluded_categories ) ) {
+			$blah = explode( 'and', $excluded_categories );
+			foreach ( $blah as $category ) {
+				$category          = intval( $category );
 				$sql_exclude_cats .= " AND post_category != $category";
 			}
 		}
 
-		$limitprev--;
-		$lastpost = @$wpdb->get_row("SELECT ID, post_title FROM $tableposts WHERE post_date < '$current_post_date' AND post_category > 0 $sqlcat $sql_exclude_cats ORDER BY post_date DESC LIMIT $limitprev, 1");
+		--$limitprev;
+		$lastpost = @$wpdb->get_row( "SELECT ID, post_title FROM $tableposts WHERE post_date < '$current_post_date' AND post_category > 0 $sqlcat $sql_exclude_cats ORDER BY post_date DESC LIMIT $limitprev, 1" );
 		++$querycount;
-		if ($lastpost) {
-			$string = '<a href="'.$blogfilename.$querystring_start.'p'.$querystring_equal.$lastpost->ID.$querystring_separator.'more'.$querystring_equal.'1'.$querystring_separator.'c'.$querystring_equal.'1">'.$previous;
-			$string .= wptexturize(stripslashes($lastpost->post_title));
+		if ( $lastpost ) {
+			$string  = '<a href="' . $blogfilename . $querystring_start . 'p' . $querystring_equal . $lastpost->ID . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1">' . $previous;
+			$string .= wptexturize( stripslashes( $lastpost->post_title ) );
 			$string .= '</a>';
-			$format = str_replace('%', $string, $format);
+			$format  = str_replace( '%', $string, $format );
 			echo $format;
 		}
 	}
 }
 
-function next_post($format='%', $next='next post: ', $title='yes', $in_same_cat='no', $limitnext=1, $excluded_categories='') {
+function next_post( $format = '%', $next = 'next post: ', $title = 'yes', $in_same_cat = 'no', $limitnext = 1, $excluded_categories = '' ) {
 	global $wpdb;
 	global $tableposts, $p, $posts, $id, $post, $siteurl, $blogfilename, $querycount;
 	global $time_difference;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if(($p) || ($posts==1)) {
+	if ( ( $p ) || ( $posts == 1 ) ) {
 
 		$current_post_date = $post->post_date;
-		$current_category = $post->post_category;
+		$current_category  = $post->post_category;
 
 		$sqlcat = '';
-		if ($in_same_cat != 'no') {
+		if ( $in_same_cat != 'no' ) {
 			$sqlcat = " AND post_category='$current_category' ";
 		}
 
 		$sql_exclude_cats = '';
-		if (!empty($excluded_categories)) {
-			$blah = explode('and', $excluded_categories);
-			foreach($blah as $category) {
-				$category = intval($category);
+		if ( ! empty( $excluded_categories ) ) {
+			$blah = explode( 'and', $excluded_categories );
+			foreach ( $blah as $category ) {
+				$category          = intval( $category );
 				$sql_exclude_cats .= " AND post_category != $category";
 			}
 		}
 
-		$now = date('Y-m-d H:i:s',(time() + ($time_difference * 3600)));
+		$now = date( 'Y-m-d H:i:s', ( time() + ( $time_difference * 3600 ) ) );
 
-		$limitnext--;
+		--$limitnext;
 
-		$nextpost = @$wpdb->get_row("SELECT ID,post_title FROM $tableposts WHERE post_date > '$current_post_date' AND post_date < '$now' AND post_category > 0 $sqlcat $sql_exclude_cats ORDER BY post_date ASC LIMIT $limitnext,1");
+		$nextpost = @$wpdb->get_row( "SELECT ID,post_title FROM $tableposts WHERE post_date > '$current_post_date' AND post_date < '$now' AND post_category > 0 $sqlcat $sql_exclude_cats ORDER BY post_date ASC LIMIT $limitnext,1" );
 		++$querycount;
-		if ($nextpost) {
-			$string = '<a href="'.$blogfilename.$querystring_start.'p'.$querystring_equal.$nextpost->ID.$querystring_separator.'more'.$querystring_equal.'1'.$querystring_separator.'c'.$querystring_equal.'1">'.$next;
-			if ($title=='yes') {
-				$string .= wptexturize(stripslashes($nextpost->post_title));
+		if ( $nextpost ) {
+			$string = '<a href="' . $blogfilename . $querystring_start . 'p' . $querystring_equal . $nextpost->ID . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1">' . $next;
+			if ( $title == 'yes' ) {
+				$string .= wptexturize( stripslashes( $nextpost->post_title ) );
 			}
 			$string .= '</a>';
-			$format = str_replace('%', $string, $format);
+			$format  = str_replace( '%', $string, $format );
 			echo $format;
 		}
 	}
@@ -683,106 +730,120 @@ function next_post($format='%', $next='next post: ', $title='yes', $in_same_cat=
 
 
 
-function next_posts($max_page = 0) { // original by cfactor at cooltux.org
+function next_posts( $max_page = 0 ) {
+	// original by cfactor at cooltux.org
 	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if (empty($p) && ($what_to_show == 'paged')) {
+	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
 		$qstr = $_SERVER['QUERY_STRING'];
-		if (!empty($qstr)) {
-			$qstr = preg_replace("/&paged=\d{0,}/","",$qstr);
-			$qstr = preg_replace("/paged=\d{0,}/","",$qstr);
-		} elseif (stristr($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] )) {
-			if ('' != $qstr = str_replace($_SERVER['SCRIPT_NAME'], '',
-											$_SERVER['REQUEST_URI']) ) {
-				$qstr = preg_replace("/^\//", "", $qstr);
-				$qstr = preg_replace("/paged\/\d{0,}\//", "", $qstr);
-				$qstr = preg_replace("/paged\/\d{0,}/", "", $qstr);
-				$qstr = preg_replace("/\/$/", "", $qstr);
+		if ( ! empty( $qstr ) ) {
+			$qstr = preg_replace( '/&paged=\d{0,}/', '', $qstr );
+			$qstr = preg_replace( '/paged=\d{0,}/', '', $qstr );
+		} elseif ( stristr( $_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] ) ) {
+			if ( '' != $qstr = str_replace(
+				$_SERVER['SCRIPT_NAME'],
+				'',
+				$_SERVER['REQUEST_URI']
+			) ) {
+				$qstr = preg_replace( '/^\//', '', $qstr );
+				$qstr = preg_replace( '/paged\/\d{0,}\//', '', $qstr );
+				$qstr = preg_replace( '/paged\/\d{0,}/', '', $qstr );
+				$qstr = preg_replace( '/\/$/', '', $qstr );
 			}
 		}
-		if (!$paged) $paged = 1;
-		$nextpage = intval($paged) + 1;
-		if (!$max_page || $max_page >= $nextpage) {
-			echo  $pagenow.$querystring_start.
-				($qstr == '' ? '' : $qstr.$querystring_separator) .
-				'paged'.$querystring_equal.$nextpage;
+		if ( ! $paged ) {
+			$paged = 1;
+		}
+		$nextpage = intval( $paged ) + 1;
+		if ( ! $max_page || $max_page >= $nextpage ) {
+			echo $pagenow . $querystring_start .
+				( $qstr == '' ? '' : $qstr . $querystring_separator ) .
+				'paged' . $querystring_equal . $nextpage;
 		}
 	}
 }
 
-function next_posts_link($label='Next Page >>', $max_page=0) {
+function next_posts_link( $label = 'Next Page >>', $max_page = 0 ) {
 	global $wpdb;
 	global $p, $paged, $result, $request, $posts_per_page, $what_to_show;
-	if ($what_to_show == 'paged') {
-		if (!$max_page) {
+	if ( $what_to_show == 'paged' ) {
+		if ( ! $max_page ) {
 			$nxt_request = $request;
-			if ($pos = strpos(strtoupper($request), 'LIMIT')) {
-				$nxt_request = substr($request, 0, $pos);
+			if ( $pos = strpos( strtoupper( $request ), 'LIMIT' ) ) {
+				$nxt_request = substr( $request, 0, $pos );
 			}
-			$nxt_result = mysqli_query($wpdb->dbh, $nxt_request);
-			$numposts = mysqli_num_rows($nxt_result);
-			$max_page = ceil($numposts / $posts_per_page);
+			$nxt_result = mysqli_query( $wpdb->dbh, $nxt_request );
+			$numposts   = mysqli_num_rows( $nxt_result );
+			$max_page   = ceil( $numposts / $posts_per_page );
 		}
-		if (!$paged) $paged = 1;
-		$nextpage = intval($paged) + 1;
-		if (empty($p) && (empty($paged) || $nextpage <= $max_page)) {
+		if ( ! $paged ) {
+			$paged = 1;
+		}
+		$nextpage = intval( $paged ) + 1;
+		if ( empty( $p ) && ( empty( $paged ) || $nextpage <= $max_page ) ) {
 			echo '<a href="';
-			echo next_posts($max_page);
-			echo '">'. htmlspecialchars($label) .'</a>';
+			echo next_posts( $max_page );
+			echo '">' . htmlspecialchars( $label ) . '</a>';
 		}
 	}
 }
 
 
-function previous_posts() { // original by cfactor at cooltux.org
+function previous_posts() {
+	// original by cfactor at cooltux.org
 	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if (empty($p) && ($what_to_show == 'paged')) {
+	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
 		$qstr = $_SERVER['QUERY_STRING'];
-		if (!empty($qstr)) {
-			$qstr = preg_replace("/&paged=\d{0,}/","",$qstr);
-			$qstr = preg_replace("/paged=\d{0,}/","",$qstr);
-		} elseif (stristr($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] )) {
-			if ('' != $qstr = str_replace($_SERVER['SCRIPT_NAME'], '',
-											$_SERVER['REQUEST_URI']) ) {
-				$qstr = preg_replace("/^\//", "", $qstr);
-				$qstr = preg_replace("/paged\/\d{0,}\//", "", $qstr);
-				$qstr = preg_replace("/paged\/\d{0,}/", "", $qstr);
-				$qstr = preg_replace("/\/$/", "", $qstr);
+		if ( ! empty( $qstr ) ) {
+			$qstr = preg_replace( '/&paged=\d{0,}/', '', $qstr );
+			$qstr = preg_replace( '/paged=\d{0,}/', '', $qstr );
+		} elseif ( stristr( $_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] ) ) {
+			if ( '' != $qstr = str_replace(
+				$_SERVER['SCRIPT_NAME'],
+				'',
+				$_SERVER['REQUEST_URI']
+			) ) {
+				$qstr = preg_replace( '/^\//', '', $qstr );
+				$qstr = preg_replace( '/paged\/\d{0,}\//', '', $qstr );
+				$qstr = preg_replace( '/paged\/\d{0,}/', '', $qstr );
+				$qstr = preg_replace( '/\/$/', '', $qstr );
 			}
 		}
-		$nextpage = intval($paged) - 1;
-		if ($nextpage < 1) $nextpage = 1;
-		echo  $pagenow.$querystring_start.
-			($qstr == '' ? '' : $qstr.$querystring_separator) .
-			'paged'.$querystring_equal.$nextpage;
+		$nextpage = intval( $paged ) - 1;
+		if ( $nextpage < 1 ) {
+			$nextpage = 1;
+		}
+		echo $pagenow . $querystring_start .
+			( $qstr == '' ? '' : $qstr . $querystring_separator ) .
+			'paged' . $querystring_equal . $nextpage;
 	}
 }
 
-function previous_posts_link($label='<< Previous Page') {
+function previous_posts_link( $label = '<< Previous Page' ) {
 	global $p, $paged, $what_to_show;
-	if (empty($p)  && ($paged > 1) && ($what_to_show == 'paged')) {
+	if ( empty( $p ) && ( $paged > 1 ) && ( $what_to_show == 'paged' ) ) {
 		echo '<a href="';
 		echo previous_posts();
-		echo '">'.  htmlspecialchars($label) .'</a>';
+		echo '">' . htmlspecialchars( $label ) . '</a>';
 	}
 }
 
-function posts_nav_link($sep=' :: ', $prelabel='<< Previous Page', $nxtlabel='Next Page >>') {
+function posts_nav_link( $sep = ' :: ', $prelabel = '<< Previous Page', $nxtlabel = 'Next Page >>' ) {
 	global $wpdb;
 	global $p, $what_to_show, $request, $posts_per_page;
-	if (empty($p) && ($what_to_show == 'paged')) {
+	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
 		$nxt_request = $request;
-		if ($pos = strpos(strtoupper($request), 'LIMIT')) {
-			$nxt_request = substr($request, 0, $pos);
+		if ( $pos = strpos( strtoupper( $request ), 'LIMIT' ) ) {
+			$nxt_request = substr( $request, 0, $pos );
 		}
-		$nxt_result = mysqli_query($wpdb->dbh, $nxt_request);
-		$numposts = mysqli_num_rows($nxt_result);
-		$max_page = ceil($numposts / $posts_per_page);
-		if ($max_page > 1) {
-			previous_posts_link($prelabel);
-			echo htmlspecialchars($sep);
-			next_posts_link($nxtlabel, $max_page);
+		$nxt_result = mysqli_query( $wpdb->dbh, $nxt_request );
+		$numposts   = mysqli_num_rows( $nxt_result );
+		$max_page   = ceil( $numposts / $posts_per_page );
+		if ( $max_page > 1 ) {
+			previous_posts_link( $prelabel );
+			echo htmlspecialchars( $sep );
+			next_posts_link( $nxtlabel, $max_page );
 		}
 	}
 }
@@ -796,45 +857,45 @@ function posts_nav_link($sep=' :: ', $prelabel='<< Previous Page', $nxtlabel='Ne
 
 function the_category() {
 	$category = get_the_category();
-	$category = apply_filters('the_category', $category);
-	echo convert_chars($category, 'html');
+	$category = apply_filters( 'the_category', $category );
+	echo convert_chars( $category, 'html' );
 }
 function the_category_rss() {
-	echo convert_chars(strip_tags(get_the_category()), 'xml');
+	echo convert_chars( strip_tags( get_the_category() ), 'xml' );
 }
 function the_category_unicode() {
 	$category = get_the_category();
-	$category = apply_filters('the_category_unicode', $category);
-	echo convert_chars($category, 'unicode');
+	$category = apply_filters( 'the_category_unicode', $category );
+	echo convert_chars( $category, 'unicode' );
 }
 
 function get_the_category() {
 	global $post, $tablecategories, $querycount, $cache_categories, $use_cache, $wpdb;
 	$cat_ID = $post->post_category;
-	if ((empty($cache_categories[$cat_ID])) OR (!$use_cache)) {
-		$cat_name = $wpdb->get_var("SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'");
+	if ( ( empty( $cache_categories[ $cat_ID ] ) ) or ( ! $use_cache ) ) {
+		$cat_name = $wpdb->get_var( "SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'" );
 		++$querycount;
-		$cache_categories[$cat_ID] = &$cat_name;
+		$cache_categories[ $cat_ID ] = &$cat_name;
 	} else {
-		$cat_name = $cache_categories[$cat_ID];
+		$cat_name = $cache_categories[ $cat_ID ];
 	}
-	return(stripslashes($cat_name));
+	return( stripslashes( $cat_name ) );
 }
 
-function get_the_category_by_ID($cat_ID) {
+function get_the_category_by_ID( $cat_ID ) {
 	global $tablecategories, $querycount, $cache_categories, $use_cache, $wpdb;
 	// EN: use empty() so an uninitialised $cache_categories cache does not
 	//     warn (matches the sibling get_the_category()).
 	// JA: $cache_categories キャッシュ未初期化時に警告が出ないよう empty()
 	//     を使う(姉妹関数 get_the_category() に合わせる)。
-	if ((empty($cache_categories[$cat_ID])) OR (!$use_cache)) {
-		$cat_name = $wpdb->get_var("SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'");
+	if ( ( empty( $cache_categories[ $cat_ID ] ) ) or ( ! $use_cache ) ) {
+		$cat_name = $wpdb->get_var( "SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'" );
 		++$querycount;
-		$cache_categories[$cat_ID] = &$cat_name;
+		$cache_categories[ $cat_ID ] = &$cat_name;
 	} else {
-		$cat_name = $cache_categories[$cat_ID];
+		$cat_name = $cache_categories[ $cat_ID ];
 	}
-	return(stripslashes($cat_name));
+	return( stripslashes( $cat_name ) );
 }
 
 function the_category_ID() {
@@ -842,57 +903,61 @@ function the_category_ID() {
 	echo $post->post_category;
 }
 
-function the_category_head($before='', $after='') {
+function the_category_head( $before = '', $after = '' ) {
 	global $post, $currentcat, $previouscat, $dateformat, $newday;
 	$currentcat = $post->post_category;
-	if ($currentcat != $previouscat) {
+	if ( $currentcat != $previouscat ) {
 		echo $before;
-		echo get_the_category_by_ID($currentcat);
+		echo get_the_category_by_ID( $currentcat );
 		echo $after;
 		$previouscat = $currentcat;
 	}
 }
 
 // out of the b2 loop
-function dropdown_cats($optionall = 1, $all = 'All') {
+function dropdown_cats( $optionall = 1, $all = 'All' ) {
 	global $cat, $tablecategories, $querycount, $wpdb;
-	$categories = $wpdb->get_results("SELECT cat_ID, cat_name FROM $tablecategories");
+	$categories = $wpdb->get_results( "SELECT cat_ID, cat_name FROM $tablecategories" );
 	++$querycount;
 	echo "<select name='cat' class='postform'>\n";
-	if (intval($optionall) == 1) {
+	if ( intval( $optionall ) == 1 ) {
 		echo "\t<option value='all'>$all</option>\n";
 	}
-	foreach ($categories as $category) {
-		echo "\t<option value=\"".$category->cat_ID."\"";
-		if ($category->cat_ID == $cat)
+	foreach ( $categories as $category ) {
+		echo "\t<option value=\"" . $category->cat_ID . '"';
+		if ( $category->cat_ID == $cat ) {
 			echo ' selected="selected"';
-		echo '>'.stripslashes($category->cat_name)."</option>\n";
+		}
+		echo '>' . stripslashes( $category->cat_name ) . "</option>\n";
 	}
 	echo "</select>\n";
 }
 
 // out of the b2 loop
-function list_cats($optionall = 1, $all = 'All', $sort_column = 'ID', $sort_order = 'asc', $file = 'blah', $list = true) {
+function list_cats( $optionall = 1, $all = 'All', $sort_column = 'ID', $sort_order = 'asc', $file = 'blah', $list = true ) {
 	global $tablecategories, $querycount, $wpdb;
 	global $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	$file = ($file == 'blah') ? $pagenow : $file;
-	$sort_column = 'cat_'.$sort_column;
-	$categories = $wpdb->get_results("SELECT * FROM $tablecategories WHERE cat_ID > 0 ORDER BY $sort_column $sort_order");
+	$file        = ( $file == 'blah' ) ? $pagenow : $file;
+	$sort_column = 'cat_' . $sort_column;
+	$categories  = $wpdb->get_results( "SELECT * FROM $tablecategories WHERE cat_ID > 0 ORDER BY $sort_column $sort_order" );
 	++$querycount;
-	if (intval($optionall) == 1) {
-		$all = apply_filters('list_cats', $all);
-		if ($list) echo "\n\t<li><a href=\"".$file.$querystring_start.'cat'.$querystring_equal.'all">'.$all."</a></li>";
-		else echo "\t<a href=\"".$file.$querystring_start.'cat'.$querystring_equal.'all">'.$all."</a><br />\n";
-	}
-	foreach ($categories as $category) {
-		$cat_name = apply_filters('list_cats', $category->cat_name);
-		if ($list) {
-			echo "\n\t<li><a href=\"".$file.$querystring_start.'cat'.$querystring_equal.$category->cat_ID.'">';
-			echo stripslashes($cat_name)."</a></li>";
+	if ( intval( $optionall ) == 1 ) {
+		$all = apply_filters( 'list_cats', $all );
+		if ( $list ) {
+			echo "\n\t<li><a href=\"" . $file . $querystring_start . 'cat' . $querystring_equal . 'all">' . $all . '</a></li>';
 		} else {
-			echo "\t<a href=\"".$file.$querystring_start.'cat'.$querystring_equal.$category->cat_ID.'">';
-			echo stripslashes($cat_name)."</a><br />\n";
+			echo "\t<a href=\"" . $file . $querystring_start . 'cat' . $querystring_equal . 'all">' . $all . "</a><br />\n";
+		}
+	}
+	foreach ( $categories as $category ) {
+		$cat_name = apply_filters( 'list_cats', $category->cat_name );
+		if ( $list ) {
+			echo "\n\t<li><a href=\"" . $file . $querystring_start . 'cat' . $querystring_equal . $category->cat_ID . '">';
+			echo stripslashes( $cat_name ) . '</a></li>';
+		} else {
+			echo "\t<a href=\"" . $file . $querystring_start . 'cat' . $querystring_equal . $category->cat_ID . '">';
+			echo stripslashes( $cat_name ) . "</a><br />\n";
 		}
 	}
 }
@@ -912,27 +977,27 @@ function list_cats($optionall = 1, $all = 'All', $sort_column = 'ID', $sort_orde
 
 /***** Permalink tags *****/
 
-function permalink_anchor($mode = 'id') {
+function permalink_anchor( $mode = 'id' ) {
 	global $id, $post;
-	switch(strtolower($mode)) {
+	switch ( strtolower( $mode ) ) {
 		case 'title':
-			$title = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $post->post_title);
-			echo '<a name="'.$title.'"></a>';
+			$title = preg_replace( '/[^a-zA-Z0-9_\.-]/', '_', $post->post_title );
+			echo '<a name="' . $title . '"></a>';
 			break;
 		case 'id':
 		default:
-			echo '<a name="'.$id.'"></a>';
+			echo '<a name="' . $id . '"></a>';
 			break;
 	}
 }
 
-function permalink_link($file='', $mode = 'id') {
+function permalink_link( $file = '', $mode = 'id' ) {
 	global $id, $post, $pagenow, $cacheweekly, $wpdb, $querycount;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	$file = ($file=='') ? $pagenow : $file;
-	switch(strtolower($mode)) {
+	$file = ( $file == '' ) ? $pagenow : $file;
+	switch ( strtolower( $mode ) ) {
 		case 'title':
-			$title = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $post->post_title);
+			$title  = preg_replace( '/[^a-zA-Z0-9_\.-]/', '_', $post->post_title );
 			$anchor = $title;
 			break;
 		case 'id':
@@ -940,39 +1005,40 @@ function permalink_link($file='', $mode = 'id') {
 			$anchor = $id;
 			break;
 	}
-	$archive_mode = get_settings('archive_mode');
-	switch($archive_mode) {
+	$archive_mode = get_settings( 'archive_mode' );
+	switch ( $archive_mode ) {
 		case 'daily':
-			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).substr($post->post_date,5,2).substr($post->post_date,8,2).'#'.$anchor;
+			echo $file . $querystring_start . 'm' . $querystring_equal . substr( $post->post_date, 0, 4 ) . substr( $post->post_date, 5, 2 ) . substr( $post->post_date, 8, 2 ) . '#' . $anchor;
 			break;
 		case 'monthly':
-			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).substr($post->post_date,5,2).'#'.$anchor;
+			echo $file . $querystring_start . 'm' . $querystring_equal . substr( $post->post_date, 0, 4 ) . substr( $post->post_date, 5, 2 ) . '#' . $anchor;
 			break;
 		case 'weekly':
-			if((!isset($cacheweekly)) || (empty($cacheweekly[$post->post_date]))) {
-				$cacheweekly[$post->post_date] = $wpdb->get_var("SELECT WEEK('$post->post_date')");
+			if ( ( ! isset( $cacheweekly ) ) || ( empty( $cacheweekly[ $post->post_date ] ) ) ) {
+				$cacheweekly[ $post->post_date ] = $wpdb->get_var( "SELECT WEEK('$post->post_date')" );
 				++$querycount;
 			}
-			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).$querystring_separator.'w'.$querystring_equal.$cacheweekly[$post->post_date].'#'.$anchor;
+			echo $file . $querystring_start . 'm' . $querystring_equal . substr( $post->post_date, 0, 4 ) . $querystring_separator . 'w' . $querystring_equal . $cacheweekly[ $post->post_date ] . '#' . $anchor;
 			break;
 		case 'postbypost':
-			echo $file.$querystring_start.'p'.$querystring_equal.$id;
+			echo $file . $querystring_start . 'p' . $querystring_equal . $id;
 			break;
 	}
 }
 
-function permalink_single($file='') {
+function permalink_single( $file = '' ) {
 	global $id, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ($file=='')
+	if ( $file == '' ) {
 		$file = $pagenow;
-	echo $file.$querystring_start.'p'.$querystring_equal.$id.$querystring_separator.'more'.$querystring_equal.'1'.$querystring_separator.'c'.$querystring_equal.'1';
+	}
+	echo $file . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1';
 }
 
-function permalink_single_rss($file = 'b2rss.php') {
+function permalink_single_rss( $file = 'b2rss.php' ) {
 	global $id, $pagenow, $siteurl, $blogfilename;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-		echo $siteurl.'/'.$blogfilename.$querystring_start.'p'.$querystring_equal.$id.$querystring_separator.'c'.$querystring_equal.'1';
+		echo $siteurl . '/' . $blogfilename . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'c' . $querystring_equal . '1';
 }
 
 /***** // Permalink tags *****/
@@ -984,45 +1050,48 @@ function permalink_single_rss($file = 'b2rss.php') {
 
 function start_b2() {
 	global $post, $id, $postdata, $authordata, $day, $preview, $page, $pages, $multipage, $more, $numpages;
-	global $preview_userid,$preview_date,$preview_content,$preview_title,$preview_category,$preview_notify,$preview_make_clickable,$preview_autobr;
+	global $preview_userid, $preview_date, $preview_content, $preview_title, $preview_category, $preview_notify, $preview_make_clickable, $preview_autobr;
 	global $pagenow;
 	global $_GET;
-	if (!$preview) {
+	if ( ! $preview ) {
 		$id = $post->ID;
 	} else {
-		$id = 0;
-		$postdata = array (
-			'ID' => 0,
+		$id       = 0;
+		$postdata = array(
+			'ID'        => 0,
 			'Author_ID' => $_GET['preview_userid'],
-			'Date' => $_GET['preview_date'],
-			'Content' => $_GET['preview_content'],
-			'Excerpt' => $_GET['preview_excerpt'],
-			'Title' => $_GET['preview_title'],
-			'Category' => $_GET['preview_category'],
-			'Notify' => 1
-			);
+			'Date'      => $_GET['preview_date'],
+			'Content'   => $_GET['preview_content'],
+			'Excerpt'   => $_GET['preview_excerpt'],
+			'Title'     => $_GET['preview_title'],
+			'Category'  => $_GET['preview_category'],
+			'Notify'    => 1,
+		);
 	}
-	$authordata = get_userdata($post->post_author);
-	$day = mysql2date('d.m.y', $post->post_date);
-	$currentmonth = mysql2date('m', $post->post_date);
-	$numpages = 1;
-	if (!$page)
+	$authordata   = get_userdata( $post->post_author );
+	$day          = mysql2date( 'd.m.y', $post->post_date );
+	$currentmonth = mysql2date( 'm', $post->post_date );
+	$numpages     = 1;
+	if ( ! $page ) {
 		$page = 1;
-	if (isset($p))
+	}
+	if ( isset( $p ) ) {
 		$more = 1;
+	}
 	$content = $post->post_content;
-	if (preg_match('/<!--nextpage-->/', $post->post_content)) {
-		if ($page > 1)
+	if ( preg_match( '/<!--nextpage-->/', $post->post_content ) ) {
+		if ( $page > 1 ) {
 			$more = 1;
+		}
 		$multipage = 1;
-		$content = stripslashes($post->post_content);
-		$content = str_replace("\n<!--nextpage-->\n", '<!--nextpage-->', $content);
-		$content = str_replace("\n<!--nextpage-->", '<!--nextpage-->', $content);
-		$content = str_replace("<!--nextpage-->\n", '<!--nextpage-->', $content);
-		$pages = explode('<!--nextpage-->', $content);
-		$numpages = count($pages);
+		$content   = stripslashes( $post->post_content );
+		$content   = str_replace( "\n<!--nextpage-->\n", '<!--nextpage-->', $content );
+		$content   = str_replace( "\n<!--nextpage-->", '<!--nextpage-->', $content );
+		$content   = str_replace( "<!--nextpage-->\n", '<!--nextpage-->', $content );
+		$pages     = explode( '<!--nextpage-->', $content );
+		$numpages  = count( $pages );
 	} else {
-		$pages[0] = stripslashes($post->post_content);
+		$pages[0]  = stripslashes( $post->post_content );
 		$multipage = 0;
 	}
 	return true;
@@ -1030,63 +1099,61 @@ function start_b2() {
 
 function is_new_day() {
 	global $day, $previousday;
-	if ($day != $previousday) {
-		return(1);
+	if ( $day != $previousday ) {
+		return( 1 );
 	} else {
-		return(0);
+		return( 0 );
 	}
 }
 
-function apply_filters($tag, $string) {
+function apply_filters( $tag, $string ) {
 	global $b2_filter;
-	if (isset($b2_filter['all'])) {
-		$b2_filter['all'] = (is_string($b2_filter['all'])) ? array($b2_filter['all']) : $b2_filter['all'];
+	if ( isset( $b2_filter['all'] ) ) {
+		$b2_filter['all'] = ( is_string( $b2_filter['all'] ) ) ? array( $b2_filter['all'] ) : $b2_filter['all'];
 		// EN: $b2_filter[$tag] may be unset/null; PHP 8's array_merge() rejects
 		//     a non-array argument with a TypeError, so coerce it to an array.
 		// JA: $b2_filter[$tag] は未設定/null のことがある。PHP 8 の array_merge()
 		//     は非配列引数を TypeError とするため、配列へ変換する。
-		$b2_filter[$tag] = array_merge($b2_filter['all'], (array) ($b2_filter[$tag] ?? array()));
-		$b2_filter[$tag] = array_unique($b2_filter[$tag]);
+		$b2_filter[ $tag ] = array_merge( $b2_filter['all'], (array) ( $b2_filter[ $tag ] ?? array() ) );
+		$b2_filter[ $tag ] = array_unique( $b2_filter[ $tag ] );
 	}
-	if (isset($b2_filter[$tag])) {
-		$b2_filter[$tag] = (is_string($b2_filter[$tag])) ? array($b2_filter[$tag]) : $b2_filter[$tag];
-		$functions = $b2_filter[$tag];
-		foreach($functions as $function) {
-			$string = $function($string);
+	if ( isset( $b2_filter[ $tag ] ) ) {
+		$b2_filter[ $tag ] = ( is_string( $b2_filter[ $tag ] ) ) ? array( $b2_filter[ $tag ] ) : $b2_filter[ $tag ];
+		$functions         = $b2_filter[ $tag ];
+		foreach ( $functions as $function ) {
+			$string = $function( $string );
 		}
 	}
 	return $string;
 }
 
-function add_filter($tag, $function_to_add) {
+function add_filter( $tag, $function_to_add ) {
 	global $b2_filter;
-	if (isset($b2_filter[$tag])) {
-		$functions = $b2_filter[$tag];
-		if (is_array($functions)) {
-			foreach($functions as $function) {
+	if ( isset( $b2_filter[ $tag ] ) ) {
+		$functions = $b2_filter[ $tag ];
+		if ( is_array( $functions ) ) {
+			foreach ( $functions as $function ) {
 				$new_functions[] = $function;
 			}
-		} elseif (is_string($functions)) {
+		} elseif ( is_string( $functions ) ) {
 			$new_functions[] = $functions;
 		}
-/* this is commented out because it just makes PHP die silently
-   for no apparent reason
+		/* this is commented out because it just makes PHP die silently
+		for no apparent reason
 		if (is_array($function_to_add)) {
 			foreach($function_to_add as $function) {
 				if (!in_array($function, $b2_filter[$tag])) {
 					$new_functions[] = $function;
 				}
 			}
-		} else */if (is_string($function_to_add)) {
-			if (!@in_array($function_to_add, $b2_filter[$tag])) {
+		} else */if ( is_string( $function_to_add ) ) {
+			if ( ! @in_array( $function_to_add, $b2_filter[ $tag ] ) ) {
 				$new_functions[] = $function_to_add;
 			}
-		}
-		$b2_filter[$tag] = $new_functions;
+}
+		$b2_filter[ $tag ] = $new_functions;
 	} else {
-		$b2_filter[$tag] = array($function_to_add);
+		$b2_filter[ $tag ] = array( $function_to_add );
 	}
 	return true;
 }
-
-?>

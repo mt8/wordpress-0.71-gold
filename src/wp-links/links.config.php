@@ -31,9 +31,9 @@
 
 // table names in the database now moved to b2config.php
 
-$minadminlevel = 5;
+$minadminlevel   = 5;
 $use_adminlevels = true; // set this to false to have all links visible to
-                         // everyone in the link manager
+						// everyone in the link manager
 
 // Set this to the type rating system you wish to use.
 // allowed values are: none, number, char, image
@@ -52,17 +52,17 @@ $links_rating_ignore_zero = 0;
 $links_rating_single_image = 1;
 
 //or use an individual image for each value?
-$links_rating_image[0]='wp-links/links-images/star.gif';
+$links_rating_image[0] = 'wp-links/links-images/star.gif';
 //$links_rating_image[0]='wp-links/links-images/rating-0.gif';
-$links_rating_image[1]='wp-links/links-images/rating-1.gif';
-$links_rating_image[2]='wp-links/links-images/rating-2.gif';
-$links_rating_image[3]='wp-links/links-images/rating-3.gif';
-$links_rating_image[4]='wp-links/links-images/rating-4.gif';
-$links_rating_image[5]='wp-links/links-images/rating-5.gif';
-$links_rating_image[6]='wp-links/links-images/rating-6.gif';
-$links_rating_image[7]='wp-links/links-images/rating-7.gif';
-$links_rating_image[8]='wp-links/links-images/rating-8.gif';
-$links_rating_image[9]='wp-links/links-images/rating-9.gif';
+$links_rating_image[1] = 'wp-links/links-images/rating-1.gif';
+$links_rating_image[2] = 'wp-links/links-images/rating-2.gif';
+$links_rating_image[3] = 'wp-links/links-images/rating-3.gif';
+$links_rating_image[4] = 'wp-links/links-images/rating-4.gif';
+$links_rating_image[5] = 'wp-links/links-images/rating-5.gif';
+$links_rating_image[6] = 'wp-links/links-images/rating-6.gif';
+$links_rating_image[7] = 'wp-links/links-images/rating-7.gif';
+$links_rating_image[8] = 'wp-links/links-images/rating-8.gif';
+$links_rating_image[9] = 'wp-links/links-images/rating-9.gif';
 
 
 //weblogs.com lookup values
@@ -78,5 +78,3 @@ $weblogs_cache_file = 'weblogs.com.changes.cache';
 $weblogs_xml_url = 'http://www.weblogs.com/changes.xml';
 //$weblogs_xml_url = 'http://www.weblogs.com/shortChanges.xml';
 $weblogs_cacheminutes = 60; // cache time in minutes (if it is older than this get a new copy)
-
-?>

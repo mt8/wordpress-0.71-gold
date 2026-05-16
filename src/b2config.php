@@ -1,7 +1,7 @@
 <?php
 /* *
  * WordPress's config file *
-                         * */
+						 * */
 
 // Reminder: everything that starts with #, /* or // is a comment
 
@@ -11,10 +11,10 @@
 // $blogfilename is the name of the default file for your blog
 // $blogname is the name of your blog
 
-$siteurl = 'http://localhost:8080'; // Docker local environment URL
-$blogfilename = 'index.php';
-$blogname = "my weblog";
-$blogdescription = "babblings !";
+$siteurl         = 'http://localhost:8080'; // Docker local environment URL
+$blogfilename    = 'index.php';
+$blogname        = 'my weblog';
+$blogdescription = 'babblings !';
 
 // Your email (obvious eh?)
 $admin_email = 'you@example.com';
@@ -25,10 +25,18 @@ $admin_email = 'you@example.com';
 //     (some admin pages include it twice) without a redefinition warning.
 // JA: 一部の管理画面は b2config.php を二重に読み込むため、再定義警告が
 //     出ないよう define をガードする。
-if (!defined('DB_NAME'))     define('DB_NAME', 'b2');		// The name of the database
-if (!defined('DB_USER'))     define('DB_USER', 'user');		// Your MySQL username
-if (!defined('DB_PASSWORD')) define('DB_PASSWORD', 'pass');	// ...and password
-if (!defined('DB_HOST'))     define('DB_HOST', 'db');	// Docker Compose service name of the MySQL container
+if ( ! defined( 'DB_NAME' ) ) {
+	define( 'DB_NAME', 'b2' );       // The name of the database
+}
+if ( ! defined( 'DB_USER' ) ) {
+	define( 'DB_USER', 'user' );     // Your MySQL username
+}
+if ( ! defined( 'DB_PASSWORD' ) ) {
+	define( 'DB_PASSWORD', 'pass' ); // ...and password
+}
+if ( ! defined( 'DB_HOST' ) ) {
+	define( 'DB_HOST', 'db' );   // Docker Compose service name of the MySQL container
+}
 
 
 // If you've finished up to here you should be able to install now.
@@ -48,14 +56,14 @@ $start_of_week = 1;
 
 
 // database tables' names (change them if you want to have multiple b2's in a single database)
-$tableposts = 'b2posts';
-$tableusers = 'b2users';
-$tablesettings = 'b2settings';
+$tableposts      = 'b2posts';
+$tableusers      = 'b2users';
+$tablesettings   = 'b2settings';
 $tablecategories = 'b2categories';
-$tablecomments = 'b2comments';
+$tablecomments   = 'b2comments';
 // tables for link manager
-$tablelinks = "b2links";
-$tablelinkcategories = "b2linkcategories";
+$tablelinks          = 'b2links';
+$tablelinkcategories = 'b2linkcategories';
 
 
 // ** Post preview function **
@@ -68,8 +76,8 @@ $use_preview = 1;
 // ** Text formatting options **
 
 // these options can help you format your text without using too much html
-$use_bbcode = 0;        // use BBCode, like [b]bold[/b]
-$use_gmcode = 0;        // use GreyMatter-styles: **bold** \italic\ __underline__
+$use_bbcode    = 0;        // use BBCode, like [b]bold[/b]
+$use_gmcode    = 0;        // use GreyMatter-styles: **bold** \italic\ __underline__
 $use_quicktags = 1;     // buttons for HTML tags (they won't work on IE Mac yet)
 
 // IMPORTANT! set this to 0 if you are using Chinese, Japanese, Korean,
@@ -152,7 +160,7 @@ $use_weblogsping = 0;
 //     Issue #44 で撤去した。変数は無害な設定として(無効のまま)残し、
 //     レガシーな参照があっても解決できるようにする。
 $use_cafelogping = 0;
-$cafelogID = '';
+$cafelogID       = '';
 
 
 // ** Blo.gs ping **
@@ -204,78 +212,78 @@ $smilies_directory = $siteurl . '/b2-img/smilies';
 
 // here's the conversion table, you can modify it if you know what you're doing
 $b2smiliestrans = array(
-    ':)'        => 'icon_smile.gif',
-    ':D'        => 'icon_biggrin.gif',
-    ':-D'       => 'icon_biggrin.gif',
-    ':grin:'    => 'icon_biggrin.gif',
-    
-    ':-)'       => 'icon_smile.gif',
-    ':smile:'   => 'icon_smile.gif',
-    ':('        => 'icon_sad.gif',
-    ':-('       => 'icon_sad.gif',
-    ':sad:'     => 'icon_sad.gif',
-    ':o'        => 'icon_surprised.gif',
-    ':-o'       => 'icon_surprised.gif',
-    ':eek:'     => 'icon_surprised.gif',
-    '8O'        => 'icon_eek.gif',
-    '8-O'       => 'icon_eek.gif',
-    ':shock:'   => 'icon_eek.gif',
-    ':?'        => 'icon_confused.gif',
-    ':-?'       => 'icon_confused.gif',
-    ':???:'     => 'icon_confused.gif',
-    '8)'        => 'icon_cool.gif',
-    '8-)'       => 'icon_cool.gif',
-    ':cool:'    => 'icon_cool.gif',
-    ':lol:'     => 'icon_lol.gif',
-    ':x'        => 'icon_mad.gif',
-    ':-x'       => 'icon_mad.gif',
-    ':mad:'     => 'icon_mad.gif',
-    ':P'        => 'icon_razz.gif',
-    ':-P'       => 'icon_razz.gif',
-    ':razz:'    => 'icon_razz.gif',
-    ':oops:'    => 'icon_redface.gif',
-    ':cry:'     => 'icon_cry.gif',
-    ':evil:'    => 'icon_evil.gif',
-    ':twisted:' => 'icon_twisted.gif',
-    ':roll:'    => 'icon_rolleyes.gif',
-    ':wink:'    => 'icon_wink.gif',
-    ';)'        => 'icon_wink.gif',
-    ';-)'       => 'icon_wink.gif',
-    ':!:'       => 'icon_exclaim.gif',
-    ':?:'       => 'icon_question.gif',
-    ':idea:'    => 'icon_idea.gif',
-    ':arrow:'   => 'icon_arrow.gif',
-    ':|'        => 'icon_neutral.gif',
-    ':-|'       => 'icon_neutral.gif',
-    ':neutral:' => 'icon_neutral.gif',
-    ':mrgreen:' => 'icon_mrgreen.gif',
+	':)'        => 'icon_smile.gif',
+	':D'        => 'icon_biggrin.gif',
+	':-D'       => 'icon_biggrin.gif',
+	':grin:'    => 'icon_biggrin.gif',
+
+	':-)'       => 'icon_smile.gif',
+	':smile:'   => 'icon_smile.gif',
+	':('        => 'icon_sad.gif',
+	':-('       => 'icon_sad.gif',
+	':sad:'     => 'icon_sad.gif',
+	':o'        => 'icon_surprised.gif',
+	':-o'       => 'icon_surprised.gif',
+	':eek:'     => 'icon_surprised.gif',
+	'8O'        => 'icon_eek.gif',
+	'8-O'       => 'icon_eek.gif',
+	':shock:'   => 'icon_eek.gif',
+	':?'        => 'icon_confused.gif',
+	':-?'       => 'icon_confused.gif',
+	':???:'     => 'icon_confused.gif',
+	'8)'        => 'icon_cool.gif',
+	'8-)'       => 'icon_cool.gif',
+	':cool:'    => 'icon_cool.gif',
+	':lol:'     => 'icon_lol.gif',
+	':x'        => 'icon_mad.gif',
+	':-x'       => 'icon_mad.gif',
+	':mad:'     => 'icon_mad.gif',
+	':P'        => 'icon_razz.gif',
+	':-P'       => 'icon_razz.gif',
+	':razz:'    => 'icon_razz.gif',
+	':oops:'    => 'icon_redface.gif',
+	':cry:'     => 'icon_cry.gif',
+	':evil:'    => 'icon_evil.gif',
+	':twisted:' => 'icon_twisted.gif',
+	':roll:'    => 'icon_rolleyes.gif',
+	':wink:'    => 'icon_wink.gif',
+	';)'        => 'icon_wink.gif',
+	';-)'       => 'icon_wink.gif',
+	':!:'       => 'icon_exclaim.gif',
+	':?:'       => 'icon_question.gif',
+	':idea:'    => 'icon_idea.gif',
+	':arrow:'   => 'icon_arrow.gif',
+	':|'        => 'icon_neutral.gif',
+	':-|'       => 'icon_neutral.gif',
+	':neutral:' => 'icon_neutral.gif',
+	':mrgreen:' => 'icon_mrgreen.gif',
 );
 
 
 // the weekdays and the months.. translate them if necessary
 
-$weekday[0]='Sunday';
-$weekday[1]='Monday';
-$weekday[2]='Tuesday';
-$weekday[3]='Wednesday';
-$weekday[4]='Thursday';
-$weekday[5]='Friday';
-$weekday[6]='Saturday';
+$weekday[0] = 'Sunday';
+$weekday[1] = 'Monday';
+$weekday[2] = 'Tuesday';
+$weekday[3] = 'Wednesday';
+$weekday[4] = 'Thursday';
+$weekday[5] = 'Friday';
+$weekday[6] = 'Saturday';
 
 
 // the months, translate them if necessary - note: this isn't active everywhere yet
-$month['01']='January';
-$month['02']='February';
-$month['03']='March';
-$month['04']='April';
-$month['05']='May';
-$month['06']='June';
-$month['07']='July';
-$month['08']='August';
-$month['09']='September';
-$month['10']='October';
-$month['11']='November';
-$month['12']='December';
+$month['01'] = 'January';
+$month['02'] = 'February';
+$month['03'] = 'March';
+$month['04'] = 'April';
+$month['05'] = 'May';
+$month['06'] = 'June';
+$month['07'] = 'July';
+$month['08'] = 'August';
+$month['09'] = 'September';
+$month['10'] = 'October';
+$month['11'] = 'November';
+$month['12'] = 'December';
 
 
 
@@ -285,8 +293,8 @@ $b2inc = 'b2-include';
 
 // ** Querystring Configuration ** (don't change if you don't know what you're doing)
 
-$querystring_start = '?';
-$querystring_equal = '=';
+$querystring_start     = '?';
+$querystring_equal     = '=';
 $querystring_separator = '&amp;';
 
 
@@ -295,10 +303,10 @@ $querystring_separator = '&amp;';
 // ** Configuration for b2mail.php ** (skip this if you don't intend to blog via email)
 
 // mailserver settings
-$mailserver_url = 'mail.example.com';
+$mailserver_url   = 'mail.example.com';
 $mailserver_login = 'login@example.com';
-$mailserver_pass = 'password';
-$mailserver_port = 110;
+$mailserver_pass  = 'password';
+$mailserver_port  = 110;
 
 // by default posts will have this category
 $default_category = 1;
@@ -307,7 +315,7 @@ $default_category = 1;
 $subjectprefix = 'blog:';
 
 // body terminator string (starting from this string, everything will be ignored, including this string)
-$bodyterminator = "___";
+$bodyterminator = '___';
 
 // set this to 1 to run in test mode
 $thisisforfunonly = 0;
@@ -320,7 +328,7 @@ $thisisforfunonly = 0;
 // when you compose your message, you'll type your subject then the separator string
 // then you type your login:password, then the separator, then content
 
-$use_phoneemail = 0;
+$use_phoneemail       = 0;
 $phoneemail_separator = ':::';
 
 
@@ -330,25 +338,24 @@ $phoneemail_separator = ':::';
 /* Stop editing */
 
 
-$HTTP_HOST = getenv('HTTP_HOST');  /* domain name */
-$REMOTE_ADDR = getenv('REMOTE_ADDR'); /* visitor's IP */
-$HTTP_USER_AGENT = getenv('HTTP_USER_AGENT'); /* visitor's browser */
+$HTTP_HOST       = getenv( 'HTTP_HOST' );  /* domain name */
+$REMOTE_ADDR     = getenv( 'REMOTE_ADDR' ); /* visitor's IP */
+$HTTP_USER_AGENT = getenv( 'HTTP_USER_AGENT' ); /* visitor's browser */
 
-$server = DB_HOST;
+$server   = DB_HOST;
 $loginsql = DB_USER;
-$passsql = DB_PASSWORD;
-$path = $siteurl;
-$base = DB_NAME;
+$passsql  = DB_PASSWORD;
+$path     = $siteurl;
+$base     = DB_NAME;
 
 
 // This should get us the relative path of WordPress and the absolute path on the server. Yipee!
 $relpath = '';
-$url = explode('/', $siteurl);
-for ($i = 3; $i < count($url); $i++) {
-	$relpath .= '/'. $url[$i];
+$url     = explode( '/', $siteurl );
+for ( $i = 3; $i < count( $url ); $i++ ) {
+	$relpath .= '/' . $url[ $i ];
 }
-$abspath =  getenv('DOCUMENT_ROOT') . $relpath . '/';
-$b2inc = "/$b2inc";
+$abspath    = getenv( 'DOCUMENT_ROOT' ) . $relpath . '/';
+$b2inc      = "/$b2inc";
 $pathserver = &$siteurl;
-require_once($abspath.$b2inc.'/wp-db.php');
-?>
+require_once $abspath . $b2inc . '/wp-db.php';

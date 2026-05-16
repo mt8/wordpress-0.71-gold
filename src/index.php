@@ -1,12 +1,12 @@
-<?php /* Don't remove this line, it calls the b2 function files ! */ $blog=1;
-require_once('blog.header.php');
-require($abspath.'wp-links/links.php');
+<?php /* Don't remove this line, it calls the b2 function files ! */ $blog = 1;
+require_once 'blog.header.php';
+require $abspath . 'wp-links/links.php';
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
-	<title><?php bloginfo('name') ?><?php single_post_title(' :: ') ?><?php single_cat_title(' :: ') ?><?php single_month_title(' :: ') ?></title>
+	<title><?php bloginfo( 'name' ); ?><?php single_post_title( ' :: ' ); ?><?php single_cat_title( ' :: ' ); ?><?php single_month_title( ' :: ' ); ?></title>
 	
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
 	<meta name="generator" content="WordPress" /> <!-- EN: version removed (Issue #37) so the exact release is not disclosed publicly. JA: バージョンを除去(Issue #37) - 正確なリリースを公開しないため。 -->
@@ -16,37 +16,44 @@ require($abspath.'wp-links/links.php');
 	</style>
 	
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
-	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo('rdf_url'); ?>" />
-	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo('rss2_url'); ?>" />
+	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo( 'rdf_url' ); ?>" />
+	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo( 'rss2_url' ); ?>" />
 </head>
 
 <body>
-<h1 id="header"><a href="<?php echo $siteurl; ?>" title="<?php bloginfo('name'); ?>"><?php bloginfo('name'); ?></a></h1>
+<h1 id="header"><a href="<?php echo $siteurl; ?>" title="<?php bloginfo( 'name' ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
 
 <div id="content">
 
-<?php if ($posts) { foreach ($posts as $post) { start_b2(); ?>
-<?php the_date('','<h2>','</h2>'); ?>
+<?php
+if ( $posts ) {
+	foreach ( $posts as $post ) {
+		start_b2();
+		?>
+			<?php the_date( '', '<h2>', '</h2>' ); ?>
 
- <h3 class="storytitle">
-  <a href="<?php permalink_link() ?>" rel="bookmark"><?php the_title(); ?></a> 
-  <span class="meta"><a href="?cat=<?php the_category_ID() ?>" title="Category: <?php the_category() ?>">[<?php the_category() ?>]</a> &#8212; <?php the_author() ?> @ <?php the_time() ?>
-  </span>
- </h3>
+<h3 class="storytitle">
+	<a href="<?php permalink_link(); ?>" rel="bookmark"><?php the_title(); ?></a> 
+	<span class="meta"><a href="?cat=<?php the_category_ID(); ?>" title="Category: <?php the_category(); ?>">[<?php the_category(); ?>]</a> &#8212; <?php the_author(); ?> @ <?php the_time(); ?>
+	</span>
+</h3>
 
 <div class="storycontent">
-	<?php the_content(); ?>
+			<?php the_content(); ?>
 </div>
 
 <div class="feedback">
-	<?php link_pages('<br />Pages: ', '<br />', 'number'); ?>
+			<?php link_pages( '<br />Pages: ', '<br />', 'number' ); ?>
 </div>
 
-	<?php } } // end foreach, end if any posts ?>
+		<?php
+	}
+} // end foreach, end if any posts
+?>
 
 </div>
 
-<p class="credit"><?php timer_stop(1); ?> <cite>Powered by <a href="http://wordpress.org"><strong>WordPress</strong></a></cite></p>
+<p class="credit"><?php timer_stop( 1 ); ?> <cite>Powered by <a href="http://wordpress.org"><strong>WordPress</strong></a></cite></p>
 
 
 <div id="menu">
@@ -54,42 +61,42 @@ require($abspath.'wp-links/links.php');
 <ul>
 <li>Links:
 	<ul>
-		<?php get_links(-1, '<li>', '</li>', '', 0, '_updated', 0, 0, -1, -1)?>
+		<?php get_links( -1, '<li>', '</li>', '', 0, '_updated', 0, 0, -1, -1 ); ?>
 	</ul>
- </li>
- <li>Categories:
+</li>
+<li>Categories:
 	<ul>
-	<?php list_cats(0, 'All', 'name'); ?>
+	<?php list_cats( 0, 'All', 'name' ); ?>
 	</ul>
- </li>
- <li>Search:
-	<form id="searchform" method="get" action="<?php echo htmlspecialchars($PHP_SELF); /*$siteurl."/".$blogfilename*/ ?>">
+</li>
+<li>Search:
+	<form id="searchform" method="get" action="<?php echo htmlspecialchars( $PHP_SELF ); /*$siteurl."/".$blogfilename*/ ?>">
 	<div>
 		<input type="text" name="s" size="15" /><br />
 		<input type="submit" name="submit" value="search" />
 	</div>
 	</form>
- </li>
- <li>Archives:
- 	<ul>
-	 <?php get_archives('monthly'); ?>
- 	</ul>
- </li>
- <li>Other:
+</li>
+<li>Archives:
+	<ul>
+	<?php get_archives( 'monthly' ); ?>
+	</ul>
+</li>
+<li>Other:
 	<ul>
 		<li><a href="b2login.php">login</a></li>
 		<li><a href="b2register.php">register</a></li>
 	</ul>
- </li>
- <li>Meta:
- 	<ul>
+</li>
+<li>Meta:
+	<ul>
 		<li><a href="b2rss.php">RSS .92</a></li>
 		<li><a href="b2rdf.php">RDF 1.0</a></li>
 		<li><a href="b2rss2.php">RSS 2.0</a></li>
 		<li><a href="http://validator.w3.org/check/referer" title="This page validates as XHTML 1.0 Transitional">Valid <abbr title="eXtensible HyperText Markup Language">XHTML</abbr></a></li>
 		<li><a href="http://wordpress.org" title="Powered by WordPress, personal publishing platform">WP</a></li>
 	</ul>
- </li>
+</li>
 </ul>
 
 </div>
