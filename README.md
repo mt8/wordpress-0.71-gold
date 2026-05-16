@@ -214,6 +214,7 @@ JA: すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に�
 | `docs/static-analysis.md` | phpcs / PHPStan tooling. / phpcs・PHPStan ツール。 |
 | `docs/docker-environment.md` | Docker environment details. / Docker 環境の詳細。 |
 | `docs/gutenberg-investigation.md` | Gutenberg port feasibility investigation. / Gutenberg 移植可否の調査。 |
+| `docs/block-editor-media-and-layout.md` | Block editor: image upload & layout-block consistency. / ブロックエディタ: 画像アップロードとレイアウト整合性。 |
 
 ## License / ライセンス
 
