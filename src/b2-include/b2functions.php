@@ -382,6 +382,7 @@ function strip_all_but_one_link($text, $mylink) {
 
 
 function get_lastpostdate() {
+	global $wpdb;
 	global $tableposts, $cache_lastpostdate, $use_cache, $time_difference, $pagenow;
 	if ((!isset($cache_lastpostdate)) OR (!$use_cache)) {
 		$now = date("Y-m-d H:i:s",(time() + ($time_difference * 3600)));
@@ -391,7 +392,7 @@ function get_lastpostdate() {
 			$showcatzero = '';
 		}
 		$sql = "SELECT * FROM $tableposts WHERE $showcatzero post_date <= '$now' ORDER BY post_date DESC LIMIT 1";
-		$result = mysql_query($sql) or die("Your SQL query: <br />$sql<br /><br />MySQL said:<br />".mysql_error());
+		$result = mysqli_query($wpdb->dbh, $sql) or die("Your SQL query: <br />$sql<br /><br />MySQL said:<br />".mysqli_error($wpdb->dbh));
 		++$querycount;
 		$myrow = mysqli_fetch_object($result);
 		$lastpostdate = $myrow->post_date;
@@ -533,11 +534,12 @@ function get_postdata2($postid=0) { // less flexible, but saves mysql queries
 	return $postdata;
 }
 
-function get_commentdata($comment_ID,$no_cache=0) { // less flexible, but saves mysql queries
+function get_commentdata($comment_ID,$no_cache=0) {
+	global $wpdb; // less flexible, but saves mysql queries
 	global $postc,$id,$commentdata,$tablecomments,$querycount;
 	if ($no_cache) {
 		$query="SELECT * FROM $tablecomments WHERE comment_ID = $comment_ID";
-		$result=mysql_query($query);
+		$result=mysqli_query($wpdb->dbh, $query);
 		++$querycount;
 		$myrow = mysqli_fetch_array($result);
 	} else {
@@ -562,10 +564,11 @@ function get_commentdata($comment_ID,$no_cache=0) { // less flexible, but saves 
 }
 
 function get_catname($cat_ID) {
+	global $wpdb;
 	global $tablecategories,$cache_catnames,$use_cache,$querycount;
 	if ((!$cache_catnames) || (!$use_cache)) {
 		$sql = "SELECT * FROM $tablecategories";
-		$result = mysql_query($sql) or die('Oops, couldn\'t query the db for categories.');
+		$result = mysqli_query($wpdb->dbh, $sql) or die('Oops, couldn\'t query the db for categories.');
 		$querycount;
 		while ($post = mysqli_fetch_object($result)) {
 			$cache_catnames[$post->cat_ID] = $post->cat_name;
@@ -581,9 +584,10 @@ function profile($user_login) {
 }
 
 function dropdown_categories($blog_ID=1) {
+	global $wpdb;
 	global $postdata,$tablecategories,$mode,$querycount;
 	$query="SELECT * FROM $tablecategories";
-	$result=mysql_query($query);
+	$result=mysqli_query($wpdb->dbh, $query);
 	++$querycount;
 	$width = ($mode=="sidebar") ? "100%" : "170px";
 	echo '<select name="post_category" style="width:'.$width.';" tabindex="2" id="category">';
