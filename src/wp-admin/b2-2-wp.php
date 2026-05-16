@@ -146,8 +146,9 @@ switch ( $step ) {
 			echo "<p>... may need to update it though. Looking for column link_updated...</p>\n";
 			$query = "SELECT link_updated FROM $tablelinks LIMIT 1";
 			$q     = @mysqli_query( $wpdb->dbh, $query );
-			if ( $q != false ) {
-				if ( $row = mysqli_fetch_object( $q ) ) {
+			if ( false != $q ) {
+				$row = mysqli_fetch_object( $q );
+				if ( $row ) {
 					echo "<p>You have  column link_updated. Good!</p>\n";
 				}
 			} else {
@@ -158,8 +159,9 @@ switch ( $step ) {
 			echo "<p>Looking for column link_rel...</p>\n";
 			$query = "SELECT link_rel FROM $tablelinks LIMIT 1";
 			$q     = @mysqli_query( $wpdb->dbh, $query );
-			if ( $q != false ) {
-				if ( $row = mysqli_fetch_object( $q ) ) {
+			if ( false != $q ) {
+				$row = mysqli_fetch_object( $q );
+				if ( $row ) {
 					echo "<p>You have column link_rel. Good!</p>\n";
 				}
 			} else {
@@ -174,15 +176,16 @@ switch ( $step ) {
 			echo "<p>Looking for category 1...</p>\n";
 			$sql    = "SELECT * FROM $tablelinkcategories WHERE cat_id=1 ";
 			$result = mysqli_query( $wpdb->dbh, $sql ) or print ( "Can't query '$tablelinkcategories'.<br />" . $sql . '<br />' . mysqli_error( $wpdb->dbh ) );
-			if ( $result != false ) {
-				if ( $row = mysqli_fetch_object( $result ) ) {
+			if ( false != $result ) {
+				$row = mysqli_fetch_object( $result );
+				if ( $row ) {
 					echo "<p>You have at least 1 category. Good!</p>\n";
 					$got_row = true;
 				} else {
 					echo "<p>Gonna insert category 1...</p>\n";
 					$sql    = "INSERT INTO $tablelinkcategories (cat_id, cat_name) VALUES (1, 'General')";
 					$result = mysqli_query( $wpdb->dbh, $sql ) or print ( "Can't query insert category.<br />" . $sql . '<br />' . mysqli_error( $wpdb->dbh ) );
-					if ( $result != false ) {
+					if ( false != $result ) {
 						echo "<p>Inserted category Ok</p>\n";
 						$got_row = true;
 					}

@@ -734,17 +734,18 @@ function next_posts( $max_page = 0 ) {
 	// original by cfactor at cooltux.org
 	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
+	if ( empty( $p ) && ( 'paged' == $what_to_show ) ) {
 		$qstr = $_SERVER['QUERY_STRING'];
 		if ( ! empty( $qstr ) ) {
 			$qstr = preg_replace( '/&paged=\d{0,}/', '', $qstr );
 			$qstr = preg_replace( '/paged=\d{0,}/', '', $qstr );
 		} elseif ( stristr( $_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] ) ) {
-			if ( '' != $qstr = str_replace(
+			$qstr = str_replace(
 				$_SERVER['SCRIPT_NAME'],
 				'',
 				$_SERVER['REQUEST_URI']
-			) ) {
+			);
+			if ( '' != $qstr ) {
 				$qstr = preg_replace( '/^\//', '', $qstr );
 				$qstr = preg_replace( '/paged\/\d{0,}\//', '', $qstr );
 				$qstr = preg_replace( '/paged\/\d{0,}/', '', $qstr );
@@ -766,10 +767,11 @@ function next_posts( $max_page = 0 ) {
 function next_posts_link( $label = 'Next Page >>', $max_page = 0 ) {
 	global $wpdb;
 	global $p, $paged, $result, $request, $posts_per_page, $what_to_show;
-	if ( $what_to_show == 'paged' ) {
+	if ( 'paged' == $what_to_show ) {
 		if ( ! $max_page ) {
 			$nxt_request = $request;
-			if ( $pos = strpos( strtoupper( $request ), 'LIMIT' ) ) {
+			$pos         = strpos( strtoupper( $request ), 'LIMIT' );
+			if ( $pos ) {
 				$nxt_request = substr( $request, 0, $pos );
 			}
 			$nxt_result = mysqli_query( $wpdb->dbh, $nxt_request );
@@ -793,17 +795,18 @@ function previous_posts() {
 	// original by cfactor at cooltux.org
 	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
-	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
+	if ( empty( $p ) && ( 'paged' == $what_to_show ) ) {
 		$qstr = $_SERVER['QUERY_STRING'];
 		if ( ! empty( $qstr ) ) {
 			$qstr = preg_replace( '/&paged=\d{0,}/', '', $qstr );
 			$qstr = preg_replace( '/paged=\d{0,}/', '', $qstr );
 		} elseif ( stristr( $_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] ) ) {
-			if ( '' != $qstr = str_replace(
+			$qstr = str_replace(
 				$_SERVER['SCRIPT_NAME'],
 				'',
 				$_SERVER['REQUEST_URI']
-			) ) {
+			);
+			if ( '' != $qstr ) {
 				$qstr = preg_replace( '/^\//', '', $qstr );
 				$qstr = preg_replace( '/paged\/\d{0,}\//', '', $qstr );
 				$qstr = preg_replace( '/paged\/\d{0,}/', '', $qstr );
@@ -832,9 +835,10 @@ function previous_posts_link( $label = '<< Previous Page' ) {
 function posts_nav_link( $sep = ' :: ', $prelabel = '<< Previous Page', $nxtlabel = 'Next Page >>' ) {
 	global $wpdb;
 	global $p, $what_to_show, $request, $posts_per_page;
-	if ( empty( $p ) && ( $what_to_show == 'paged' ) ) {
+	if ( empty( $p ) && ( 'paged' == $what_to_show ) ) {
 		$nxt_request = $request;
-		if ( $pos = strpos( strtoupper( $request ), 'LIMIT' ) ) {
+		$pos         = strpos( strtoupper( $request ), 'LIMIT' );
+		if ( $pos ) {
 			$nxt_request = substr( $request, 0, $pos );
 		}
 		$nxt_result = mysqli_query( $wpdb->dbh, $nxt_request );

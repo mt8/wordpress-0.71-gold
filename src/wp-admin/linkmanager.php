@@ -266,7 +266,8 @@ switch ( $action ) {
 		" WHERE link_id = $link_id";
 
 		$result = mysqli_query( $wpdb->dbh, $sql ) or linkmanager_db_error( $wpdb->dbh, $sql );
-		if ( $row = mysqli_fetch_object( $result ) ) {
+		$row    = mysqli_fetch_object( $result );
+		if ( $row ) {
 			$link_url         = $row->link_url;
 			$link_name        = stripslashes( $row->link_name );
 			$link_image       = $row->link_image;
