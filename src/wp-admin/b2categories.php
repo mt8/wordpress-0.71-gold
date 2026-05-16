@@ -90,7 +90,7 @@ case 'Rename':
 	<form name="renamecat" action="b2categories.php" method="post">
 		<strong>New</strong> name:<br />
 		<input type="hidden" name="action" value="editedcat" />
-		<input type="hidden" name="cat_ID" value="<?php echo $_POST["cat_ID"] ?>" />
+		<input type="hidden" name="cat_ID" value="<?php echo htmlspecialchars($_POST["cat_ID"]) ?>" />
 		<input type="text" name="cat_name" value="<?php echo $cat_name ?>" /><br />
 		<input type="submit" name="submit" value="Edit it !" class="search" />
 	</form>

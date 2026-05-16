@@ -70,7 +70,7 @@ require($abspath.'wp-links/links.php');
 	</ul>
  </li>
  <li>Search:
-	<form id="searchform" method="get" action="<?php echo $PHP_SELF; /*$siteurl."/".$blogfilename*/ ?>">
+	<form id="searchform" method="get" action="<?php echo htmlspecialchars($PHP_SELF); /*$siteurl."/".$blogfilename*/ ?>">
 	<div>
 		<input type="text" name="s" size="15" /><br />
 		<input type="submit" name="submit" value="search" />
