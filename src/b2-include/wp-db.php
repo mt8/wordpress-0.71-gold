@@ -9,9 +9,13 @@
 	//  We have modified the HTML it returns slightly.
 
 	define('EZSQL_VERSION', '1.21');
-	define('OBJECT', 'OBJECT', true);
-	define('ARRAY_A', 'ARRAY_A', true);
-	define('ARRAY_N', 'ARRAY_N', true);
+	// EN: The 3rd argument (case-insensitive constants) was removed in PHP 8.0
+	//     and now emits an E_WARNING; these constants are used case-sensitively.
+	// JA: 第3引数(大文字小文字を区別しない定数)は PHP 8.0 で廃止され E_WARNING を
+	//     出す。これらの定数は大文字小文字を区別して使用している。
+	define('OBJECT', 'OBJECT');
+	define('ARRAY_A', 'ARRAY_A');
+	define('ARRAY_N', 'ARRAY_N');
 
 	//	The Main Class, renamed to avoid conflicts.
 
