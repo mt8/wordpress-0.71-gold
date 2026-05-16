@@ -429,6 +429,9 @@ function get_currentuserinfo() { // a bit like get_userdata(), on steroids
 
 function get_userdata($userid) {
 	global $wpdb, $querycount, $cache_userdata, $use_cache, $tableusers;
+	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $userid).
+	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $userid)で使われる。
+	$userid = (int) $userid;
 	if ((empty($cache_userdata[$userid])) || (!$use_cache)) {
 		$user = $wpdb->get_row("SELECT * FROM $tableusers WHERE ID = $userid");
 		++$querycount;
@@ -479,6 +482,9 @@ function get_userid($user_login) {
 
 function get_usernumposts($userid) {
 	global $tableposts, $tablecomments, $querycount, $wpdb;
+	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE post_author = $userid).
+	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE post_author = $userid)で使われる。
+	$userid = (int) $userid;
 	++$querycount;
 	return $wpdb->get_var("SELECT COUNT(*) FROM $tableposts WHERE post_author = $userid");
 }
@@ -497,6 +503,9 @@ function get_settings($setting) {
 
 function get_postdata($postid) {
 	global $tableusers, $tablesettings, $tablecategories, $tableposts, $tablecomments, $querycount, $wpdb;
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $postid).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $postid)で使われる。
+	$postid = (int) $postid;
 	$post = $wpdb->get_row("SELECT * FROM $tableposts WHERE ID = $postid");
 	++$querycount;
 	// EN: a non-existent post id yields a null row; return false so
@@ -544,6 +553,9 @@ function get_postdata2($postid=0) { // less flexible, but saves mysql queries
 function get_commentdata($comment_ID,$no_cache=0) {
 	global $wpdb; // less flexible, but saves mysql queries
 	global $postc,$id,$commentdata,$tablecomments,$querycount;
+	// EN: Cast the comment id to int -- it is used unquoted in SQL (WHERE comment_ID = $comment_ID).
+	// JA: コメント ID を整数にキャスト -- SQL でクォート無し(WHERE comment_ID = $comment_ID)で使われる。
+	$comment_ID = (int) $comment_ID;
 	if ($no_cache) {
 		$query="SELECT * FROM $tablecomments WHERE comment_ID = $comment_ID";
 		$result=mysqli_query($wpdb->dbh, $query);
