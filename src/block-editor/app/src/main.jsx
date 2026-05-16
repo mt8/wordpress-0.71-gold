@@ -36,8 +36,8 @@ registerCoreBlocks();
 //     場合は妥当な既定値にフォールバックする。
 const config = window.BLOCK_EDITOR_PROTOTYPE || {
 	postId: 1,
-	loadEndpoint: '/src/block-editor-api/load.php',
-	saveEndpoint: '/src/block-editor-api/save.php',
+	loadEndpoint: '/src/block-editor/api/load.php',
+	saveEndpoint: '/src/block-editor/api/save.php',
 	frontEndUrl: '/src/index.php?p=1',
 };
 

@@ -40,7 +40,7 @@ function be_json( $status, $body ) {
 // JA: WordPress 0.71 の設定 + データベース層。b2config.php は最後に
 //     wp-db.php を require_once し、接続して $wpdb を公開する。試作は
 //     その接続をそのまま再利用する -- 新しい DB 認証情報は持たない。
-require_once __DIR__ . '/../b2config.php';
+require_once __DIR__ . '/../../b2config.php';
 require_once $abspath . $b2inc . '/b2template.functions.php';
 require_once $abspath . $b2inc . '/b2functions.php';
 
