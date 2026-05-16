@@ -43,4 +43,22 @@ final class SecurityTest extends TestCase
 
         $this->assertNotSame($tokenA, $tokenB);
     }
+
+    public function testCsrfFieldPrintsAHiddenInputCarryingTheToken(): void
+    {
+        // EN: b2_csrf_field() echoes a hidden form input; capture and inspect it.
+        // JA: b2_csrf_field() は隠しフォーム入力を出力する。捕捉して検証する。
+        $_COOKIE['wordpresspass'] = 'cookie-value';
+
+        ob_start();
+        b2_csrf_field('save-post');
+        $field = ob_get_clean();
+
+        $this->assertStringContainsString('type="hidden"', $field);
+        $this->assertStringContainsString('name="_b2csrf"', $field);
+        $this->assertStringContainsString(
+            'value="' . b2_csrf_token('save-post') . '"',
+            $field
+        );
+    }
 }
