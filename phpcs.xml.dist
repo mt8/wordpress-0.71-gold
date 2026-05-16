@@ -16,6 +16,19 @@
          JA: WordPress コーディングスタイル。b2vars.php は cp1252 と UTF-8 が
               混在し、バイトに意味のある変換テーブルを持つため自動整形すると
               壊れる。よって本スタイルチェックの対象外とする。 -->
+    <!-- EN: The block-editor prototype (Issue #65) is a clearly-labelled
+              experimental proof-of-concept: a thin modern JSON backend for a
+              custom @wordpress/block-editor app, deliberately decoupled from
+              the 2003 b2/cafelog code path. It is excluded from this WPCS
+              pass because it is prototype code, not part of the maintained
+              WordPress 0.71 surface.
+         JA: ブロックエディタ試作(Issue #65)は明示的に実験的な概念実証で
+              ある。カスタム @wordpress/block-editor アプリ向けの薄くモダンな
+              JSON バックエンドで、2003 年の b2/cafelog のコードパスとは
+              意図的に切り離している。維持対象の WordPress 0.71 の表面では
+              なく試作コードのため、本 WPCS チェックの対象外とする。 -->
+    <exclude-pattern>src/block-editor-api/*</exclude-pattern>
+
     <rule ref="WordPress-Core">
         <exclude-pattern>src/b2-include/b2vars.php</exclude-pattern>
 

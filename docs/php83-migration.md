@@ -2714,3 +2714,136 @@ JA: `b2-include/b2functions.php` の `user_pass_ok()` は末尾が
 (`testUserPassOkComparesAgainstTheCachedPassword`。動作するキャッシュ経路
 のみを検証していた)ごと完全に削除した。スイートは 95 から 94 テストに減少。
 phpcs と PHPStan は 0 件のまま。
+
+## Issue #65: Prototype a custom block editor for WordPress 0.71 / WordPress 0.71 向けカスタムブロックエディタを試作する
+
+EN: The Gutenberg investigation (Issue #61 / PR #63,
+`docs/gutenberg-investigation.md`) concluded that porting *Gutenberg the
+application* to WordPress 0.71 is not feasible, but that a **custom block
+editor** built on the `@wordpress/block-editor` *library* with a thin
+WordPress-0.71 backend **is** feasible ("policy B"). Issue #65 builds that
+prototype: an experimental proof-of-concept, clearly labelled as such, that
+does **not** replace `wp-admin/b2edit.php`.
+
+JA: Gutenberg 調査(Issue #61 / PR #63、`docs/gutenberg-investigation.md`)の
+結論は、*アプリケーションとしての Gutenberg* を WordPress 0.71 へ移植するのは
+実現不可能だが、`@wordpress/block-editor` *ライブラリ* と薄い WordPress 0.71
+バックエンドで作る**カスタムブロックエディタ**は実現可能(「方針B」)、という
+ものだった。Issue #65 はその試作を作る。明示的に実験的と銘打った概念実証で
+あり、`wp-admin/b2edit.php` を置き換える**ものではない**。
+
+### What was added / 追加したもの
+
+EN: Two cooperating parts.
+
+- **`block-editor-prototype/`** (repository root) -- a self-contained React app
+  with its **own `package.json`** (it does not touch the repository-root npm
+  setup that Issue #60's E2E suite owns). It uses `@wordpress/block-editor`,
+  `@wordpress/block-library`, `@wordpress/blocks`, `@wordpress/components`,
+  `@wordpress/element` and `@wordpress/keyboard-shortcuts`. Vite bundles React
+  and every `@wordpress/*` package **into** one standalone module, so the boot
+  page needs no separate WordPress JavaScript runtime. The core *static* blocks
+  register themselves client-side via `registerCoreBlocks()`; no server-side
+  `register_block_type()` is involved, which is exactly why this works on 0.71.
+  `npm run build` writes the bundle to `src/block-editor-assets/`.
+- **`src/block-editor-api/`** -- the thin WordPress-0.71 backend, served by the
+  Docker blog: `bootstrap.php` (shared bootstrap; reuses `b2config.php` /
+  `$wpdb` and 0.71's cookie auth), `load.php` (`GET` a post's `post_content` as
+  JSON), `save.php` (`POST` block markup into `b2posts.post_content`) and
+  `editor.php` (the boot page that mounts the bundle for a post id).
+
+JA: 協調する 2 つの部分から成る。
+
+- **`block-editor-prototype/`**(リポジトリルート)-- 独自の **`package.json`**
+  を持つ自己完結した React アプリ(Issue #60 の E2E スイートが所有する
+  リポジトリルートの npm 設定には触れない)。`@wordpress/block-editor`・
+  `@wordpress/block-library`・`@wordpress/blocks`・`@wordpress/components`・
+  `@wordpress/element`・`@wordpress/keyboard-shortcuts` を使う。Vite は React と
+  全 `@wordpress/*` パッケージを 1 つのスタンドアロンモジュールへバンドルする
+  ため、起動ページは別の WordPress JavaScript ランタイムを必要としない。標準の
+  *静的* ブロックは `registerCoreBlocks()` でクライアント側に自己登録する。
+  サーバー側の `register_block_type()` は関与せず、これこそが 0.71 でも動作
+  する理由である。`npm run build` はバンドルを `src/block-editor-assets/` へ
+  書き出す。
+- **`src/block-editor-api/`** -- Docker のブログが配信する薄い WordPress 0.71
+  バックエンド: `bootstrap.php`(共通ブートストラップ。`b2config.php` /
+  `$wpdb` と 0.71 のクッキー認証を再利用)・`load.php`(投稿の `post_content`
+  を JSON で `GET`)・`save.php`(ブロックマークアップを
+  `b2posts.post_content` へ `POST`)・`editor.php`(投稿 ID に対しバンドルを
+  マウントする起動ページ)。
+
+### How the round trip works / 往復の仕組み
+
+EN: The editor loads a post via `load.php`, runs `parse()` on the
+`post_content` to get a block tree, edits it in `@wordpress/block-editor`, runs
+`serialize()` to get `<!-- wp:* -->` block markup, and `POST`s it back through
+`save.php` into the existing `b2posts.post_content` column. The 0.71 front end
+(`index.php?p=N`) keeps rendering the post normally because the `<!-- wp:* -->`
+delimiters are HTML comments. A legacy 0.71 post with no block delimiters is
+parsed as a single classic ("freeform") block, so existing posts open without
+data loss. Post ids are cast with `(int)` and strings escaped with
+`wpdb::escape()` (the Issue #31 SQL hardening); `save.php` enforces the same
+ownership rule as `b2edit.php`'s `editpost` handler.
+
+JA: エディタは `load.php` 経由で投稿を読み込み、`post_content` に `parse()` を
+適用してブロックツリーを得て、`@wordpress/block-editor` で編集し、
+`serialize()` で `<!-- wp:* -->` ブロックマークアップを得て、`save.php` 経由で
+既存の `b2posts.post_content` カラムへ `POST` で書き戻す。`<!-- wp:* -->`
+区切りは HTML コメントであるため、0.71 のフロントエンド(`index.php?p=N`)は
+投稿を通常どおり描画し続ける。ブロック区切りの無いレガシーな 0.71 投稿は
+1 つのクラシック(freeform)ブロックとして解析されるため、既存の投稿は
+データ欠落なく開ける。投稿 ID は `(int)` でキャストし、文字列は
+`wpdb::escape()` でエスケープする(Issue #31 の SQL 堅牢化)。`save.php` は
+`b2edit.php` の `editpost` ハンドラと同じ所有者規則を適用する。
+
+### What works / what does not / 動作するもの・しないもの
+
+EN: **Works:** loading a 0.71 post into a modern block editor, editing with the
+core static blocks (paragraph, heading, list, quote, image, ...), the block
+toolbar and inspector, saving block markup back into `post_content`, and the
+0.71 front end rendering the saved post unchanged. The full load → edit → save →
+front-end round trip was verified end to end against the Docker blog, including
+a real-browser test driving the editor UI.
+
+**Does not / limitations:** static blocks only (0.71 has no
+`register_block_type()` / PHP `render_callback` for dynamic blocks); some
+`@wordpress/block-library` blocks probe REST endpoints such as `wp/v2/types`,
+which return **404** because 0.71 has no REST API (the editor degrades
+gracefully -- the static blocks and the round trip are unaffected); no autosave,
+no revisions, no full editor chrome. It is a decoupled hybrid -- a modern editor
+over 2003 storage.
+
+JA: **動作する:** 0.71 の投稿をモダンなブロックエディタへ読み込む、標準の
+静的ブロック(段落・見出し・リスト・引用・画像ほか)での編集、ブロック
+ツールバーとインスペクタ、ブロックマークアップを `post_content` へ保存し
+戻す、0.71 のフロントエンドが保存済み投稿を変更なく描画する。読み込み →
+編集 → 保存 → フロントエンドの往復全体を、エディタ UI を操作する実ブラウザ
+テストを含め、Docker のブログに対して端から端まで検証した。
+
+**動作しない・制限:** 静的ブロックのみ(0.71 には動的ブロック用の
+`register_block_type()` / PHP `render_callback` が無い);一部の
+`@wordpress/block-library` ブロックは `wp/v2/types` などの REST
+エンドポイントを探りに行き、0.71 に REST API が無いため **404** を返す
+(エディタは穏当に劣化する -- 静的ブロックと往復は影響を受けない);
+自動保存・リビジョン・完全なエディタ UI なし。結果は疎結合のハイブリッド
+-- 2003 年のストレージの上のモダンエディタである。
+
+### Keeping the project green / プロジェクトを緑のまま保つ
+
+EN: `block-editor-prototype/node_modules/` and the build output
+`src/block-editor-assets/` are git-ignored (they are artifacts). The prototype
+PHP under `src/block-editor-api/` is a clearly-labelled experiment decoupled
+from the 2003 b2/cafelog code path, so it is excluded from the project's
+`phpcs` (`<exclude-pattern>`) and `phpstan` (`excludePaths`) -- both documented
+inline in `phpcs.xml.dist` / `phpstan.neon.dist`. `composer phpcs` (41 files)
+and `composer phpstan` stay at 0, and `composer test` is unchanged (94 tests).
+The existing blog and pages are untouched.
+
+JA: `block-editor-prototype/node_modules/` とビルド成果物
+`src/block-editor-assets/` は git 管理外(成果物のため)。`src/block-editor-api/`
+配下の試作 PHP は、2003 年の b2/cafelog のコードパスから切り離した明示的な
+実験であるため、プロジェクトの `phpcs`(`<exclude-pattern>`)と `phpstan`
+(`excludePaths`)から除外する -- いずれも `phpcs.xml.dist` /
+`phpstan.neon.dist` 内に注記済み。`composer phpcs`(41 ファイル)と
+`composer phpstan` は 0 件のまま、`composer test` は不変(94 テスト)。
+既存のブログとページには手を加えていない。

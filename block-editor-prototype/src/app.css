@@ -1,0 +1,86 @@
+/*
+ * EN: Layout styles for the WordPress 0.71 custom block-editor prototype
+ *     (Issue #65). The block UI itself is styled by the bundled @wordpress/*
+ *     stylesheets; this file only arranges the surrounding chrome.
+ * JA: WordPress 0.71 カスタムブロックエディタ試作(Issue #65)のレイアウト
+ *     スタイル。ブロック UI 自体はバンドルした @wordpress/* スタイルシートが
+ *     担当する。本ファイルは周囲の枠だけを整える。
+ */
+.be-app {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
+
+.be-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	padding: 0.5rem 1rem;
+	background: #1e1e1e;
+	color: #fff;
+}
+
+.be-toolbar-left,
+.be-toolbar-right {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.be-badge {
+	font-size: 0.75rem;
+	background: #b32d2e;
+	padding: 0.1rem 0.5rem;
+	border-radius: 3px;
+}
+
+.be-link {
+	color: #91caff;
+	font-size: 0.85rem;
+}
+
+.be-notice {
+	margin: 0;
+}
+
+.be-title {
+	font-size: 1.8rem;
+	font-weight: 700;
+	border: none;
+	border-bottom: 1px solid #ddd;
+	padding: 1rem 2rem;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.be-title:focus {
+	outline: none;
+	border-bottom-color: #3858e9;
+}
+
+.be-body {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+}
+
+.be-canvas {
+	flex: 1;
+	padding: 2rem;
+	overflow: auto;
+}
+
+.be-sidebar {
+	width: 280px;
+	border-left: 1px solid #ddd;
+	padding: 1rem;
+	overflow: auto;
+	background: #fff;
+}
+
+.be-state {
+	padding: 2rem;
+	font-family: -apple-system, system-ui, sans-serif;
+}
