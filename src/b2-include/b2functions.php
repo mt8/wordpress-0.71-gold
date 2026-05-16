@@ -27,7 +27,7 @@ function wptexturize($text) {
 			$curl = str_replace('<q>', '&#8220;', $curl);
 			$curl = str_replace('</q>', '&#8221;', $curl);
 		}
-		if ('<' != $curl{0} && $next) { // If it's not a tag
+		if ('<' != $curl[0] && $next) { // If it's not a tag
 			$curl = str_replace('---', '&#8212;', $curl);
 			$curl = str_replace('--', '&#8211;', $curl);
 			$curl = str_replace("...", '&#8230;', $curl);
