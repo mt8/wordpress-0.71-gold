@@ -2626,3 +2626,59 @@ JA: Docker ブログを起動した状態(`docker compose up -d`)で `npm run te
 ある: 再実行しても `E2E:` マーカー付きの行は残らず、開発者の元の投稿・カテゴリ
 は保持される(連続 2 回実行後に `E2E:` マーカー付き行が 0 件、総数が不変で
 あることを確認)。PHPUnit・phpcs・PHPStan には影響しない。
+
+## Issue #71: Add husky + lint-staged pre-commit hooks (phpcs / phpstan) / husky + lint-staged の pre-commit フックを追加
+
+EN: PR #66 merged a phpcs warning into `main` that went unnoticed until a
+post-merge check (fixed in PR #69). A git `pre-commit` hook that runs the
+static analysis would have caught it at commit time, so one was added.
+
+JA: PR #66 が phpcs 警告に誰も気づかないまま `main` にマージし、マージ後の
+チェックで初めて発覚した(PR #69 で修正)。commit 時に静的解析を走らせる git
+の `pre-commit` フックがあれば検出できていたため、これを追加した。
+
+### What was added / 追加内容
+
+EN:
+- `husky` and `lint-staged` as devDependencies in the root `package.json`
+  (the same `package.json` added for the Playwright E2E suite in Issue #60).
+- `.husky/pre-commit` -- runs `lint-staged`. It first skips gracefully when
+  the dev tooling is not installed (`vendor/bin/phpcs`, `vendor/bin/phpstan`
+  or `node_modules/lint-staged` missing -- e.g. a fresh git worktree), so
+  commits in such checkouts are not blocked by missing binaries.
+- `lint-staged.config.mjs` -- for staged `src/**/*.php` files it runs `phpcs`
+  scoped to the staged files, and `phpstan` project-wide. phpstan is run on
+  the whole codebase on purpose: it resolves symbols across files, so
+  analysing only the staged files in isolation would raise false
+  "function/class not found" errors.
+- The `composer phpstan` script now passes `--memory-limit=1G`. PHPStan's
+  default memory limit OOM-crashes on some machines; the explicit limit makes
+  both the script and the hook reliable.
+
+JA:
+- ルートの `package.json`(Issue #60 で Playwright E2E スイート用に追加した
+  ものと同じ)に `husky` と `lint-staged` を devDependencies として追加。
+- `.husky/pre-commit` -- `lint-staged` を実行する。先頭で、開発ツールが未導入
+  のとき(`vendor/bin/phpcs`・`vendor/bin/phpstan`・`node_modules/lint-staged`
+  のいずれかが無い -- 新規 git worktree など)はグレースフルにスキップし、
+  そうした作業場所でバイナリ欠如によりコミットが妨げられないようにする。
+- `lint-staged.config.mjs` -- staged な `src/**/*.php` に対し、`phpcs` を
+  staged ファイルに限定して実行し、`phpstan` をプロジェクト全体で実行する。
+  phpstan を全体で実行するのは意図的である: ファイルをまたいで記号解決する
+  ため、staged ファイルだけを単体解析すると誤検出の「関数/クラスが
+  見つかりません」エラーが出る。
+- `composer phpstan` スクリプトが `--memory-limit=1G` を渡すようにした。
+  PHPStan の既定のメモリ上限は環境によって OOM クラッシュするため、明示指定で
+  スクリプトとフックの両方を確実に動くようにする。
+
+### Verification / 検証
+
+EN: The hook was exercised with three commits: a file with a phpcs violation
+(commit blocked), a phpcs-clean file with an undefined-function call (blocked
+by phpstan), and a clean file (commit succeeded). No `src/` runtime code was
+changed -- this Issue only adds dev tooling.
+
+JA: フックは 3 つのコミットで検証した: phpcs 違反のあるファイル(コミット
+ブロック)、phpcs はクリーンだが未定義関数を呼ぶファイル(phpstan が
+ブロック)、クリーンなファイル(コミット成功)。`src/` のランタイムコードは
+変更していない -- 本 Issue は開発ツールの追加のみである。

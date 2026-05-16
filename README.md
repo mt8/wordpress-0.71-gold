@@ -71,10 +71,14 @@ composer phpstan   # PHPStan (level 0)
 ```
 
 EN: Both currently report **0**. phpcs runs the curated `WordPress-Core`
-standard; PHPStan runs at level 0. See `docs/static-analysis.md`.
+standard; PHPStan runs at level 0. A husky `pre-commit` hook runs `lint-staged`
+(phpcs / phpstan on staged changes) so regressions are caught before they land.
+See `docs/static-analysis.md`.
 
 JA: いずれも現在 **0 件**。phpcs は精選した `WordPress-Core` 標準、PHPStan は
-level 0 で実行する。詳細は `docs/static-analysis.md`。
+level 0 で実行する。husky の `pre-commit` フックが `lint-staged`(staged 変更
+への phpcs / phpstan)を実行し、退行をマージ前に捕捉する。詳細は
+`docs/static-analysis.md`。
 
 ## Tests / テスト
 
@@ -174,7 +178,7 @@ JA: WordPress 0.71 を、稼働中の PHP アプリケーションとして公�
 | `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. / ローカルの PHP 8.3 + MySQL 8 環境。 |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. / 静的解析の設定。 |
 | `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). / PHP 開発ツール。 |
-| `package.json`, `playwright.config.js` | Node E2E tooling (Playwright). / Node E2E ツール(Playwright)。 |
+| `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node tooling — Playwright E2E and the husky/lint-staged pre-commit hook. / Node ツール — Playwright E2E と husky/lint-staged の pre-commit フック。 |
 
 ## What was done / 実施内容
 
