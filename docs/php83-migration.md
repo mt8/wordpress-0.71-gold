@@ -216,3 +216,100 @@ admin pages are later Issues.
 
 JA: 他ファイルの `$HTTP_*_VARS`、`get_magic_quotes_gpc()`、`ereg`/`each` 等の
 廃止関数、ブログ表示・管理画面の描画は後続 Issue で扱う。
+
+---
+
+## Issue #9: Replace functions and variables removed in PHP 7/8 / PHP 7/8 で廃止された関数・変数の置き換え
+
+EN: Toward rendering the blog front end and admin pages, four classes of removed
+PHP features were addressed. Commits are split per item.
+
+JA: ブログ本体・管理画面の表示に向け、廃止された PHP 機能 4 種類に対応した。
+コミットは項目ごとに分割している。
+
+### Changes / 変更内容
+
+#### 1. `get_magic_quotes_gpc()` shim
+
+EN: New file `src/b2-include/php-compat.php` defines a `get_magic_quotes_gpc()`
+shim returning `false` (the function was removed in PHP 8.0). The shim is loaded
+via PHP's `auto_prepend_file`, configured by `docker/php-compat.ini` (copied
+into the image by the `Dockerfile`), so it is defined before every request —
+necessary because some admin files (e.g. `wp-admin/b2edit.php`) call the
+function before they load `b2config.php`.
+
+JA: 新規ファイル `src/b2-include/php-compat.php` に `false` を返す
+`get_magic_quotes_gpc()` シムを定義(同関数は PHP 8.0 で廃止)。シムは PHP の
+`auto_prepend_file`(`docker/php-compat.ini` で設定し、`Dockerfile` でイメージへ
+コピー)で全リクエストの前に読み込む。一部の管理画面ファイル
+(例: `wp-admin/b2edit.php`)は `b2config.php` 読み込み前に同関数を呼ぶため。
+
+#### 2. `ereg` / `eregi` / `ereg_replace` / `eregi_replace` shims
+
+EN: The POSIX regex functions (removed in PHP 7.0) are reimplemented over PCRE
+in `php-compat.php`. POSIX patterns are wrapped with a `~` delimiter; PCRE
+errors degrade gracefully.
+
+JA: POSIX 正規表現関数(PHP 7.0 で廃止)を `php-compat.php` で PCRE 上に再実装。
+POSIX パターンは `~` デリミタで包み、PCRE エラー時は安全に縮退する。
+
+#### 3. `each()` shim
+
+EN: `each()` (removed in PHP 8.0) is reimplemented in `php-compat.php` using
+`key()`/`current()`/`next()`.
+
+JA: `each()`(PHP 8.0 で廃止)を `php-compat.php` で `key()`/`current()`/`next()`
+を用いて再実装。
+
+#### 4. `$HTTP_*_VARS` -> superglobals
+
+EN: The `$HTTP_*_VARS` superglobals (removed in PHP 5.4) are mechanically
+replaced with `$_GET` / `$_POST` / `$_COOKIE` / `$_SERVER` across 28 files
+(343 occurrences).
+
+JA: `$HTTP_*_VARS` スーパーグローバル(PHP 5.4 で廃止)を 28 ファイル・343 箇所で
+`$_GET` / `$_POST` / `$_COOKIE` / `$_SERVER` へ機械的に置換。
+
+#### 5. `array_merge()` null argument in `apply_filters()` (discovered during verification)
+
+EN: Verifying the blog front end revealed a 5th blocker: `apply_filters()`
+passed a possibly-null array element to `array_merge()`, which is a fatal
+`TypeError` in PHP 8. The argument is now coerced to an array. This was not one
+of the four enumerated items but is a hard fatal on the render path, so it is
+included here.
+
+JA: ブログ本体の表示検証で 5 件目の障壁が判明: `apply_filters()` が null の
+可能性がある配列要素を `array_merge()` に渡しており、PHP 8 では fatal な
+`TypeError` となる。引数を配列へ変換した。当初の 4 項目には含まれないが、表示
+パス上の確実な fatal のため本 Issue に含めた。
+
+### Verification / 検証
+
+EN: In the Docker environment with WordPress installed, the blog front end
+(`index.php`) and `b2login.php` both return HTTP 200 with **no fatal error**.
+
+JA: Docker 環境(WordPress インストール済み)で、ブログ本体(`index.php`)と
+`b2login.php` がいずれも HTTP 200 を返し、**fatal エラーが発生しない**ことを確認。
+
+### Known remaining issues / 既知の残課題
+
+EN: The blog front end renders without a fatal error, but the seeded post is not
+yet displayed. Verification uncovered further, distinct problems, deferred to
+later Issues:
+- PHP 8 changed string-to-number comparison semantics: `'' != intval($user_ID)`
+  (with `$user_ID` unset) is now true, so `blog.header.php` builds an invalid
+  `SELECT` and the posts query fails with a SQL syntax error.
+- The `/e` modifier in `preg_replace()` (e.g. `b2functions.php`) was removed in
+  PHP 7.0 — it now emits a warning and does not transform the text.
+- Numerous non-fatal `E_WARNING` / `E_DEPRECATED` notices (undefined variables,
+  dynamic properties, `define()` 3rd argument, uninitialized string offsets).
+
+JA: ブログ本体は fatal エラーなく描画されるが、初期投稿はまだ表示されない。検証
+により、さらに別種の問題が判明した。後続 Issue で扱う:
+- PHP 8 は文字列と数値の比較仕様を変更した。`'' != intval($user_ID)`
+  (`$user_ID` 未設定)が真になり、`blog.header.php` が不正な `SELECT` を組み立て、
+  投稿クエリが SQL 構文エラーになる。
+- `preg_replace()` の `/e` 修飾子(例: `b2functions.php`)は PHP 7.0 で廃止。現在は
+  警告を出し、テキストを変換しない。
+- 多数の非 fatal な `E_WARNING` / `E_DEPRECATED`(未定義変数、動的プロパティ、
+  `define()` 第3引数、未初期化文字列オフセット)。
