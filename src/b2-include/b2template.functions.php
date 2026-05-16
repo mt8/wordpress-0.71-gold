@@ -631,6 +631,7 @@ function previous_post($format='%', $previous='previous post: ', $title='yes', $
 }
 
 function next_post($format='%', $next='next post: ', $title='yes', $in_same_cat='no', $limitnext=1, $excluded_categories='') {
+	global $wpdb;
 	global $tableposts, $p, $posts, $id, $post, $siteurl, $blogfilename, $querycount;
 	global $time_difference;
 	global $querystring_start, $querystring_equal, $querystring_separator;
@@ -703,6 +704,7 @@ function next_posts($max_page = 0) { // original by cfactor at cooltux.org
 }
 
 function next_posts_link($label='Next Page >>', $max_page=0) {
+	global $wpdb;
 	global $p, $paged, $result, $request, $posts_per_page, $what_to_show;
 	if ($what_to_show == 'paged') {
 		if (!$max_page) {
@@ -710,7 +712,7 @@ function next_posts_link($label='Next Page >>', $max_page=0) {
 			if ($pos = strpos(strtoupper($request), 'LIMIT')) {
 				$nxt_request = substr($request, 0, $pos);
 			}
-			$nxt_result = mysql_query($nxt_request);
+			$nxt_result = mysqli_query($wpdb->dbh, $nxt_request);
 			$numposts = mysqli_num_rows($nxt_result);
 			$max_page = ceil($numposts / $posts_per_page);
 		}
@@ -760,13 +762,14 @@ function previous_posts_link($label='<< Previous Page') {
 }
 
 function posts_nav_link($sep=' :: ', $prelabel='<< Previous Page', $nxtlabel='Next Page >>') {
+	global $wpdb;
 	global $p, $what_to_show, $request, $posts_per_page;
 	if (empty($p) && ($what_to_show == 'paged')) {
 		$nxt_request = $request;
 		if ($pos = strpos(strtoupper($request), 'LIMIT')) {
 			$nxt_request = substr($request, 0, $pos);
 		}
-		$nxt_result = mysql_query($nxt_request);
+		$nxt_result = mysqli_query($wpdb->dbh, $nxt_request);
 		$numposts = mysqli_num_rows($nxt_result);
 		$max_page = ceil($numposts / $posts_per_page);
 		if ($max_page > 1) {

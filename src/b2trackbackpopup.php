@@ -26,7 +26,7 @@ $blog=1; include ("blog.header.php"); while($row = mysqli_fetch_object($result))
 <p><em><?php trackback_url() ?></em></p>
 
 
-	<?php /* do not delete this line */ $queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date"; $resultc = mysql_query($queryc); if ($resultc) { ?>
+	<?php /* do not delete this line */ $queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date"; $resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) { ?>
 
 <h2>Trackbacks</h2>
 <ol id="trackbacks">

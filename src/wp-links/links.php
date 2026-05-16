@@ -296,6 +296,7 @@ function get_autotoggle($id = 0) {
  */
 function links_popup_script($text = 'Links', $width=400, $height=400,
                             $file='links.all.php', $count = true) {
+	global $wpdb;
    global $tablelinks;
    if ($count == true) {
       $counts = $wpdb->get_var("SELECT count(*) FROM $tablelinks");

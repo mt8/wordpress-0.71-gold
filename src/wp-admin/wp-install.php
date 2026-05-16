@@ -68,10 +68,10 @@ $got_row = false;
 <p>Installing WP-Links.</p>
 <p>Checking for tables...</p>
 <?php
-$result = mysql_list_tables(DB_NAME);
+$result = mysqli_query($wpdb->dbh, 'SHOW TABLES FROM `' . DB_NAME . '`');
 if (!$result) {
     print "DB Error, could not list tables\n";
-    print 'MySQL Error: ' . mysql_error();
+    print 'MySQL Error: ' . mysqli_error($wpdb->dbh);
     exit;
 }
 
@@ -90,7 +90,7 @@ if (!$got_cats) {
            " auto_toggle enum ('Y','N') NOT NULL default 'N', ".
            " PRIMARY KEY (cat_id) ".
            ") ";
-    $result = mysql_query($sql) or print ("Can't create the table '$tablelinkcategories' in the database.<br />" . $sql . "<br />" . mysql_error());
+    $result = mysqli_query($wpdb->dbh, $sql) or print ("Can't create the table '$tablelinkcategories' in the database.<br />" . $sql . "<br />" . mysqli_error($wpdb->dbh));
     if ($result != false) {
         echo "<p>Table '$tablelinkcategories' created OK</p>\n";
         $got_cats = true;
@@ -116,11 +116,11 @@ if (!$got_links) {
            " link_rel varchar(255) NOT NULL default '',         " .
            " PRIMARY KEY (link_id)                              " .
            ") ";
-    $result = mysql_query($sql) or print ("Can't create the table '$tablelinks' in the database.<br />" . $sql . "<br />" . mysql_error());
-	$links = mysql_query("INSERT INTO $tablelinks VALUES ('', 'http://wordpress.org', 'WordPress', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
-	$links = mysql_query("INSERT INTO $tablelinks VALUES ('', 'http://cafelog.com', 'b2', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
-	$links = mysql_query("INSERT INTO $tablelinks VALUES ('', 'http://photomatt.net', 'Matt', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
-	$links = mysql_query("INSERT INTO $tablelinks VALUES ('', 'http://zed1.com/b2/', 'Mike', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
+    $result = mysqli_query($wpdb->dbh, $sql) or print ("Can't create the table '$tablelinks' in the database.<br />" . $sql . "<br />" . mysqli_error($wpdb->dbh));
+	$links = mysqli_query($wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://wordpress.org', 'WordPress', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
+	$links = mysqli_query($wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://cafelog.com', 'b2', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
+	$links = mysqli_query($wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://photomatt.net', 'Matt', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
+	$links = mysqli_query($wpdb->dbh, "INSERT INTO $tablelinks VALUES ('', 'http://zed1.com/b2/', 'Mike', '', '', 1, '', 'Y', 1, 0, '0000-00-00 00:00:00', '');");
 
 
 
@@ -136,7 +136,7 @@ if (!$got_links) {
 if ($got_links && $got_cats) {
     echo "<p>Looking for category 1...</p>\n";
     $sql = "SELECT * FROM $tablelinkcategories WHERE cat_id=1 ";
-    $result = mysql_query($sql) or print ("Can't query '$tablelinkcategories'.<br />" . $sql . "<br />" . mysql_error());
+    $result = mysqli_query($wpdb->dbh, $sql) or print ("Can't query '$tablelinkcategories'.<br />" . $sql . "<br />" . mysqli_error($wpdb->dbh));
     if ($result != false) {
         if ($row = mysqli_fetch_object($result)) {
             echo "<p>You have at least 1 category. Good!</p>\n";
@@ -144,7 +144,7 @@ if ($got_links && $got_cats) {
         } else {
             echo "<p>Gonna insert category 1...</p>\n";
             $sql = "INSERT INTO $tablelinkcategories (cat_id, cat_name) VALUES (1, 'General')";
-            $result = mysql_query($sql) or print ("Can't query insert category.<br />" . $sql . "<br />" . mysql_error());
+            $result = mysqli_query($wpdb->dbh, $sql) or print ("Can't query insert category.<br />" . $sql . "<br />" . mysqli_error($wpdb->dbh));
             if ($result != false) {
                 echo "<p>Inserted category Ok</p>\n";
                 $got_row = true;
@@ -171,7 +171,7 @@ if ($got_row) {
 #       just remove the // in this file
 
 // $query = "DROP TABLE IF EXISTS $tableposts";
-// $q = mysql_query($query) or die ("doh, can't drop the table \"$tableposts\" in the database.");
+// $q = mysqli_query($wpdb->dbh, $query) or die ("doh, can't drop the table \"$tableposts\" in the database.");
 
 $query = "CREATE TABLE $tableposts (
   ID int(10) unsigned NOT NULL auto_increment,
@@ -205,7 +205,7 @@ $q = $wpdb->query($query);
 
 <?php
 // $query = "DROP TABLE IF EXISTS $tablecategories";
-// $q = mysql_query($query) or mysql_doh("doh, can't drop the table \"$tablecategories\" in the database.");
+// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablecategories\" in the database.");
 
 $query = "
 CREATE TABLE $tablecategories (
@@ -227,7 +227,7 @@ $result = $wpdb->query($query);
 
 <?php
 // $query = "DROP TABLE IF EXISTS $tablecomments";
-// $q = mysql_query($query) or mysql_doh("doh, can't drop the table \"$tablecomments\" in the database.");
+// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablecomments\" in the database.");
 
 $query = "
 CREATE TABLE $tablecomments (
@@ -254,7 +254,7 @@ $q = $wpdb->query($query);
 
 <?php
 // $query = "DROP TABLE IF EXISTS $tablesettings";
-// $q = mysql_query($query) or mysql_doh("doh, can't drop the table \"$tablesettings\" in the database.");
+// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablesettings\" in the database.");
 
 $query = "
 CREATE TABLE $tablesettings (
@@ -279,7 +279,7 @@ $q = $wpdb->query($query);
 
 <?php
 // $query = "DROP TABLE IF EXISTS $tableusers";
-// $q = mysql_query($query) or mysql_doh("doh, can't drop the table \"$tableusers\" in the database.");
+// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tableusers\" in the database.");
 
 $query = "
 CREATE TABLE $tableusers (

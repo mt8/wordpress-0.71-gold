@@ -3,7 +3,7 @@
 
 	<?php // don't touch these 2 lines
 	$queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<trackback />%' ORDER BY comment_date";
-	$resultc = mysql_query($queryc); if ($resultc) {
+	$resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) {
 	?>
 
 <h2>Trackbacks</h2>

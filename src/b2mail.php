@@ -186,7 +186,7 @@ for ($iCount=1; $iCount<=$Count; $iCount++) {
 		echo "<p><b>Login:</b> $user_login, <b>Pass:</b> $user_pass</p>";
 
 		$sql = "SELECT ID, user_level FROM $tableusers WHERE user_login='$user_login' AND user_pass='$user_pass' ORDER BY ID DESC LIMIT 1";
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (!mysqli_num_rows($result)) {
 			echo '<p><b>Wrong login or password.</b></p></div>';
@@ -217,8 +217,8 @@ for ($iCount=1; $iCount<=$Count; $iCount++) {
 				$post_title = addslashes(trim($post_title));
 				$content = addslashes(trim($content));
 				$sql = "INSERT INTO $tableposts (post_author, post_date, post_content, post_title, post_category) VALUES ($post_author, '$post_date', '$content', '$post_title', $post_category)";
-				$result = mysql_query($sql) or die('Couldn\'t add post: '.mysql_error());
-				$post_ID = mysql_insert_id();
+				$result = mysqli_query($wpdb->dbh, $sql) or die('Couldn\'t add post: '.mysqli_error($wpdb->dbh));
+				$post_ID = mysqli_insert_id($wpdb->dbh);
 
 				if (isset($sleep_after_edit) && $sleep_after_edit > 0) {
 					sleep($sleep_after_edit);

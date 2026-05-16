@@ -55,6 +55,7 @@ $b2newpost_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, $xmlrpcS
 $b2newpost_doc='Adds a post, blogger-api like, +title +category +postdate';
 
 function b2newpost($m) {
+	global $wpdb;
 
 	global $xmlrpcerruser; // import user errcode value
 	global $blog_ID,$cache_userdata,$tableposts,$use_rss,$use_weblogsping,$post_autobr;
@@ -101,13 +102,13 @@ function b2newpost($m) {
 		}
 
 		$sql = "INSERT INTO $tableposts (post_author, post_date, post_content, post_title, post_category) VALUES ('$user_ID','$now','$content','$post_title','$category')";
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (!$result)
 			return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
            "For some strange yet very annoying reason, your entry couldn't be posted.");
 
-		$post_ID = mysql_insert_id();
+		$post_ID = mysqli_insert_id($wpdb->dbh);
 
 		if (!isset($blog_ID)) { $blog_ID = 1; }
 
@@ -138,6 +139,7 @@ $b2getcategories_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, $x
 $b2getcategories_doc='given a blogID, gives a struct that list categories in that blog, using categoryID and categoryName. categoryName is there so the user would choose a category name from the client, rather than just a number. however, when using b2.newPost, only the category ID number should be sent.';
 
 function b2getcategories($m) {
+	global $wpdb;
 	global $xmlrpcerruser,$tablecategories;
 
 	dbconnect();
@@ -157,7 +159,7 @@ function b2getcategories($m) {
 	if (user_pass_ok($username,$password)) {
 
 		$sql = "SELECT * FROM $tablecategories ORDER BY cat_ID ASC";
-		$result = mysql_query($sql) or die($sql);
+		$result = mysqli_query($wpdb->dbh, $sql) or die($sql);
 
 		$i = 0;
 		while($row = mysqli_fetch_object($result)) {
@@ -194,6 +196,7 @@ $b2_getPostURL_sig = array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, $x
 $b2_getPostURL_doc = 'Given a blog ID, username, password, and a post ID, returns the URL to that post.';
 
 function b2_getPostURL($m) {
+	global $wpdb;
 	global $xmlrpcerruser, $tableposts;
 	global $siteurl, $blogfilename, $querystring_start, $querystring_equal, $querystring_separator;
 
@@ -243,7 +246,7 @@ function b2_getPostURL($m) {
 				case 'weekly':
 					if((!isset($cacheweekly)) || (empty($cacheweekly[$postdata['Date']]))) {
 						$sql = "SELECT WEEK('".$postdata['Date']."')";
-						$result = mysql_query($sql);
+						$result = mysqli_query($wpdb->dbh, $sql);
 						$row = mysqli_fetch_row($result);
 						$cacheweekly[$postdata['Date']] = $row[0];
 					}
@@ -292,6 +295,7 @@ $bloggernewpost_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, $xm
 $bloggernewpost_doc='Adds a post, blogger-api like';
 
 function bloggernewpost($m) {
+	global $wpdb;
 
 	global $xmlrpcerruser; // import user errcode value
 	global $blog_ID,$cache_userdata,$tableposts,$use_rss,$use_weblogsping,$post_autobr;
@@ -329,13 +333,13 @@ function bloggernewpost($m) {
 		$now = date("Y-m-d H:i:s",(time() + ($time_difference * 3600)));
 
 		$sql = "INSERT INTO $tableposts (post_author, post_date, post_content, post_title, post_category) VALUES ('$user_ID','$now','$content','$post_title','$post_category')";
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (!$result)
 			return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
            "For some strange yet very annoying reason, your entry couldn't be posted.");
 
-		$post_ID = mysql_insert_id();
+		$post_ID = mysqli_insert_id($wpdb->dbh);
 
 		if (!isset($blog_ID)) { $blog_ID = 1; }
 
@@ -368,6 +372,7 @@ $bloggereditpost_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, $x
 $bloggereditpost_doc='Edits a post, blogger-api like';
 
 function bloggereditpost($m) {
+	global $wpdb;
 
 	global $xmlrpcerruser; // import user errcode value
 	global $blog_ID,$cache_userdata,$tableposts,$use_rss,$use_weblogsping,$post_autobr;
@@ -387,7 +392,7 @@ function bloggereditpost($m) {
 	$newcontent = $newcontent->scalarval();
 
 	$sql = "SELECT * FROM $tableposts WHERE ID = '$post_ID'";
-	$result = @mysql_query($sql);
+	$result = @mysqli_query($wpdb->dbh, $sql);
 
 	if (!$result)
 		return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
@@ -422,7 +427,7 @@ function bloggereditpost($m) {
 		$content = format_to_post($content);
 
 		$sql = "UPDATE $tableposts SET post_content='$content', post_title='$post_title', post_category='$post_category' WHERE ID = '$post_ID'";
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (!$result)
 			return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
@@ -454,6 +459,7 @@ $bloggerdeletepost_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcString, 
 $bloggerdeletepost_doc='Deletes a post, blogger-api like';
 
 function bloggerdeletepost($m) {
+	global $wpdb;
 
 	global $xmlrpcerruser; // import user errcode value
 	global $blog_ID,$cache_userdata,$tableposts,$use_rss,$use_weblogsping,$post_autobr;
@@ -473,7 +479,7 @@ function bloggerdeletepost($m) {
 	$newcontent = $newcontent->scalarval();
 
 	$sql = "SELECT * FROM $tableposts WHERE ID = '$post_ID'";
-	$result = @mysql_query($sql);
+	$result = @mysqli_query($wpdb->dbh, $sql);
 
 	if (!$result)
 		return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
@@ -500,7 +506,7 @@ function bloggerdeletepost($m) {
 		}
 
 		$sql = "DELETE FROM $tableposts WHERE ID = '$post_ID'";
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (!$result)
 			return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
@@ -532,6 +538,7 @@ $bloggergetusersblogs_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcStrin
 $bloggergetusersblogs_doc='returns the user\'s blogs - this is a dummy function, just so that BlogBuddy and other blogs-retrieving apps work';
 
 function bloggergetusersblogs($m) {
+	global $wpdb;
 	// this function will have a real purpose with CafeLog's multiple blogs capability
 
 	global $xmlrpcerruser,$siteurl,$blogfilename,$blogname;
@@ -543,7 +550,7 @@ function bloggergetusersblogs($m) {
 	dbconnect();
 
 	$sql = "SELECT user_level FROM $tableusers WHERE user_login = '$user_login' AND user_level > 3";
-	$result = mysql_query($sql) or die($sql."<br />".mysql_error());
+	$result = mysqli_query($wpdb->dbh, $sql) or die($sql."<br />".mysqli_error($wpdb->dbh));
 
 	$is_admin = mysqli_num_rows($result);
 
@@ -656,6 +663,7 @@ $bloggergetrecentposts_sig=array(array($xmlrpcString, $xmlrpcString, $xmlrpcStri
 $bloggergetrecentposts_doc='fetches X most recent posts, blogger-api like';
 
 function bloggergetrecentposts($m) {
+	global $wpdb;
 	global $xmlrpcerruser,$tableposts;
 
 	error_reporting(0); // there is a bug in phpxmlrpc that makes it say there are errors while the output is actually valid, so let's disable errors for that function
@@ -682,10 +690,10 @@ function bloggergetrecentposts($m) {
 	if (user_pass_ok($username,$password)) {
 
 		$sql = "SELECT * FROM $tableposts WHERE post_category > 0 ORDER BY post_date DESC".$limit;
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 		if (!$result)
 			return new xmlrpcresp(0, $xmlrpcerruser+2, // user error 2
-           "For some strange yet very annoying reason, the entries couldn't be fetched.".mysql_error());
+           "For some strange yet very annoying reason, the entries couldn't be fetched.".mysqli_error($wpdb->dbh));
 		
 		$data = new xmlrpcval("","array");
 
@@ -955,7 +963,7 @@ function pingback_ping($m) {
 				// ...or a string #title, a little more complicated
 				$title = preg_replace('/[^a-zA-Z0-9]/', '.', $urltest['fragment']);
 				$sql = "SELECT ID FROM $tableposts WHERE post_title RLIKE '$title'";
-				$result = mysql_query($sql) or die("Query: $sql\n\nError: ".mysql_error());
+				$result = mysqli_query($wpdb->dbh, $sql) or die("Query: $sql\n\nError: ".mysqli_error($wpdb->dbh));
 				$blah = mysqli_fetch_array($result);
 				$post_ID = $blah['ID'];
 				$way = 'from the fragment (title)';
@@ -967,7 +975,7 @@ function pingback_ping($m) {
 		debug_fwrite($log, "Found post ID $way: $post_ID\n");
 
 		$sql = 'SELECT post_author FROM '.$tableposts.' WHERE ID = '.$post_ID;
-		$result = mysql_query($sql);
+		$result = mysqli_query($wpdb->dbh, $sql);
 
 		if (mysqli_num_rows($result)) {
 
@@ -975,7 +983,7 @@ function pingback_ping($m) {
 
 			// Let's check that the remote site didn't already pingback this entry
 			$sql = 'SELECT * FROM '.$tablecomments.' WHERE comment_post_ID = '.$post_ID.' AND comment_author_url = \''.$pagelinkedfrom.'\' AND comment_content LIKE \'%<pingback />%\'';
-			$result = mysql_query($sql);
+			$result = mysqli_query($wpdb->dbh, $sql);
 
 			if (mysqli_num_rows($result) || (1==1)) {
 			
@@ -1025,7 +1033,7 @@ function pingback_ping($m) {
 					$original_title = $title;
 					$title = addslashes(strip_tags(trim($title)));
 					$sql = "INSERT INTO $tablecomments (comment_post_ID, comment_author, comment_author_url, comment_date, comment_content) VALUES ($post_ID, '$title', '$pagelinkedfrom', NOW(), '$context')";
-					$consulta = mysql_query($sql);
+					$consulta = mysqli_query($wpdb->dbh, $sql);
 
 					if ($comments_notify) {
 

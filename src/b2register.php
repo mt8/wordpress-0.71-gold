@@ -81,16 +81,16 @@ case "register":
 		die ("<b>ERROR</b>: the email address isn't correct");
 	}
 
-	$id=mysql_connect($server,$loginsql,$passsql);
+	$id = mysqli_connect($server,$loginsql,$passsql);
 	if ($id==false)	{
-		die ("<b>OOPS</b>: can't connect to the server !".mysql_error());
+		die ("<b>OOPS</b>: can't connect to the server !".mysqli_connect_error());
 	}
 
-	mysql_select_db("$base") or die ("<b>OOPS</b>: can't select the database $base : ".mysql_error());
+	mysqli_select_db($id, "$base") or die ("<b>OOPS</b>: can't select the database $base : ".mysqli_error($id));
 
 	/* checking the login isn't already used by another user */
 	$request =  " SELECT user_login FROM $tableusers WHERE user_login = '$user_login'";
-	$result = mysql_query($request,$id) or die ("<b>OOPS</b>: can't check the login...");
+	$result = mysqli_query($id, $request) or die ("<b>OOPS</b>: can't check the login...");
 	$lines = mysqli_num_rows($result);
 	mysqli_free_result($result);
 	if ($lines>=1) {
@@ -106,9 +106,9 @@ case "register":
 	$user_nickname=addslashes($user_nickname);
 
 	$query = "INSERT INTO $tableusers (user_login, user_pass, user_nickname, user_email, user_ip, user_domain, user_browser, dateYMDhour, user_level, user_idmode) VALUES ('$user_login','$pass1','$user_nickname','$user_email','$user_ip','$user_domain','$user_browser',NOW(),'$new_users_can_blog','nickname')";
-	$result = mysql_query($query);
+	$result = mysqli_query($id, $query);
 	if ($result==false) {
-		die ("<b>ERROR</b>: couldn't register you... please contact the <a href=\"mailto:$admin_email\">webmaster</a> !".mysql_error());
+		die ("<b>ERROR</b>: couldn't register you... please contact the <a href=\"mailto:$admin_email\">webmaster</a> !".mysqli_error($id));
 	}
 
 	$stars="";
