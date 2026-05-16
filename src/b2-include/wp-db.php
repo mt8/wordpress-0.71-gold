@@ -206,8 +206,13 @@ require_once(__DIR__ . '/mysql-shim.php');
 			else
 			{
 
-				// In other words if this was a select statement..
-				if ( $this->result )
+				// EN: A SELECT yields a mysqli_result; a successful non-SELECT
+				//     (CREATE/etc.) yields bool true. Only fetch from a result
+				//     set -- mysqli_num_fields(true) would be a TypeError.
+				// JA: SELECT は mysqli_result を返し、SELECT 以外(CREATE 等)の
+				//     成功は bool true を返す。結果セットのときだけ取得する。
+				//     mysqli_num_fields(true) は TypeError になるため。
+				if ( $this->result instanceof mysqli_result )
 				{
 
 					// =======================================================
