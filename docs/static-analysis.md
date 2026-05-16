@@ -138,3 +138,20 @@ staged されていないとき、フックは何もしない。開発ツール�
 (composer install / npm install していない新規 git worktree など)では
 フックはグレースフルにスキップし、そこでのコミットを妨げない。本当に必要な
 ときは `git commit --no-verify` でフックを迂回できる。
+
+### Hook hygiene / フックの留意点
+
+EN: `.husky/pre-commit` is committed **executable** (mode 100755) with a
+`#!/usr/bin/env sh` shebang, so the hook fires regardless of the local
+`core.hooksPath` value. Note: running husky's `prepare` script (`npm install`)
+inside a **git worktree** can repoint the shared `core.hooksPath`; if the hook
+ever seems not to run, check `git config core.hooksPath` and re-run
+`npm install` at the repository root (Issue #83).
+
+JA: `.husky/pre-commit` は `#!/usr/bin/env sh` シバン付きで**実行権限付き**
+(モード 100755)としてコミットしている。これにより、ローカルの
+`core.hooksPath` の値に依らずフックが発火する。注意: **git worktree** 内で
+husky の `prepare` スクリプト(`npm install`)を実行すると、共有の
+`core.hooksPath` が書き換わることがある。フックが動いていないようなら
+`git config core.hooksPath` を確認し、リポジトリルートで `npm install` を
+やり直す(Issue #83)。
