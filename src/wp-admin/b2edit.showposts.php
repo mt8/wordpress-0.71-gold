@@ -3,7 +3,7 @@
 
 require_once('../b2config.php');
 
-if (!$showposts) {
+if (empty($showposts)) {
 	if ($posts_per_page) {
 		$showposts=$posts_per_page;
 	} else {
@@ -74,6 +74,7 @@ if ($previousXstart > 0) {
 <?php
 if (!isset($order))
   $order="DESC";
+$besp_selected = '';
 $i = $order;
 if ($i == "DESC")
  $besp_selected = "selected='selected'";
@@ -133,9 +134,9 @@ if ($i == "ASC")
 	$width = ($mode=="sidebar") ? "100%" : "170px";
 	foreach ($categories as $category) {
 		echo "<option value=\"".$category->cat_ID."\"";
-		if ($category->cat_ID == $postdata["Category"])
+		if (isset($postdata["Category"]) && $category->cat_ID == $postdata["Category"])
 			echo " selected='selected'";
-		echo ">".$row->cat_name."</option>";
+		echo ">".$category->cat_name."</option>";
 	}
 		?>
 		</select>
@@ -240,7 +241,7 @@ if ($i == "ASC")
 				if ($m)
 				echo "&m=$m";
 				echo "'>Edit</a>";
-				echo " - <a href='b2edit.php?action=delete&amp;post=$id' onclick=\"return confirm('You are about to delete this post \'".$row->post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete</a> ";
+				echo " - <a href='b2edit.php?action=delete&amp;post=$id' onclick=\"return confirm('You are about to delete this post \'".$post->post_title."\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete</a> ";
 				}
 				if ('private' == $post->post_status) echo ' - <strong>Private</strong>';
 				?>

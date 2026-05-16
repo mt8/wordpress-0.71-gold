@@ -126,7 +126,7 @@ switch($action) {
 
         $post = $_GET['post'];
         if ($user_level > 0) {
-            $postdata = get_postdata($post);
+            $postdata = get_postdata($post) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
             $authordata = get_userdata($postdata["Author_ID"]);
             if ($user_level < $authordata->user_level)
                 die ('You don&#8217;t have the right to edit <strong>'.$authordata[1].'</strong>&#8217;s posts.');
