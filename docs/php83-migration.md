@@ -455,3 +455,62 @@ separate later Issue.
 JA: 実行時の `E_WARNING` / `E_DEPRECATED`(未定義変数、動的プロパティ、`${var}`
 補間、`define()` 第3引数、ほとんど通らないパスの `/e` 修飾子、`POP3` 旧式
 コンストラクタ)は、別の後続 Issue で扱う。
+
+---
+
+## Issue #15: Clean up the runtime warnings on the blog front end / ブログ本体の実行時警告を掃除
+
+EN: After Issue #13 the blog front end still emitted ~46 non-fatal
+`E_WARNING` / `E_DEPRECATED` notices. They are all fixed; the front end now
+renders with **zero** warning/deprecated/notice lines.
+
+JA: Issue #13 完了後もブログ本体は約 46 件の非 fatal な `E_WARNING` /
+`E_DEPRECATED` を出力していた。これらをすべて修正し、フロントは警告/非推奨/通知
+が **0 行**で描画されるようになった。
+
+### Changes (per commit) / 変更内容(コミット単位)
+
+EN:
+1. `apply_filters()` (b2template.functions.php): fix the `$tags` typo (should be
+   `$tag`).
+2. `wptexturize()` (b2functions.php): initialize `$output`; guard `$curl[0]`
+   with `?? ''`.
+3. `wp-db.php`: drop the removed 3rd argument of `define()`.
+4. `wpdb` class: declare the previously-dynamic properties.
+5. `blog.header.php`: initialize `$showposts` / `$user_ID` reads.
+6. `blog.header.php`: initialize the `$querycount` global counter.
+7. Add `global $querycount;` to the query-counter functions that lacked it.
+8. `pingWeblogsRss()`: remove the optional parameter declared before a required
+   one (this also removed the "headers already sent" warning).
+
+JA:
+1. `apply_filters()`(b2template.functions.php): `$tags` のタイプミスを修正
+   (`$tag` が正)。
+2. `wptexturize()`(b2functions.php): `$output` を初期化、`$curl[0]` を `?? ''`
+   でガード。
+3. `wp-db.php`: `define()` の廃止された第3引数を除去。
+4. `wpdb` クラス: 動的だったプロパティを宣言。
+5. `blog.header.php`: `$showposts` / `$user_ID` の参照を初期化。
+6. `blog.header.php`: グローバルカウンタ `$querycount` を初期化。
+7. `$querycount` を使うのに `global` 宣言が無かったクエリカウンタ関数に
+   `global $querycount;` を追加。
+8. `pingWeblogsRss()`: 必須引数より前の任意引数を除去(「headers already sent」
+   警告も解消)。
+
+### Verification / 検証
+
+EN: In the Docker environment `http://localhost:8080/` returns HTTP 200,
+displays the seeded post, and produces **zero** `Warning` / `Deprecated` /
+`Notice` lines, with no fatal error and no SQL error.
+
+JA: Docker 環境で `http://localhost:8080/` が HTTP 200 を返し、初期投稿を表示し、
+`Warning` / `Deprecated` / `Notice` を **0 行**しか出さない。fatal エラー・
+SQL エラーも無い。
+
+### Out of scope / スコープ外
+
+EN: Warnings on admin pages beyond what the front end exercises, the remaining
+`/e` modifiers, and the `POP3` old-style constructor are later Issues.
+
+JA: ブログ本体が通らない管理画面の警告、残りの `/e` 修飾子、`POP3` 旧式
+コンストラクタは後続 Issue で扱う。
