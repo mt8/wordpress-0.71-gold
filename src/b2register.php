@@ -99,11 +99,19 @@ case "register":
 	$user_domain = gethostbyaddr($_SERVER['REMOTE_ADDR'] );
 	$user_browser = $_SERVER['HTTP_USER_AGENT'];
 
+	// EN: Issue #34 -- store a bcrypt hash of the password, never the plaintext.
+	//     password_hash() output is ASCII-safe, so addslashes() is applied for
+	//     SQL safety just like the other fields.
+	// JA: Issue #34 -- パスワードは平文ではなく bcrypt ハッシュで保存する。
+	//     password_hash() の出力は ASCII セーフなので、他のフィールドと同様に
+	//     SQL 対策として addslashes() を適用する。
+	$user_pass_hash = password_hash($pass1, PASSWORD_DEFAULT);
+
 	$user_login=addslashes($user_login);
-	$pass1=addslashes($pass1);
+	$user_pass_hash=addslashes($user_pass_hash);
 	$user_nickname=addslashes($user_nickname);
 
-	$query = "INSERT INTO $tableusers (user_login, user_pass, user_nickname, user_email, user_ip, user_domain, user_browser, dateYMDhour, user_level, user_idmode) VALUES ('$user_login','$pass1','$user_nickname','$user_email','$user_ip','$user_domain','$user_browser',NOW(),'$new_users_can_blog','nickname')";
+	$query = "INSERT INTO $tableusers (user_login, user_pass, user_nickname, user_email, user_ip, user_domain, user_browser, dateYMDhour, user_level, user_idmode) VALUES ('$user_login','$user_pass_hash','$user_nickname','$user_email','$user_ip','$user_domain','$user_browser',NOW(),'$new_users_can_blog','nickname')";
 	$result = mysqli_query($id, $query);
 	if ($result==false) {
 		die ("<b>ERROR</b>: couldn't register you... please contact the <a href=\"mailto:$admin_email\">webmaster</a> !".mysqli_error($id));

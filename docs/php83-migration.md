@@ -1344,3 +1344,187 @@ JA: **公開コメントフォーム**(`b2comments.post.php`・`b2comments.php`�
 フィルタを設定するだけ、あるいは別ファイルにあり本 Issue の明示的なファイル
 一覧外であって、ブログ中核データへの状態変更書き込みではないため、後続作業と
 した。
+
+---
+
+## Issue #34: Authentication & session management / 認証・セッション管理
+
+EN: WordPress 0.71-gold stored and compared passwords in plaintext, emailed the
+stored password on the lost-password flow, derived the auth cookie from the
+typed plaintext, and set cookies with no security flags. This Issue hashes
+passwords, makes the auth cookie consistent with the stored value, resets
+(instead of emails) lost passwords, and hardens the cookies.
+
+JA: WordPress 0.71-gold はパスワードを平文で保存・比較し、パスワード再発行で
+保存パスワードをメール送信し、認証クッキーを入力された平文から生成し、
+クッキーにセキュリティフラグを付けていなかった。本 Issue ではパスワードを
+ハッシュ化し、認証クッキーを保存値と整合させ、パスワード再発行をメール送信
+ではなくリセットに変更し、クッキーを強化する。
+
+### A. Password hashing with transparent migration / パスワードのハッシュ化と透過的移行
+
+EN: New passwords are stored as bcrypt hashes via
+`password_hash($pw, PASSWORD_DEFAULT)` in `b2register.php` (registration) and
+`wp-admin/b2profile.php` (profile password change).
+
+`login()` in `b2login.php` no longer matches `WHERE user_pass = '...'`. It
+loads the row by `user_login` only, then verifies in PHP:
+
+- If the stored value is a hash (`password_get_info()['algo']` is truthy) →
+  `password_verify($typed, $stored)`.
+- If it is not a hash (a legacy plaintext row) → compare plaintext; on a match,
+  immediately `password_hash()` the typed password and `UPDATE` the row. This
+  transparently upgrades each legacy account on its next successful login.
+
+So the existing `admin` / `password` account keeps working and is upgraded to a
+bcrypt hash on first login.
+
+JA: 新しいパスワードは `b2register.php`(登録)と `wp-admin/b2profile.php`
+(プロフィールのパスワード変更)で `password_hash($pw, PASSWORD_DEFAULT)` に
+より bcrypt ハッシュとして保存する。
+
+`b2login.php` の `login()` は `WHERE user_pass = '...'` での照合をやめた。
+`user_login` のみで行を取得し、PHP 側で検証する。
+
+- 保存値がハッシュ(`password_get_info()['algo']` が真)なら →
+  `password_verify($typed, $stored)`。
+- ハッシュでない(レガシーな平文行)なら → 平文比較し、一致したら直ちに
+  入力パスワードを `password_hash()` して行を `UPDATE` する。これにより各
+  レガシーアカウントは次回ログイン成功時に透過的にアップグレードされる。
+
+よって既存の `admin` / `password` アカウントは引き続き動作し、初回ログイン時に
+bcrypt ハッシュへアップグレードされる。
+
+### B. Auth-cookie consistency / 認証クッキーの整合性
+
+EN: `checklogin()` verifies the session by comparing the `wordpresspass` cookie
+to `md5($userdata->user_pass)`. Previously `login()` set the cookie to
+`md5(typed plaintext)`, which only matched because `user_pass` *was* the
+plaintext. After hashing, that would break the session.
+
+`login()` now sets `wordpresspass` to `md5()` of the **stored** `user_pass`
+value (the bcrypt hash, including the row just upgraded by the transparent
+migration). `wp-admin/b2profile.php` applies the same after a password change.
+Both sides of `checklogin()` therefore agree whether the row is hashed or still
+legacy plaintext, and the CSRF token (Issue #33), which seeds from the same
+cookie, stays consistent.
+
+JA: `checklogin()` は `wordpresspass` クッキーを `md5($userdata->user_pass)` と
+比較してセッションを検証する。従来 `login()` はクッキーを `md5(入力平文)` に
+設定しており、`user_pass` が平文そのものだったから一致していた。ハッシュ化後は
+これではセッションが壊れる。
+
+`login()` は `wordpresspass` を、**保存された** `user_pass` の値(透過的移行で
+今アップグレードされた行も含む bcrypt ハッシュ)の `md5()` に設定するように
+変更した。`wp-admin/b2profile.php` もパスワード変更後に同様に設定する。これに
+より `checklogin()` の両辺は行がハッシュ済みでもレガシー平文でも一致し、同じ
+クッキーから生成される CSRF トークン(Issue #33)も整合性を保つ。
+
+### C. Lost password becomes a reset / パスワード再発行をリセットに変更
+
+EN: The `retrievepassword` case in `b2login.php` used to email
+`$user_data->user_pass`. After hashing that would email a useless hash. It now
+generates a fresh 12-character random temporary password with `random_int()`,
+stores its bcrypt hash, and emails only the new plaintext temporary password.
+No stored secret is ever emailed. The response no longer reveals whether a
+given login exists.
+
+JA: `b2login.php` の `retrievepassword` ケースは `$user_data->user_pass` を
+メール送信していた。ハッシュ化後はこれでは無意味なハッシュを送ることになる。
+現在は `random_int()` で 12 文字のランダムな一時パスワードを新規生成し、その
+bcrypt ハッシュを保存して、新しい平文の一時パスワードのみをメール送信する。
+保存されている秘密情報を送ることは一切ない。応答は指定ログインの存在有無も
+明かさない。
+
+### D. Cookie security flags / クッキーのセキュリティフラグ
+
+EN: All authentication `setcookie()` calls (`wordpressuser`, `wordpresspass`,
+`wordpressblogid` in `b2login.php`; `wordpresspass` in `b2profile.php`) now use
+the PHP 7.3+ options-array form with `httponly => true`, `samesite => 'Lax'`,
+and `secure => !empty($_SERVER['HTTPS'])` so the flag is set only over HTTPS
+and the local HTTP environment keeps working. `b2login.php` centralises this in
+a `b2_auth_cookie_flags()` helper; the logout case expires the cookies with the
+same path/flags so the browser actually deletes them.
+
+JA: すべての認証 `setcookie()` 呼び出し(`b2login.php` の `wordpressuser`・
+`wordpresspass`・`wordpressblogid`、`b2profile.php` の `wordpresspass`)は
+PHP 7.3 以降のオプション配列形式を用い、`httponly => true`・
+`samesite => 'Lax'`・`secure => !empty($_SERVER['HTTPS'])` を設定する。Secure は
+HTTPS のときだけ付与され、ローカルの HTTP 環境は動作し続ける。`b2login.php` は
+これを `b2_auth_cookie_flags()` ヘルパーに集約し、ログアウト時は同じ
+path/フラグでクッキーを失効させ、ブラウザが確実に削除するようにした。
+
+### E. Database column width / データベースのカラム幅
+
+EN: A bcrypt hash is 60 characters but `b2users.user_pass` was `varchar(20)`.
+The column was widened to `varchar(255)` on the live database
+(`ALTER TABLE b2users MODIFY user_pass VARCHAR(255) NOT NULL`) and the
+`CREATE TABLE b2users` in `src/wp-admin/wp-install.php` was updated so fresh
+installs get the wider column.
+
+JA: bcrypt ハッシュは 60 文字だが `b2users.user_pass` は `varchar(20)` だった。
+ライブデータベースのカラムを `varchar(255)` に拡張し
+(`ALTER TABLE b2users MODIFY user_pass VARCHAR(255) NOT NULL`)、新規インス
+トールが広いカラムを得られるよう `src/wp-admin/wp-install.php` の
+`CREATE TABLE b2users` も更新した。
+
+### Changes / 変更内容
+
+- `src/b2login.php` — `b2_auth_cookie_flags()` helper; `login()` rewritten to
+  look up by login name and verify with `password_verify()` plus legacy
+  re-hash; auth cookie set to `md5(stored value)`; hardened logout cookies;
+  `retrievepassword` resets instead of emailing the stored secret.
+- `src/b2register.php` — registration stores `password_hash()` output.
+- `src/wp-admin/b2profile.php` — profile password change stores
+  `password_hash()` output and sets the hardened cookie to `md5(stored hash)`.
+- `src/wp-admin/wp-install.php` — `b2users.user_pass` column widened to
+  `varchar(255)`.
+
+### Verification / 検証
+
+EN: `php -l` passes on all four changed files; `composer phpcs` reports 0
+violations; `composer phpstan --memory-limit=1G` reports 0 errors. The full
+login lifecycle was verified with `curl` against the Docker environment on this
+branch: fresh `admin`/`password` login (302 to `wp-admin`, cookies set), the
+admin row upgraded to a `$2y$` bcrypt hash, an authenticated request stays
+logged in, logout then re-login via the hash path, wrong password rejected,
+profile password change writes a hash and the new password logs in, and
+`retrievepassword` rotates the stored hash without emailing a secret. Front end
+and admin pages load with no PHP warnings or fatals.
+
+JA: 変更した 4 ファイルすべてで `php -l` が通り、`composer phpcs` は違反 0 件、
+`composer phpstan --memory-limit=1G` はエラー 0 件。本ブランチの Docker 環境に
+対し `curl` でログインのライフサイクル全体を検証した。`admin`/`password` の新規
+ログイン(`wp-admin` へ 302、クッキー設定)、admin 行が `$2y$` bcrypt ハッシュへ
+アップグレード、認証済みリクエストでログイン維持、ログアウト後にハッシュ経路で
+再ログイン、誤ったパスワードの拒否、プロフィールのパスワード変更でハッシュを
+書き込み新パスワードでログイン、`retrievepassword` が秘密情報を送らずに保存
+ハッシュをローテーション。フロントエンドと管理画面は PHP 警告・fatal なしで
+表示される。
+
+### Out of scope / スコープ外
+
+EN: Replacing the `md5(password-hash)` bearer cookie with a server-side random
+session id is **not** done here — WordPress 0.71-gold has no session storage
+infrastructure and that is a separate, larger change. The existing cookie
+mechanism is kept, made consistent per section B. As a consequence the
+`md5:`-prefixed password path in `login()` (where the client sends
+`md5(stored user_pass)`) now only authenticates a legacy **plaintext** row: a
+bcrypt hash is not recoverable from its md5, so a hashed account cannot be
+reached through the `md5:` path. The normal username+password path is fully
+functional for hashed accounts; the `md5:` path is an edge feature and this
+limitation is documented rather than worked around. The XML-RPC password check
+(`user_pass_ok()` in the Latin-1 `b2functions.php`) still compares plaintext
+and is left for a follow-up Issue.
+
+JA: `md5(パスワードハッシュ)` のベアラークッキーをサーバー側のランダムな
+セッション ID に置き換えることは本 Issue では**行わない** — WordPress
+0.71-gold にはセッション保存基盤が無く、別個のより大きな変更となる。既存の
+クッキー方式は維持し、セクション B の通り整合させた。その結果、`login()` の
+`md5:` 接頭辞付きパスワード経路(クライアントが `md5(保存された user_pass)` を
+送る方式)はレガシーな**平文**行のみ認証する。bcrypt ハッシュはその md5 から
+復元できないため、ハッシュ済みアカウントは `md5:` 経路では認証できない。通常の
+ユーザー名+パスワード経路はハッシュ済みアカウントで完全に機能する。`md5:`
+経路はエッジ機能であり、本制限は回避せず記録するにとどめる。XML-RPC の
+パスワードチェック(Latin-1 の `b2functions.php` の `user_pass_ok()`)は
+依然として平文比較であり、後続 Issue とした。

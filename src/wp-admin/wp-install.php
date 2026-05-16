@@ -285,7 +285,7 @@ $query = "
 CREATE TABLE $tableusers (
   ID int(10) unsigned NOT NULL auto_increment,
   user_login varchar(20) NOT NULL default '',
-  user_pass varchar(20) NOT NULL default '',
+  user_pass varchar(255) NOT NULL default '',
   user_firstname varchar(50) NOT NULL default '',
   user_lastname varchar(50) NOT NULL default '',
   user_nickname varchar(50) NOT NULL default '',
