@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+  EN: PHP 8.3 compatibility check for WordPress 0.71-gold. Runs the
+      PHPCompatibility standard against src/ with the target PHP version 8.3.
+  JA: WordPress 0.71-gold の PHP 8.3 互換性チェック。PHPCompatibility 標準を
+      src/ に対し、対象 PHP バージョン 8.3 で実行する。
+-->
+<ruleset name="wordpress-0.71-gold">
+    <description>PHP 8.3 compatibility check for WordPress 0.71-gold.</description>
+
+    <file>src</file>
+
+    <!-- EN: Reference the PHPCompatibility ruleset by path, so no phpcs
+              "composer installer" plugin is needed.
+         JA: PHPCompatibility ルールセットをパス参照する。phpcs の
+              composer-installer プラグインは不要。 -->
+    <rule ref="./vendor/phpcompatibility/php-compatibility/PHPCompatibility/ruleset.xml"/>
+
+    <!-- EN: Target PHP version for the compatibility check.
+         JA: 互換性チェックの対象 PHP バージョン。 -->
+    <config name="testVersion" value="8.3"/>
+
+    <arg name="extensions" value="php"/>
+    <arg value="sp"/>
+</ruleset>
