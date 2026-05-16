@@ -32,7 +32,7 @@ include_once("../wp-links/links.php");
 
 $title = 'Import Blogroll';
 
-$step = $_GET['step'];
+$step = isset($_GET['step']) ? $_GET['step'] : '';
 if (!$step) $step = 0;
 ?>
 <?php

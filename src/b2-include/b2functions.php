@@ -499,6 +499,13 @@ function get_postdata($postid) {
 	global $tableusers, $tablesettings, $tablecategories, $tableposts, $tablecomments, $querycount, $wpdb;
 	$post = $wpdb->get_row("SELECT * FROM $tableposts WHERE ID = $postid");
 	++$querycount;
+	// EN: a non-existent post id yields a null row; return false so
+	//     callers do not read properties on null.
+	// JA: 存在しない投稿 ID では行が null になる。null への
+	//     プロパティアクセスを避けるため false を返す。
+	if (!$post) {
+		return false;
+	}
 	
 	$postdata = array (
 		'ID' => $post->ID, 
@@ -593,7 +600,7 @@ function dropdown_categories($blog_ID=1) {
 	echo '<select name="post_category" style="width:'.$width.';" tabindex="2" id="category">';
 	while($post = mysqli_fetch_object($result)) {
 		echo "<option value=\"".$post->cat_ID."\"";
-		if ($post->cat_ID == $postdata["Category"])
+		if (isset($postdata["Category"]) && $post->cat_ID == $postdata["Category"])
 			echo " selected";
 		echo ">".$post->cat_name."</option>";
 	}
@@ -603,7 +610,7 @@ function dropdown_categories($blog_ID=1) {
 function touch_time($edit = 1) {
 	global $month, $postdata, $time_difference;
 	// echo $postdata['Date'];
-	if ('draft' == $postdata['post_status']) {
+	if (isset($postdata['post_status']) && 'draft' == $postdata['post_status']) {
 		$checked = 'checked="checked" ';
 		$edit = false;
 	} else {

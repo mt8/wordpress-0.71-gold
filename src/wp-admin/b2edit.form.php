@@ -5,6 +5,16 @@ function selected($selected, $current) {
 	if ($selected == $current) echo ' selected="selected"';
 }
 
+// EN: defaults for a brand-new post so the form does not read undefined
+//     variables; the 'edit' case overrides them from the stored post.
+// JA: 新規投稿でフォームが未定義変数を読まないための既定値。
+//     'edit' の場合は保存済み投稿の値で上書きされる。
+if (!isset($post_status))     $post_status = 'publish';
+if (!isset($comment_status))  $comment_status = 'open';
+if (!isset($ping_status))     $ping_status = 'open';
+if (!isset($post_password))   $post_password = '';
+if (!isset($form_prevstatus)) $form_prevstatus = '';
+
 switch($action) {
 	case 'post':
 		$submitbutton_text = 'Blog this!';

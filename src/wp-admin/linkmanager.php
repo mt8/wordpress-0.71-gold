@@ -65,7 +65,7 @@ for ($i=0; $i<count($b2varstoreset); $i += 1) {
     }
 }
 
-$links_show_cat_id = $_COOKIE["links_show_cat_id"];
+$links_show_cat_id = isset($_COOKIE["links_show_cat_id"]) ? $_COOKIE["links_show_cat_id"] : '';
 
 // error_log("start, links_show_cat_id=$links_show_cat_id");  
 
@@ -227,7 +227,7 @@ switch ($action) {
     </tr>
     <tr height="20"> 
       <td height="20" align="right">URL:</td>
-      <td><input type="text" name="linkurl" size="80" value="<?php echo $link_url; ?>"></td>
+      <td><input type="text" name="linkurl" size="80" value="<?php echo isset($link_url) ? $link_url : ''; ?>"></td>
     </tr>
     <tr height="20"> 
       <td height="20" align="right">Display Name/Alt text:</td>
@@ -496,7 +496,7 @@ LINKS;
     <tr><td colspan="2"><b>Add</b> a link:</td></tr>
       <tr height="20">
         <td height="20" align="right">URL:</td>
-        <td><input type="text" name="linkurl" size="80" value="<?php echo $link_url; ?>"></td>
+        <td><input type="text" name="linkurl" size="80" value="<?php echo isset($link_url) ? $link_url : ''; ?>"></td>
       </tr>
       <tr height="20">
         <td height="20" align="right">Display Name/Alt text:</td>

@@ -156,7 +156,7 @@ $result = mysqli_query($wpdb->dbh, $query) or die("Couldn't execute query. ".mys
     echo "        <select name=\"cat_id\">\n";
     while($row = mysqli_fetch_object($result)) {
         echo "          <option value=\"".$row->cat_id."\"";
-        if ($row->cat_id == $cat_id)
+        if (isset($cat_id) && $row->cat_id == $cat_id)
             echo ' selected';
         echo ">".$row->cat_id.": ".$row->cat_name;
         if ($row->auto_toggle == 'Y')

@@ -21,10 +21,14 @@ $admin_email = 'you@example.com';
 
 // ** MySQL settings **
 
-define('DB_NAME', 'b2');		// The name of the database
-define('DB_USER', 'user');		// Your MySQL username
-define('DB_PASSWORD', 'pass');	// ...and password
-define('DB_HOST', 'db');	// Docker Compose service name of the MySQL container
+// EN: guard the defines so b2config.php can be processed more than once
+//     (some admin pages include it twice) without a redefinition warning.
+// JA: 一部の管理画面は b2config.php を二重に読み込むため、再定義警告が
+//     出ないよう define をガードする。
+if (!defined('DB_NAME'))     define('DB_NAME', 'b2');		// The name of the database
+if (!defined('DB_USER'))     define('DB_USER', 'user');		// Your MySQL username
+if (!defined('DB_PASSWORD')) define('DB_PASSWORD', 'pass');	// ...and password
+if (!defined('DB_HOST'))     define('DB_HOST', 'db');	// Docker Compose service name of the MySQL container
 
 
 // If you've finished up to here you should be able to install now.
