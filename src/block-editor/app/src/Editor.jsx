@@ -48,6 +48,60 @@ import {
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
 /**
+ * EN: Settings handed to BlockEditorProvider.
+ *
+ *     A block's toolbar / inspector controls for typography, colour, spacing,
+ *     etc. are gated behind editor "settings" -- `useSettings()` reads them
+ *     from `settings.__experimentalFeatures` (populated from theme.json in a
+ *     real WordPress install). With no settings prop the block-editor store
+ *     keeps its bare defaults, so `typography.textAlign` is undefined and the
+ *     paragraph block's text-alignment toolbar control never renders.
+ *
+ *     This standalone editor has no theme.json, so the equivalent feature
+ *     flags are supplied here directly. `appearanceTools` switches on the
+ *     common appearance controls; `typography.textAlign` is what makes the
+ *     paragraph's Align-text control appear in the floating toolbar.
+ * JA: BlockEditorProvider へ渡す設定。
+ *
+ *     ブロックのツールバー / インスペクタにある文字組み・色・余白などの
+ *     操作子は、エディタの「設定」によって出し分けられる。`useSettings()`
+ *     はそれらを `settings.__experimentalFeatures`(本物の WordPress では
+ *     theme.json から供給される)から読み取る。settings を渡さないと
+ *     ブロックエディタストアは素の既定値のままで `typography.textAlign` が
+ *     undefined となり、段落ブロックのテキスト配置ツールバー操作子が
+ *     描画されない。
+ *
+ *     このスタンドアロンエディタには theme.json が無いため、相当する機能
+ *     フラグをここで直接与える。`appearanceTools` は一般的な外観操作子を
+ *     有効化し、`typography.textAlign` が段落の「テキストを揃える」操作子を
+ *     フローティングツールバーへ出す鍵となる。
+ */
+const EDITOR_SETTINGS = {
+	// EN: hasFixedToolbar=false keeps the floating per-block toolbar.
+	// JA: hasFixedToolbar=false でフローティングの各ブロックツールバーを保つ。
+	hasFixedToolbar: false,
+	__experimentalFeatures: {
+		appearanceTools: true,
+		typography: {
+			textAlign: true,
+			fontStyle: true,
+			fontWeight: true,
+			lineHeight: true,
+			textDecoration: true,
+		},
+		color: {
+			text: true,
+			background: true,
+			link: true,
+		},
+		spacing: {
+			margin: true,
+			padding: true,
+		},
+	},
+};
+
+/**
  * EN: The post-status options offered by 0.71's own editor (b2edit.form.php).
  * JA: 0.71 自身のエディタ(b2edit.form.php)が提供する投稿ステータス選択肢。
  */
@@ -243,6 +297,7 @@ export function Editor( { config } ) {
 						value={ blocks }
 						onInput={ setBlocks }
 						onChange={ setBlocks }
+						settings={ EDITOR_SETTINGS }
 					>
 						<div className="be-body">
 							{ showOverview && (
