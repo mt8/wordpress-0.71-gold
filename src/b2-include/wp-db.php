@@ -24,6 +24,17 @@
 		var $debug_called;
 		var $vardump_called;
 		var $show_errors = true;
+		// EN: Declared so PHP 8.2 does not warn about dynamic property creation.
+		// JA: PHP 8.2 の動的プロパティ生成の警告を避けるため宣言する。
+		var $dbh;
+		var $result;
+		var $last_query;
+		var $last_result;
+		var $col_info;
+		var $num_rows;
+		var $rows_affected;
+		var $insert_id;
+		var $func_call;
 
 		// ==================================================================
 		//	DB Constructor - connects to the server and selects a database
