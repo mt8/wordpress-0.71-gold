@@ -4,6 +4,13 @@
 # JA: WordPress 0.71-gold 向けの PHPStan 設定。
 #     WordPress 0.71 は WordPress コア自体(プラグイン/テーマではない)であり、
 #     関数はすべて src/ 内に定義されるため WordPress コアスタブは不要。
+#
+# EN: The legacy findings are captured in phpstan-baseline.neon so the tool
+#     stays green; they are reduced in a later "runtime warnings" Issue.
+# JA: レガシーな検出は phpstan-baseline.neon に取り込みツールを green に保つ。
+#     後続の「実行時警告」Issue で削減する。
+includes:
+    - phpstan-baseline.neon
 parameters:
     level: 0
     paths:
