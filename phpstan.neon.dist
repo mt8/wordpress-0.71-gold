@@ -8,3 +8,15 @@ parameters:
     level: 0
     paths:
         - src
+    # EN: The block-editor prototype (Issue #65) is a clearly-labelled
+    #     experimental proof-of-concept -- a thin modern JSON backend for a
+    #     custom @wordpress/block-editor app, decoupled from the 2003
+    #     b2/cafelog code path. It is excluded as prototype code, not part of
+    #     the maintained WordPress 0.71 surface.
+    # JA: ブロックエディタ試作(Issue #65)は明示的に実験的な概念実証であり、
+    #     カスタム @wordpress/block-editor アプリ向けの薄くモダンな JSON
+    #     バックエンドで、2003 年の b2/cafelog のコードパスとは切り離して
+    #     いる。維持対象の WordPress 0.71 の表面ではなく試作コードのため
+    #     除外する。
+    excludePaths:
+        - src/block-editor-api/*
