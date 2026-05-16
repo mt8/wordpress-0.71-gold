@@ -297,7 +297,7 @@ if ($i == "ASC")
 
 					<form action="<?php echo $siteurl.'/b2comments.post.php'?>" method="post">
 						<input type="hidden" name="comment_post_ID" value="<?php echo $id; ?>" />
-						<input type="hidden" name="redirect_to" value="<?php echo $HTTP_SERVER_VARS["REQUEST_URI"]; ?>" />
+						<input type="hidden" name="redirect_to" value="<?php echo $_SERVER["REQUEST_URI"]; ?>" />
 						<input type="text" name="author" class="textarea" value="<?php echo $user_nickname ?>" size="20" tabindex="1" /><br />
 						<input type="text" name="email" class="textarea" value="<?php echo $user_email ?>" size="20" tabindex="2" /><br />
 						<input type="text" name="url" class="textarea" value="<?php echo $user_url ?>" size="20" tabindex="3" /><br />

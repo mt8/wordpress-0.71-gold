@@ -16,23 +16,23 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -49,11 +49,11 @@ case "register":
 		return ereg("^[a-zA-Z0-9\_-\|]+$",$value);
 	}
 
-	$user_login = $HTTP_POST_VARS["user_login"];
-	$pass1 = $HTTP_POST_VARS["pass1"];
-	$pass2 = $HTTP_POST_VARS["pass2"];
-	$user_email = $HTTP_POST_VARS["user_email"];
-	$user_login = $HTTP_POST_VARS["user_login"];
+	$user_login = $_POST["user_login"];
+	$pass1 = $_POST["pass1"];
+	$pass2 = $_POST["pass2"];
+	$user_email = $_POST["user_email"];
+	$user_login = $_POST["user_login"];
 
 	/* declaring global fonctions */
 #	global $user_login,$pass1,$pass2,$user_firstname,$user_nickname,$user_icq,$user_email,$user_url;
@@ -97,9 +97,9 @@ case "register":
 		die ("<b>ERROR</b>: this login is already registered, please choose another one");
 	}
 
-	$user_ip = $HTTP_SERVER_VARS['REMOTE_ADDR'] ;
-	$user_domain = gethostbyaddr($HTTP_SERVER_VARS['REMOTE_ADDR'] );
-	$user_browser = $HTTP_SERVER_VARS['HTTP_USER_AGENT'];
+	$user_ip = $_SERVER['REMOTE_ADDR'] ;
+	$user_domain = gethostbyaddr($_SERVER['REMOTE_ADDR'] );
+	$user_browser = $_SERVER['HTTP_USER_AGENT'];
 
 	$user_login=addslashes($user_login);
 	$pass1=addslashes($pass1);

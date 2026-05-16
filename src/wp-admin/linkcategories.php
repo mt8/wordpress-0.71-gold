@@ -36,14 +36,14 @@ $b2varstoreset = array('action','standalone','cat', 'auto_toggle');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
     $b2var = $b2varstoreset[$i];
     if (!isset($$b2var)) {
-        if (empty($HTTP_POST_VARS["$b2var"])) {
-            if (empty($HTTP_GET_VARS["$b2var"])) {
+        if (empty($_POST["$b2var"])) {
+            if (empty($_GET["$b2var"])) {
                 $$b2var = '';
             } else {
-                $$b2var = $HTTP_GET_VARS["$b2var"];
+                $$b2var = $_GET["$b2var"];
             }
         } else {
-            $$b2var = $HTTP_POST_VARS["$b2var"];
+            $$b2var = $_POST["$b2var"];
         }
     }
 }
@@ -57,8 +57,8 @@ switch ($action) {
       if ($user_level < $minadminlevel)
           die ("Cheatin' uh ?");
     
-      $cat_name=addslashes($HTTP_POST_VARS["cat_name"]);
-      $auto_toggle = $HTTP_POST_VARS["auto_toggle"];
+      $cat_name=addslashes($_POST["cat_name"]);
+      $auto_toggle = $_POST["auto_toggle"];
       if ($auto_toggle != 'Y') {
           $auto_toggle = 'N';
       }
@@ -74,7 +74,7 @@ switch ($action) {
     $standalone = 1;
     include_once("./b2header.php");
 
-    $cat_id = $HTTP_POST_VARS["cat_id"];
+    $cat_id = $_POST["cat_id"];
     $cat_name=get_linkcatname($cat_id);
     $cat_name=addslashes($cat_name);
 
@@ -96,7 +96,7 @@ switch ($action) {
   case "Edit":
   {
     include_once ("./b2header.php");
-    $cat_id = $HTTP_POST_VARS["cat_id"];
+    $cat_id = $_POST["cat_id"];
     $cat_name=get_linkcatname($cat_id);
     $cat_name=addslashes($cat_name);
     $auto_toggle=get_autotoggle($cat_id);
@@ -107,7 +107,7 @@ switch ($action) {
     <form name="editcat" method="post">
       <b>New</b> name:<br />
       <input type="hidden" name="action" value="editedcat" />
-      <input type="hidden" name="cat_id" value="<?php echo $HTTP_POST_VARS["cat_id"] ?>" />
+      <input type="hidden" name="cat_id" value="<?php echo $_POST["cat_id"] ?>" />
       <input type="text" name="cat_name" value="<?php echo $cat_name ?>" /><br />
       <input type="checkbox" name="auto_toggle" value="Y" <?php echo $auto_toggle == 'Y' ? '"checked"' : ''; ?>/> auto-toggle?<br />
       <input type="submit" name="submit" value="Edit it !" class="search" />
@@ -125,9 +125,9 @@ switch ($action) {
     if ($user_level < $minadminlevel)
       die ("Cheatin' uh ?");
     
-    $cat_name=addslashes($HTTP_POST_VARS["cat_name"]);
-    $cat_id=$HTTP_POST_VARS["cat_id"];
-    $auto_toggle=$HTTP_POST_VARS["auto_toggle"];
+    $cat_name=addslashes($_POST["cat_name"]);
+    $cat_id=$_POST["cat_id"];
+    $auto_toggle=$_POST["auto_toggle"];
 
     $query="UPDATE $tablelinkcategories SET cat_name='$cat_name', auto_toggle='$auto_toggle' WHERE cat_id=$cat_id";
     $result=mysql_query($query) or die("Couldn't edit link category <b>$cat_name</b>: ".$query.mysql_error());

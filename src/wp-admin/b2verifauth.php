@@ -4,12 +4,12 @@ require_once('../b2config.php');
 
 /* checking login & pass in the database */
 function veriflog() {
-	global $HTTP_COOKIE_VARS;
+	global $_COOKIE;
 	global $tableusers, $wpdb;
 
-	if (!empty($HTTP_COOKIE_VARS["wordpressuser"])) {
-		$user_login = $HTTP_COOKIE_VARS["wordpressuser"];
-		$user_pass_md5 = $HTTP_COOKIE_VARS["wordpresspass"];
+	if (!empty($_COOKIE["wordpressuser"])) {
+		$user_login = $_COOKIE["wordpressuser"];
+		$user_pass_md5 = $_COOKIE["wordpresspass"];
 	} else {
 		return false;
 	}
@@ -38,7 +38,7 @@ function veriflog() {
 		header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
 		header('Cache-Control: no-cache, must-revalidate');
 		header('Pragma: no-cache');
-		if (!empty($HTTP_COOKIE_VARS["wordpressuser"])) {
+		if (!empty($_COOKIE["wordpressuser"])) {
 			$error="<strong>Error</strong>: wrong login or password";
 		}
 		header("Location: $path/b2login.php");

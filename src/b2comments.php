@@ -1,11 +1,11 @@
 <?php // Do not delete these lines
-	if ('b2comments.php' == basename($HTTP_SERVER_VARS['SCRIPT_FILENAME']))
+	if ('b2comments.php' == basename($_SERVER['SCRIPT_FILENAME']))
 		die ('Please do not load this page directly. Thanks!');
 	if (($withcomments) or ($c)) {
 
-		$comment_author = (empty($HTTP_COOKIE_VARS["comment_author"])) ? "name" : $HTTP_COOKIE_VARS["comment_author"];
-		$comment_author_email = (empty($HTTP_COOKIE_VARS["comment_author"])) ? "email" : trim($HTTP_COOKIE_VARS["comment_author_email"]);
-		$comment_author_url = (empty($HTTP_COOKIE_VARS["comment_author"])) ? "url" : trim($HTTP_COOKIE_VARS["comment_author_url"]);
+		$comment_author = (empty($_COOKIE["comment_author"])) ? "name" : $_COOKIE["comment_author"];
+		$comment_author_email = (empty($_COOKIE["comment_author"])) ? "email" : trim($_COOKIE["comment_author_email"]);
+		$comment_author_url = (empty($_COOKIE["comment_author"])) ? "url" : trim($_COOKIE["comment_author_url"]);
 
 	$comments = $wpdb->get_results("SELECT * FROM $tablecomments WHERE comment_post_ID = $id ORDER BY comment_date");
 ?>

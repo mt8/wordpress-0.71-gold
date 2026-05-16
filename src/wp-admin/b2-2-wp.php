@@ -1,7 +1,7 @@
 <?php
 require('../b2config.php');
 
-$step = $HTTP_GET_VARS['step'];
+$step = $_GET['step'];
 if (!$step) $step = 0;
 if (!step) $step = 0;
 ?>

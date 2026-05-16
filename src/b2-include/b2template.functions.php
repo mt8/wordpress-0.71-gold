@@ -432,14 +432,14 @@ function the_content_unicode($more_link_text='(more...)', $stripteaser=0, $more_
 
 function get_the_content($more_link_text='(more...)', $stripteaser=0, $more_file='') {
 	global $id, $post, $more, $c, $withcomments, $page, $pages, $multipage, $numpages;
-	global $HTTP_SERVER_VARS, $preview;
+	global $_SERVER, $preview;
 	global $querystring_start, $querystring_equal, $querystring_separator;
     global $pagenow;
 	$output = '';
 	if ($more_file != '') {
 		$file = $more_file;
 	} else {
-		$file = $pagenow; //$HTTP_SERVER_VARS['PHP_SELF'];
+		$file = $pagenow; //$_SERVER['PHP_SELF'];
 	}
 	$content = $pages[$page-1];
 	$content = explode('<!--more-->', $content);
@@ -518,7 +518,7 @@ function the_excerpt_unicode() {
 
 function get_the_excerpt($fakeit = false) {
 	global $id, $post;
-	global $HTTP_SERVER_VARS, $preview;
+	global $_SERVER, $preview;
 	$output = '';
 	$output = $post->post_excerpt;
     //if we haven't got an excerpt, make one in the style of the rss ones
@@ -676,16 +676,16 @@ function next_post($format='%', $next='next post: ', $title='yes', $in_same_cat=
 
 
 function next_posts($max_page = 0) { // original by cfactor at cooltux.org
-	global $HTTP_SERVER_VARS, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
+	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
 	if (empty($p) && ($what_to_show == 'paged')) {
-		$qstr = $HTTP_SERVER_VARS['QUERY_STRING'];
+		$qstr = $_SERVER['QUERY_STRING'];
 		if (!empty($qstr)) {
 			$qstr = preg_replace("/&paged=\d{0,}/","",$qstr);
 			$qstr = preg_replace("/paged=\d{0,}/","",$qstr);
-		} elseif (stristr($HTTP_SERVER_VARS['REQUEST_URI'], $HTTP_SERVER_VARS['SCRIPT_NAME'] )) {
-			if ('' != $qstr = str_replace($HTTP_SERVER_VARS['SCRIPT_NAME'], '',
-											$HTTP_SERVER_VARS['REQUEST_URI']) ) {
+		} elseif (stristr($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] )) {
+			if ('' != $qstr = str_replace($_SERVER['SCRIPT_NAME'], '',
+											$_SERVER['REQUEST_URI']) ) {
 				$qstr = preg_replace("/^\//", "", $qstr);
 				$qstr = preg_replace("/paged\/\d{0,}\//", "", $qstr);
 				$qstr = preg_replace("/paged\/\d{0,}/", "", $qstr);
@@ -726,16 +726,16 @@ function next_posts_link($label='Next Page >>', $max_page=0) {
 
 
 function previous_posts() { // original by cfactor at cooltux.org
-	global $HTTP_SERVER_VARS, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
+	global $_SERVER, $siteurl, $blogfilename, $p, $paged, $what_to_show, $pagenow;
 	global $querystring_start, $querystring_equal, $querystring_separator;
 	if (empty($p) && ($what_to_show == 'paged')) {
-		$qstr = $HTTP_SERVER_VARS['QUERY_STRING'];
+		$qstr = $_SERVER['QUERY_STRING'];
 		if (!empty($qstr)) {
 			$qstr = preg_replace("/&paged=\d{0,}/","",$qstr);
 			$qstr = preg_replace("/paged=\d{0,}/","",$qstr);
-		} elseif (stristr($HTTP_SERVER_VARS['REQUEST_URI'], $HTTP_SERVER_VARS['SCRIPT_NAME'] )) {
-			if ('' != $qstr = str_replace($HTTP_SERVER_VARS['SCRIPT_NAME'], '',
-											$HTTP_SERVER_VARS['REQUEST_URI']) ) {
+		} elseif (stristr($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'] )) {
+			if ('' != $qstr = str_replace($_SERVER['SCRIPT_NAME'], '',
+											$_SERVER['REQUEST_URI']) ) {
 				$qstr = preg_replace("/^\//", "", $qstr);
 				$qstr = preg_replace("/paged\/\d{0,}\//", "", $qstr);
 				$qstr = preg_replace("/paged\/\d{0,}/", "", $qstr);
@@ -1094,8 +1094,8 @@ function trackback_url($display = true) {
 
 
 function trackback_rdf($timezone = 0) {
-	global $siteurl, $id, $HTTP_SERVER_VARS;
-	if (!stristr($HTTP_SERVER_VARS['HTTP_USER_AGENT'], 'W3C_Validator')) {
+	global $siteurl, $id, $_SERVER;
+	if (!stristr($_SERVER['HTTP_USER_AGENT'], 'W3C_Validator')) {
 		echo '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '."\n";
 		echo '    xmlns:dc="http://purl.org/dc/elements/1.1/"'."\n";
 		echo '    xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">'."\n";
@@ -1191,19 +1191,19 @@ function start_b2() {
 	global $post, $id, $postdata, $authordata, $day, $preview, $page, $pages, $multipage, $more, $numpages;
 	global $preview_userid,$preview_date,$preview_content,$preview_title,$preview_category,$preview_notify,$preview_make_clickable,$preview_autobr;
 	global $pagenow;
-	global $HTTP_GET_VARS;
+	global $_GET;
 	if (!$preview) {
 		$id = $post->ID;
 	} else {
 		$id = 0;
 		$postdata = array (
 			'ID' => 0,
-			'Author_ID' => $HTTP_GET_VARS['preview_userid'],
-			'Date' => $HTTP_GET_VARS['preview_date'],
-			'Content' => $HTTP_GET_VARS['preview_content'],
-			'Excerpt' => $HTTP_GET_VARS['preview_excerpt'],
-			'Title' => $HTTP_GET_VARS['preview_title'],
-			'Category' => $HTTP_GET_VARS['preview_category'],
+			'Author_ID' => $_GET['preview_userid'],
+			'Date' => $_GET['preview_date'],
+			'Content' => $_GET['preview_content'],
+			'Excerpt' => $_GET['preview_excerpt'],
+			'Title' => $_GET['preview_title'],
+			'Category' => $_GET['preview_category'],
 			'Notify' => 1
 			);
 	}

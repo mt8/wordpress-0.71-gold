@@ -44,9 +44,9 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action','standalone','cat_id', 'linkurl', 'name', 'image',
@@ -55,19 +55,19 @@ $b2varstoreset = array('action','standalone','cat_id', 'linkurl', 'name', 'image
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
     $b2var = $b2varstoreset[$i];
     if (!isset($$b2var)) {
-        if (empty($HTTP_POST_VARS["$b2var"])) {
-            if (empty($HTTP_GET_VARS["$b2var"])) {
+        if (empty($_POST["$b2var"])) {
+            if (empty($_GET["$b2var"])) {
                 $$b2var = '';
             } else {
-                $$b2var = $HTTP_GET_VARS["$b2var"];
+                $$b2var = $_GET["$b2var"];
             }
         } else {
-            $$b2var = $HTTP_POST_VARS["$b2var"];
+            $$b2var = $_POST["$b2var"];
         }
     }
 }
 
-$links_show_cat_id = $HTTP_COOKIE_VARS["links_show_cat_id"];
+$links_show_cat_id = $_COOKIE["links_show_cat_id"];
 
 // error_log("start, links_show_cat_id=$links_show_cat_id");  
 
@@ -77,15 +77,15 @@ switch ($action) {
     $standalone = 1;
     include_once('b2header.php');
 
-    $link_url = $HTTP_POST_VARS["linkurl"];
-    $link_name = $HTTP_POST_VARS["name"];
-    $link_image = $HTTP_POST_VARS["image"];
-    $link_target = $HTTP_POST_VARS["target"];
-    $link_category = $HTTP_POST_VARS["category"];
-    $link_description = $HTTP_POST_VARS["description"];
-    $link_visible = $HTTP_POST_VARS["visible"];
-    $link_rating = $HTTP_POST_VARS["rating"];
-    $link_rel = $HTTP_POST_VARS["rel"];
+    $link_url = $_POST["linkurl"];
+    $link_name = $_POST["name"];
+    $link_image = $_POST["image"];
+    $link_target = $_POST["target"];
+    $link_category = $_POST["category"];
+    $link_description = $_POST["description"];
+    $link_visible = $_POST["visible"];
+    $link_rating = $_POST["rating"];
+    $link_rel = $_POST["rel"];
     $auto_toggle = get_autotoggle($link_category);
 
     if ($user_level < $minadminlevel)
@@ -126,16 +126,16 @@ switch ($action) {
       $standalone = 1;
       include_once('b2header.php');
 
-      $link_id = $HTTP_POST_VARS["link_id"];
-      $link_url = $HTTP_POST_VARS["linkurl"];
-      $link_name = $HTTP_POST_VARS["name"];
-      $link_image = $HTTP_POST_VARS["image"];
-      $link_target = $HTTP_POST_VARS["target"];
-      $link_category = $HTTP_POST_VARS["category"];
-      $link_description = $HTTP_POST_VARS["description"];
-      $link_visible = $HTTP_POST_VARS["visible"];
-      $link_rating = $HTTP_POST_VARS["rating"];
-      $link_rel = $HTTP_POST_VARS["rel"];
+      $link_id = $_POST["link_id"];
+      $link_url = $_POST["linkurl"];
+      $link_name = $_POST["name"];
+      $link_image = $_POST["image"];
+      $link_target = $_POST["target"];
+      $link_category = $_POST["category"];
+      $link_description = $_POST["description"];
+      $link_visible = $_POST["visible"];
+      $link_rating = $_POST["rating"];
+      $link_rel = $_POST["rel"];
       $auto_toggle = get_autotoggle($link_category);
 
       if ($user_level < $minadminlevel)
@@ -169,7 +169,7 @@ switch ($action) {
     $standalone = 1;
     include_once('b2header.php');
 
-    $link_id = $HTTP_POST_VARS["link_id"];
+    $link_id = $_POST["link_id"];
 
     if ($user_level < $minadminlevel)
       die ("Cheatin' uh ?");
@@ -324,8 +324,8 @@ switch ($action) {
   } // end Show
   case "popup":
   {
-    $link_url = $HTTP_GET_VARS["linkurl"];
-    $link_name = $HTTP_GET_VARS["name"];
+    $link_url = $_GET["linkurl"];
+    $link_name = $_GET["name"];
     //break; fall through
   }
   default:

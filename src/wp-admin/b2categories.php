@@ -14,23 +14,23 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action','standalone','cat');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -45,7 +45,7 @@ case 'addcat':
 	if ($user_level < 3)
 		die ('Cheatin&#8217; uh?');
 	
-	$cat_name=addslashes($HTTP_POST_VARS["cat_name"]);
+	$cat_name=addslashes($_POST["cat_name"]);
 
 	$query = "INSERT INTO $tablecategories (cat_ID,cat_name) VALUES ('0', '$cat_name')";
 	$result = mysql_query($query) or die("Couldn't add category <b>$cat_name</b>");
@@ -59,7 +59,7 @@ case 'Delete':
 	$standalone = 1;
 	require_once('b2header.php');
 
-	$cat_ID = intval($HTTP_POST_VARS["cat_ID"]);
+	$cat_ID = intval($_POST["cat_ID"]);
 	$cat_name = get_catname($cat_ID);
 	$cat_name = addslashes($cat_name);
 
@@ -82,7 +82,7 @@ break;
 case 'Rename':
 
 	require_once ('b2header.php');
-	$cat_name = get_catname($HTTP_POST_VARS["cat_ID"]);
+	$cat_name = get_catname($_POST["cat_ID"]);
 	$cat_name = addslashes($cat_name);
 	?>
 
@@ -92,7 +92,7 @@ case 'Rename':
 	<form name="renamecat" action="b2categories.php" method="post">
 		<strong>New</strong> name:<br />
 		<input type="hidden" name="action" value="editedcat" />
-		<input type="hidden" name="cat_ID" value="<?php echo $HTTP_POST_VARS["cat_ID"] ?>" />
+		<input type="hidden" name="cat_ID" value="<?php echo $_POST["cat_ID"] ?>" />
 		<input type="text" name="cat_name" value="<?php echo $cat_name ?>" /><br />
 		<input type="submit" name="submit" value="Edit it !" class="search" />
 	</form>
@@ -110,8 +110,8 @@ case 'editedcat':
 	if ($user_level < 3)
 		die ('Cheatin&#8217; uh?');
 	
-	$cat_name = addslashes($HTTP_POST_VARS["cat_name"]);
-	$cat_ID = addslashes($HTTP_POST_VARS["cat_ID"]);
+	$cat_name = addslashes($_POST["cat_name"]);
+	$cat_ID = addslashes($_POST["cat_ID"]);
 
 	$query = "UPDATE $tablecategories SET cat_name='$cat_name' WHERE cat_ID = $cat_ID";
 	$result = mysql_query($query) or die("Couldn't edit category <b>$cat_name</b>: ".mysql_error());

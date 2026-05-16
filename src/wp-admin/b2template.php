@@ -14,23 +14,23 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action','standalone','redirect','profile','error','warning','a','file');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -46,8 +46,8 @@ case 'update':
 		die('<p>You have no right to edit the template for this blog.<br />Ask for a promotion to your <a href="mailto:$admin_email">blog admin</a>. :)</p>');
 	}
 
-	$newcontent = stripslashes($HTTP_POST_VARS["newcontent"]);
-	$file = $HTTP_POST_VARS["file"];
+	$newcontent = stripslashes($_POST["newcontent"]);
+	$file = $_POST["file"];
 	$f = fopen($file, 'w+');
 	fwrite($f, $newcontent);
 	fclose($f);

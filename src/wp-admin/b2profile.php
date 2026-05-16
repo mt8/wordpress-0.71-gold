@@ -13,23 +13,23 @@ function add_magic_quotes($array) {
 } 
 
 if (!get_magic_quotes_gpc()) {
-	$HTTP_GET_VARS    = add_magic_quotes($HTTP_GET_VARS);
-	$HTTP_POST_VARS   = add_magic_quotes($HTTP_POST_VARS);
-	$HTTP_COOKIE_VARS = add_magic_quotes($HTTP_COOKIE_VARS);
+	$_GET    = add_magic_quotes($_GET);
+	$_POST   = add_magic_quotes($_POST);
+	$_COOKIE = add_magic_quotes($_COOKIE);
 }
 
 $b2varstoreset = array('action','standalone','redirect','profile','user');
 for ($i=0; $i<count($b2varstoreset); $i += 1) {
 	$b2var = $b2varstoreset[$i];
 	if (!isset($$b2var)) {
-		if (empty($HTTP_POST_VARS["$b2var"])) {
-			if (empty($HTTP_GET_VARS["$b2var"])) {
+		if (empty($_POST["$b2var"])) {
+			if (empty($_GET["$b2var"])) {
 				$$b2var = '';
 			} else {
-				$$b2var = $HTTP_GET_VARS["$b2var"];
+				$$b2var = $_GET["$b2var"];
 			}
 		} else {
-			$$b2var = $HTTP_POST_VARS["$b2var"];
+			$$b2var = $_POST["$b2var"];
 		}
 	}
 }
@@ -46,52 +46,52 @@ case 'update':
 	get_currentuserinfo();
 
 	/* checking the nickname has been typed */
-	if (empty($HTTP_POST_VARS["newuser_nickname"])) {
+	if (empty($_POST["newuser_nickname"])) {
 		die ("<strong>ERROR</strong>: please enter your nickname (can be the same as your login)");
 		return false;
 	}
 
 	/* if the ICQ UIN has been entered, check to see if it has only numbers */
-	if (!empty($HTTP_POST_VARS["newuser_icq"])) {
-		if ((ereg("^[0-9]+$",$HTTP_POST_VARS["newuser_icq"]))==false) {
+	if (!empty($_POST["newuser_icq"])) {
+		if ((ereg("^[0-9]+$",$_POST["newuser_icq"]))==false) {
 			die ("<strong>ERROR</strong>: your ICQ UIN can only be a number, no letters allowed");
 			return false;
 		}
 	}
 
 	/* checking e-mail address */
-	if (empty($HTTP_POST_VARS["newuser_email"])) {
+	if (empty($_POST["newuser_email"])) {
 		die ("<strong>ERROR</strong>: please type your e-mail address");
 		return false;
-	} else if (!is_email($HTTP_POST_VARS["newuser_email"])) {
+	} else if (!is_email($_POST["newuser_email"])) {
 		die ("<strong>ERROR</strong>: the email address isn't correct");
 		return false;
 	}
 
-	if ($HTTP_POST_VARS["pass1"] == "") {
-		if ($HTTP_POST_VARS["pass2"] != "")
+	if ($_POST["pass1"] == "") {
+		if ($_POST["pass2"] != "")
 			die ("<strong>ERROR</strong>: you typed your new password only once. Go back to type it twice.");
 		$updatepassword = "";
 	} else {
-		if ($HTTP_POST_VARS["pass2"] == "")
+		if ($_POST["pass2"] == "")
 			die ("<strong>ERROR</strong>: you typed your new password only once. Go back to type it twice.");
-		if ($HTTP_POST_VARS["pass1"] != $HTTP_POST_VARS["pass2"])
+		if ($_POST["pass1"] != $_POST["pass2"])
 			die ("<strong>ERROR</strong>: you typed two different passwords. Go back to correct that.");
-		$newuser_pass = $HTTP_POST_VARS["pass1"];
+		$newuser_pass = $_POST["pass1"];
 		$updatepassword = "user_pass='$newuser_pass', ";
 		setcookie("wordpresspass",md5($newuser_pass),time()+31536000);
 	}
 
-	$newuser_firstname=addslashes($HTTP_POST_VARS["newuser_firstname"]);
-	$newuser_lastname=addslashes($HTTP_POST_VARS["newuser_lastname"]);
-	$newuser_nickname=addslashes($HTTP_POST_VARS["newuser_nickname"]);
-	$newuser_icq=addslashes($HTTP_POST_VARS["newuser_icq"]);
-	$newuser_aim=addslashes($HTTP_POST_VARS["newuser_aim"]);
-	$newuser_msn=addslashes($HTTP_POST_VARS["newuser_msn"]);
-	$newuser_yim=addslashes($HTTP_POST_VARS["newuser_yim"]);
-	$newuser_email=addslashes($HTTP_POST_VARS["newuser_email"]);
-	$newuser_url=addslashes($HTTP_POST_VARS["newuser_url"]);
-	$newuser_idmode=addslashes($HTTP_POST_VARS["newuser_idmode"]);
+	$newuser_firstname=addslashes($_POST["newuser_firstname"]);
+	$newuser_lastname=addslashes($_POST["newuser_lastname"]);
+	$newuser_nickname=addslashes($_POST["newuser_nickname"]);
+	$newuser_icq=addslashes($_POST["newuser_icq"]);
+	$newuser_aim=addslashes($_POST["newuser_aim"]);
+	$newuser_msn=addslashes($_POST["newuser_msn"]);
+	$newuser_yim=addslashes($_POST["newuser_yim"]);
+	$newuser_email=addslashes($_POST["newuser_email"]);
+	$newuser_url=addslashes($_POST["newuser_url"]);
+	$newuser_idmode=addslashes($_POST["newuser_idmode"]);
 
 	$query = "UPDATE $tableusers SET user_firstname='$newuser_firstname', ".$updatepassword."user_lastname='$newuser_lastname', user_nickname='$newuser_nickname', user_icq='$newuser_icq', user_email='$newuser_email', user_url='$newuser_url', user_aim='$newuser_aim', user_msn='$newuser_msn', user_yim='$newuser_yim', user_idmode='$newuser_idmode' WHERE ID = $user_ID";
 	$result = $wpdb->query($query);
@@ -115,7 +115,7 @@ case 'viewprofile':
 	require_once('b2verifauth.php');
 
 	$profiledata = get_userdata($user);
-	if ($HTTP_COOKIE_VARS['wordpressuser'] == $profiledata->user_login)
+	if ($_COOKIE['wordpressuser'] == $profiledata->user_login)
 		header ('Location: b2profile.php');
 	
 	$profile = 1;

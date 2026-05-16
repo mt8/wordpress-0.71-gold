@@ -133,7 +133,7 @@ $tablebottom = "\t\t</td>\n\t</table>\n\t</td>\n\t</table>\n";
 $blankline = '<img src="../b2-img/blank.gif" width="10" height="5" border="0" /><br />';
 
 # on which page are we ?
-$PHP_SELF = $HTTP_SERVER_VARS['PHP_SELF'];
+$PHP_SELF = $_SERVER['PHP_SELF'];
 $pagenow = explode('/', $PHP_SELF);
 $pagenow = trim($pagenow[(sizeof($pagenow)-1)]);
 $pagenow = explode('?', $pagenow);
@@ -145,7 +145,7 @@ if (($querystring_start == '/') && ($pagenow != 'b2edit.php')) {
 # browser detection
 $is_lynx = 0; $is_gecko = 0; $is_winIE = 0; $is_macIE = 0; $is_opera = 0; $is_NS4 = 0;
 if (!isset($HTTP_USER_AGENT)) {
-	$HTTP_USER_AGENT = $HTTP_SERVER_VARS['HTTP_USER_AGENT'];
+	$HTTP_USER_AGENT = $_SERVER['HTTP_USER_AGENT'];
 }
 if (preg_match('/Lynx/', $HTTP_USER_AGENT)) {
 	$is_lynx = 1;
@@ -193,8 +193,8 @@ $b2_gecko_correction['out'] = array(
 );
 
 # server detection
-$is_Apache = strstr($HTTP_SERVER_VARS['SERVER_SOFTWARE'], 'Apache') ? 1 : 0;
-$is_IIS = strstr($HTTP_SERVER_VARS['SERVER_SOFTWARE'], 'Microsoft-IIS') ? 1 : 0;
+$is_Apache = strstr($_SERVER['SERVER_SOFTWARE'], 'Apache') ? 1 : 0;
+$is_IIS = strstr($_SERVER['SERVER_SOFTWARE'], 'Microsoft-IIS') ? 1 : 0;
 
 # if the config file does not provide the smilies array, let's define it here
 if (!isset($b2smiliestrans)) {
