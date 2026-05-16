@@ -41,6 +41,11 @@ $b2varstoreset = array('m','p','posts','w','c', 'cat','withcomments','s','search
 @header ("X-Pingback: $siteurl/xmlrpc.php");
 
 /* Getting settings from db */
+// EN: $querycount is a global counter incremented by the query helpers below;
+//     initialize it so the first ++$querycount does not hit an undefined var.
+// JA: $querycount は下記のクエリ補助関数が加算するグローバルカウンタ。最初の
+//     ++$querycount が未定義変数にならないよう初期化する。
+$querycount = 0;
 $posts_per_page = get_settings('posts_per_page');
 $what_to_show = get_settings('what_to_show');
 $archive_mode = get_settings('archive_mode');
