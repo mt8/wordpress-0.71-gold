@@ -190,7 +190,15 @@ switch ( $action ) {
 	}
 
 		$post_category  = intval( $_POST['post_category'] );
-		$post_autobr    = intval( $_POST['post_autobr'] );
+		// EN: Issue #60 -- the edit form (b2edit.form.php) never renders a
+		//     'post_autobr' field, so reading $_POST['post_autobr'] directly
+		//     raised an "Undefined array key" warning under PHP 8.3. Default
+		//     it to 0 with a guard, matching the migration's hardening style.
+		// JA: Issue #60 -- 編集フォーム(b2edit.form.php)は 'post_autobr'
+		//     フィールドを出力しないため、$_POST['post_autobr'] を直接読むと
+		//     PHP 8.3 で "Undefined array key" 警告が出ていた。ガードで 0 を
+		//     既定値とし、移行作業の堅牢化スタイルに合わせる。
+		$post_autobr    = isset( $_POST['post_autobr'] ) ? intval( $_POST['post_autobr'] ) : 0;
 		$content        = balanceTags( $_POST['content'] );
 		$content        = format_to_post( $content );
 		$excerpt        = balanceTags( $_POST['excerpt'] );

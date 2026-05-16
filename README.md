@@ -106,6 +106,43 @@ JA: PHPUnit スイート(**95 テスト**)が、2003 年当時のコードのう
   サーバー無しで単体テスト可能にする。
 - **CSRF ヘルパー** — Issue #33 で追加。
 
+## E2E tests / E2E テスト
+
+```sh
+# 1. Start the local Docker blog / ローカル Docker ブログを起動
+docker compose up -d
+docker compose ps          # confirm web + db are Up / web と db が Up か確認
+
+# 2. Install the Node tooling (first run only) / Node ツールを導入 (初回のみ)
+npm install
+npx playwright install chromium
+
+# 3. Run the suite / スイートを実行
+npm run test:e2e
+```
+
+EN: A Playwright end-to-end suite (in `e2e/`) drives the real admin and
+front-end pages of the running Docker blog. It covers the admin flows
+(log in; create / edit / delete a post; add / delete a category) and the
+front end (home page, single post `?p=`, category `?cat=`, monthly archive
+`?m=`, and the RSS .92 / RDF 1.0 / RSS 2.0 feeds), and asserts that no PHP
+`Fatal error` / `Warning` / `Deprecated` text appears on any page. Test data
+is seeded and cleaned up by helpers in `e2e/helpers/`; every seeded row carries
+an `E2E:` title/name prefix and only those rows are removed, so your existing
+content is never touched and the suite is safe to re-run. The Docker blog must
+be running first. See `docs/php83-migration.md` (Issue #60) for details.
+
+JA: Playwright の E2E スイート(`e2e/`)が、稼働中の Docker ブログの実際の
+管理画面・フロントエンドのページを操作する。管理画面フロー(ログイン、投稿の
+作成/編集/削除、カテゴリの追加/削除)とフロントエンド(トップ、単一投稿
+`?p=`、カテゴリ `?cat=`、月別アーカイブ `?m=`、RSS .92 / RDF 1.0 / RSS 2.0
+フィード)を対象とし、どのページにも PHP の `Fatal error` / `Warning` /
+`Deprecated` が出ないことを検証する。テストデータは `e2e/helpers/` のヘルパーが
+投入・後始末する。投入する行はすべて `E2E:` というタイトル/名前接頭辞を持ち、
+その行のみを削除するため、既存コンテンツに触れることはなく、再実行しても安全
+である。先に Docker ブログを起動しておくこと。詳細は `docs/php83-migration.md`
+(Issue #60)を参照。
+
 ## Publishing safely (static export) / 安全な公開（静的書き出し）
 
 ```sh
@@ -130,11 +167,14 @@ JA: WordPress 0.71 を、稼働中の PHP アプリケーションとして公�
 | Path | Contents / 内容 |
 |------|-----------------|
 | `src/` | The WordPress 0.71-gold source — the actual modified codebase. / WordPress 0.71-gold のソース(改修対象の本体)。 |
+| `tests/` | PHPUnit unit tests. / PHPUnit 単体テスト。 |
+| `e2e/` | Playwright E2E specs and test-data helpers. / Playwright E2E spec とテストデータヘルパー。 |
 | `docs/` | Documentation. / ドキュメント。 |
 | `bin/` | Tooling scripts — the static-export script. / ツールスクリプト(静的書き出し)。 |
 | `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. / ローカルの PHP 8.3 + MySQL 8 環境。 |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. / 静的解析の設定。 |
-| `composer.json` | Dev tooling (phpcs / WPCS / PHPStan). / 開発ツール。 |
+| `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). / PHP 開発ツール。 |
+| `package.json`, `playwright.config.js` | Node E2E tooling (Playwright). / Node E2E ツール(Playwright)。 |
 
 ## What was done / 実施内容
 

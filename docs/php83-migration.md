@@ -2481,3 +2481,148 @@ JA: `composer test` で PHPUnit が走り、**95 テスト・150 アサーショ
 (12 テスト・18 アサーションから増加)。`php -l` は新規テストファイルすべてで
 構文エラー 0 件。phpcs と PHPStan は不変: 両者は本 Issue が触れていない `src/`
 のみを解析し、`tests/` はその対象外である。
+
+## Issue #60: Introduce an end-to-end (E2E) test suite / E2E テストスイートを導入
+
+EN: The PHPUnit suite (Issue #53) unit-tests pure helpers, but nothing
+exercised the 2003-era PHP **end to end** -- a real HTTP request hitting
+Apache + PHP 8.3 + MySQL 8 and producing a rendered page. Current WordPress
+core uses **Playwright** for its E2E tests, so this Issue adds a Playwright
+suite that drives the real admin and front-end pages of the running Docker
+blog.
+
+JA: PHPUnit スイート(Issue #53)は純粋なヘルパーを単体テストするが、2003 年
+当時の PHP を**エンドツーエンド**で動かすもの -- Apache + PHP 8.3 + MySQL 8 に
+実際の HTTP リクエストを当て、レンダリングされたページを生成すること -- は
+無かった。現在の WordPress コアは E2E に **Playwright** を使用しているため、
+本 Issue は稼働中の Docker ブログの実際の管理画面・フロントエンドのページを
+操作する Playwright スイートを追加する。
+
+### Playwright setup / Playwright のセットアップ
+
+EN: The project had no Node side before this Issue. Added at the repo root:
+
+- `package.json` -- declares `@playwright/test` as the only devDependency and
+  the `test:e2e` script (`playwright test`).
+- `playwright.config.js` -- `testDir: ./e2e`, baseURL `http://localhost:8080`,
+  a single `chromium` project, and sensible timeouts (30 s per test, 10 s for
+  actions/assertions, 15 s for navigation). It runs **serially with one
+  worker**: the admin specs create and delete rows in the small shared `b2`
+  database, so parallel files would race each other.
+- `.gitignore` -- `node_modules/`, `test-results/`, `playwright-report/` and
+  `/playwright/.cache/` are ignored.
+
+JA: 本 Issue 以前、プロジェクトに Node 側は無かった。リポジトリ直下に追加:
+
+- `package.json` -- 唯一の devDependency として `@playwright/test` を、
+  スクリプトとして `test:e2e`(`playwright test`)を宣言する。
+- `playwright.config.js` -- `testDir: ./e2e`、baseURL は
+  `http://localhost:8080`、`chromium` プロジェクト 1 つ、妥当なタイムアウト
+  (テスト 30 秒、アクション/アサーション 10 秒、ナビゲーション 15 秒)。
+  **ワーカー 1 つで直列実行**する: 管理画面 spec は小さな共有 `b2` データベース
+  の行を作成・削除するため、並列実行ではファイル同士が競合する。
+- `.gitignore` -- `node_modules/`・`test-results/`・`playwright-report/`・
+  `/playwright/.cache/` を無視する。
+
+### Test-data helpers / テストデータヘルパー
+
+EN: `e2e/helpers/` holds three helper modules:
+
+- `test-data.js` -- seeds posts and categories to a known state and cleans them
+  up afterwards. It is deliberately **non-destructive**: every row it creates
+  carries an `E2E:` marker prefix in its title / name, and `cleanupE2EData()`
+  deletes **only** rows with that marker (the default category, `cat_ID` 1, is
+  never deleted). The developer's existing posts and categories are never
+  touched, so the suite is safe to re-run. Seeding is done via SQL
+  (`docker compose exec -T db mysql ... -e "..."`) because direct SQL is the
+  most reliable way to put the small shared `b2` database into a known state.
+  `INSERT` and `SELECT LAST_INSERT_ID()` are issued in **one** `mysql -e` call,
+  because `LAST_INSERT_ID()` is MySQL-session-scoped and each
+  `docker compose exec` is a fresh session.
+- `auth.js` -- `loginAsAdmin()` drives the real `b2login.php` form with the
+  Docker-environment credentials (`admin` / `password`).
+- `assertions.js` -- `expectNoPhpErrors()` asserts a rendered page contains no
+  PHP error output (`Fatal error`, `Parse error`, `<b>Warning</b>`,
+  `<b>Notice</b>`, `<b>Deprecated</b>`, `Uncaught Error`).
+
+JA: `e2e/helpers/` に 3 つのヘルパーモジュールを置く:
+
+- `test-data.js` -- 投稿・カテゴリを既知の状態に投入し、後で後始末する。
+  意図的に**非破壊**である: 作成する行はすべてタイトル/名前に `E2E:` マーカー
+  接頭辞を持ち、`cleanupE2EData()` はそのマーカーを持つ行**のみ**を削除する
+  (既定カテゴリ `cat_ID` 1 は削除しない)。開発者の既存の投稿・カテゴリには
+  一切触れないため、スイートは再実行しても安全である。データ投入は SQL
+  (`docker compose exec -T db mysql ... -e "..."`)で行う。レガシーな管理 UI に
+  依存せず、小さな共有 `b2` データベースを既知の状態に置く最も確実な方法だから
+  である。`INSERT` と `SELECT LAST_INSERT_ID()` は **1 回**の `mysql -e` 呼び
+  出しで発行する。`LAST_INSERT_ID()` は MySQL のセッションスコープであり、
+  各 `docker compose exec` は別セッションになるためである。
+- `auth.js` -- `loginAsAdmin()` が Docker 環境の資格情報(`admin` /
+  `password`)で実際の `b2login.php` フォームを操作する。
+- `assertions.js` -- `expectNoPhpErrors()` が、レンダリングされたページに PHP の
+  エラー出力(`Fatal error`・`Parse error`・`<b>Warning</b>`・`<b>Notice</b>`・
+  `<b>Deprecated</b>`・`Uncaught Error`)が無いことを検証する。
+
+### Specs / spec
+
+EN: Two spec files under `e2e/`, **10 tests** in total:
+
+- `admin.spec.js` (3 tests) -- log in to the admin; the full post lifecycle
+  (create / edit / delete); category management (add / delete). The specs drive
+  the **real** b2/cafelog admin forms and links, so the hidden `_b2csrf` token
+  in every POST form and the `_b2csrf` parameter on every delete link are
+  handled automatically -- the suite never mints a token by hand. Each
+  state-changing step is verified against the database via the helpers.
+- `frontend.spec.js` (7 tests) -- the home page, a single post (`?p=`), a
+  category page (`?cat=`), a monthly archive (`?m=`), and the three feeds
+  (RSS .92 / RDF 1.0 / RSS 2.0). Every page is checked for the absence of PHP
+  error output.
+
+JA: `e2e/` 配下に 2 つの spec ファイル、合計 **10 テスト**:
+
+- `admin.spec.js`(3 テスト)-- 管理画面へのログイン、投稿のライフサイクル
+  全体(作成/編集/削除)、カテゴリ管理(追加/削除)。spec は**実際の**
+  b2/cafelog 管理フォーム・リンクを操作するため、各 POST フォームの隠し
+  `_b2csrf` トークンと各削除リンクの `_b2csrf` パラメータは自動的に処理される
+  -- スイートが手動でトークンを生成することはない。状態を変更する各ステップは
+  ヘルパー経由でデータベースに対して検証する。
+- `frontend.spec.js`(7 テスト)-- トップページ、単一投稿(`?p=`)、カテゴリ
+  ページ(`?cat=`)、月別アーカイブ(`?m=`)、3 種のフィード(RSS .92 /
+  RDF 1.0 / RSS 2.0)。どのページでも PHP エラー出力が無いことを検査する。
+
+### Bug found and fixed / 発見・修正したバグ
+
+EN: The admin post-edit spec immediately caught a genuine PHP 8.3 regression:
+`b2edit.php` (`editpost` case) read `$_POST['post_autobr']` directly, but the
+edit form `b2edit.form.php` never renders a `post_autobr` field. Under PHP 8.3
+this raised `Warning: Undefined array key "post_autobr"`, which in turn caused
+a `Cannot modify header information` warning because the warning text was
+emitted before the redirect `header()`. Fixed with an `isset()` guard
+(`$post_autobr = isset( $_POST['post_autobr'] ) ? intval( ... ) : 0;`), matching
+the hardening style of the earlier admin-warning fixes. This is the only `src/`
+change in this Issue.
+
+JA: 管理画面の投稿編集 spec が、本物の PHP 8.3 リグレッションを即座に検出した:
+`b2edit.php`(`editpost` ケース)は `$_POST['post_autobr']` を直接読んでいたが、
+編集フォーム `b2edit.form.php` は `post_autobr` フィールドを出力しない。PHP 8.3
+ではこれが `Warning: Undefined array key "post_autobr"` を出し、さらにその警告
+テキストがリダイレクトの `header()` より前に出力されたため
+`Cannot modify header information` 警告も発生していた。過去の管理画面警告修正の
+堅牢化スタイルに合わせ、`isset()` ガード
+(`$post_autobr = isset( $_POST['post_autobr'] ) ? intval( ... ) : 0;`)で修正
+した。これが本 Issue における唯一の `src/` 変更である。
+
+### Verification / 検証
+
+EN: With the Docker blog running (`docker compose up -d`), `npm run test:e2e`
+runs **10 tests, all passing** against the local environment. The suite is
+**idempotent**: re-running it leaves no `E2E:`-marked rows behind, and the
+developer's original posts and categories remain intact (verified by counting
+`E2E:`-marked rows -- 0 -- and total rows -- unchanged -- after two consecutive
+runs). PHPUnit, phpcs and PHPStan are unaffected.
+
+JA: Docker ブログを起動した状態(`docker compose up -d`)で `npm run test:e2e`
+を実行すると、ローカル環境に対して **10 テスト・全合格**。スイートは**冪等**で
+ある: 再実行しても `E2E:` マーカー付きの行は残らず、開発者の元の投稿・カテゴリ
+は保持される(連続 2 回実行後に `E2E:` マーカー付き行が 0 件、総数が不変で
+あることを確認)。PHPUnit・phpcs・PHPStan には影響しない。
