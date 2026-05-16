@@ -160,7 +160,7 @@ function b2getcategories($m) {
 		$result = mysql_query($sql) or die($sql);
 
 		$i = 0;
-		while($row = mysql_fetch_object($result)) {
+		while($row = mysqli_fetch_object($result)) {
 			$cat_name = $row->cat_name;
 			$cat_ID = $row->cat_ID;
 
@@ -244,7 +244,7 @@ function b2_getPostURL($m) {
 					if((!isset($cacheweekly)) || (empty($cacheweekly[$postdata['Date']]))) {
 						$sql = "SELECT WEEK('".$postdata['Date']."')";
 						$result = mysql_query($sql);
-						$row = mysql_fetch_row($result);
+						$row = mysqli_fetch_row($result);
 						$cacheweekly[$postdata['Date']] = $row[0];
 					}
 					$post_URL = $blog_URL.$querystring_start.'m'.$querystring_equal.substr($postdata['Date'],0,4).$querystring_separator.'w'.$querystring_equal.$cacheweekly[$postdata['Date']].'#'.$title;
@@ -545,7 +545,7 @@ function bloggergetusersblogs($m) {
 	$sql = "SELECT user_level FROM $tableusers WHERE user_login = '$user_login' AND user_level > 3";
 	$result = mysql_query($sql) or die($sql."<br />".mysql_error());
 
-	$is_admin = mysql_num_rows($result);
+	$is_admin = mysqli_num_rows($result);
 
 	$struct = new xmlrpcval(array("isAdmin" => new xmlrpcval($is_admin,"boolean"),
 									"url" => new xmlrpcval($siteurl."/".$blogfilename),
@@ -690,7 +690,7 @@ function bloggergetrecentposts($m) {
 		$data = new xmlrpcval("","array");
 
 		$i = 0;
-		while($row = mysql_fetch_object($result)) {
+		while($row = mysqli_fetch_object($result)) {
 			$postdata = array(
 				"ID" => $row->ID, 
 				"Author_ID" => $row->post_author, 
@@ -956,7 +956,7 @@ function pingback_ping($m) {
 				$title = preg_replace('/[^a-zA-Z0-9]/', '.', $urltest['fragment']);
 				$sql = "SELECT ID FROM $tableposts WHERE post_title RLIKE '$title'";
 				$result = mysql_query($sql) or die("Query: $sql\n\nError: ".mysql_error());
-				$blah = mysql_fetch_array($result);
+				$blah = mysqli_fetch_array($result);
 				$post_ID = $blah['ID'];
 				$way = 'from the fragment (title)';
 			}
@@ -969,7 +969,7 @@ function pingback_ping($m) {
 		$sql = 'SELECT post_author FROM '.$tableposts.' WHERE ID = '.$post_ID;
 		$result = mysql_query($sql);
 
-		if (mysql_num_rows($result)) {
+		if (mysqli_num_rows($result)) {
 
 			debug_fwrite($log, 'Post exists'."\n");
 
@@ -977,7 +977,7 @@ function pingback_ping($m) {
 			$sql = 'SELECT * FROM '.$tablecomments.' WHERE comment_post_ID = '.$post_ID.' AND comment_author_url = \''.$pagelinkedfrom.'\' AND comment_content LIKE \'%<pingback />%\'';
 			$result = mysql_query($sql);
 
-			if (mysql_num_rows($result) || (1==1)) {
+			if (mysqli_num_rows($result) || (1==1)) {
 			
 				// very stupid, but gives time to the 'from' server to publish !
 				sleep(1);

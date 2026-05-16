@@ -188,12 +188,12 @@ for ($iCount=1; $iCount<=$Count; $iCount++) {
 		$sql = "SELECT ID, user_level FROM $tableusers WHERE user_login='$user_login' AND user_pass='$user_pass' ORDER BY ID DESC LIMIT 1";
 		$result = mysql_query($sql);
 
-		if (!mysql_num_rows($result)) {
+		if (!mysqli_num_rows($result)) {
 			echo '<p><b>Wrong login or password.</b></p></div>';
 			continue;
 		}
 
-		$row = mysql_fetch_object($result);
+		$row = mysqli_fetch_object($result);
 		$user_level = $row->user_level;
 		$post_author = $row->ID;
 

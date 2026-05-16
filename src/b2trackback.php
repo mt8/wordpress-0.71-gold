@@ -12,7 +12,7 @@
 <p><em><?php trackback_url() ?></em></p>
 
 <ol id="trackbacks">
-	<?php /* this line is b2's motor, do not delete it */ while($rowc = mysql_fetch_object($resultc)) { $commentdata = get_commentdata($rowc->comment_ID); ?>
+	<?php /* this line is b2's motor, do not delete it */ while($rowc = mysqli_fetch_object($resultc)) { $commentdata = get_commentdata($rowc->comment_ID); ?>
 	<li id="trackback-<?php comment_ID() ?>">
 	<?php comment_text() ?>
 	

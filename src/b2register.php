@@ -91,8 +91,8 @@ case "register":
 	/* checking the login isn't already used by another user */
 	$request =  " SELECT user_login FROM $tableusers WHERE user_login = '$user_login'";
 	$result = mysql_query($request,$id) or die ("<b>OOPS</b>: can't check the login...");
-	$lines = mysql_num_rows($result);
-	mysql_free_result($result);
+	$lines = mysqli_num_rows($result);
+	mysqli_free_result($result);
 	if ($lines>=1) {
 		die ("<b>ERROR</b>: this login is already registered, please choose another one");
 	}

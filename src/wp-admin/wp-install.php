@@ -75,7 +75,7 @@ if (!$result) {
     exit;
 }
 
-while ($row = mysql_fetch_row($result)) {
+while ($row = mysqli_fetch_row($result)) {
     if ($row[0] == $tablelinks)
         $got_links = true;
     if ($row[0] == $tablelinkcategories)
@@ -138,7 +138,7 @@ if ($got_links && $got_cats) {
     $sql = "SELECT * FROM $tablelinkcategories WHERE cat_id=1 ";
     $result = mysql_query($sql) or print ("Can't query '$tablelinkcategories'.<br />" . $sql . "<br />" . mysql_error());
     if ($result != false) {
-        if ($row = mysql_fetch_object($result)) {
+        if ($row = mysqli_fetch_object($result)) {
             echo "<p>You have at least 1 category. Good!</p>\n";
             $got_row = true;
         } else {
