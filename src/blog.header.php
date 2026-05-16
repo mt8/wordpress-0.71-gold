@@ -277,7 +277,7 @@ if ($preview) {
 	// little funky fix for IEwin, rawk on that code
 	$is_winIE = ((preg_match('/MSIE/',$HTTP_USER_AGENT)) && (preg_match('/Win/',$HTTP_USER_AGENT)));
 	if (($is_winIE) && (!isset($IEWin_bookmarklet_fix))) {
-		$preview_content =  preg_replace('/\%u([0-9A-F]{4,4})/e',  "'&#'.base_convert('\\1',16,10).';'", $preview_content);
+		$preview_content =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $preview_content);
 	}
 }
 

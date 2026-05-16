@@ -91,8 +91,8 @@ if (($is_macIE) && (!isset($IEMac_bookmarklet_fix))) {
 }
 
 if (($is_winIE) && (!isset($IEWin_bookmarklet_fix))) {
-	$popuptitle =  preg_replace("/\%u([0-9A-F]{4,4})/e",  "'&#'.base_convert('\\1',16,10).';'", $popuptitle);
-	$text =  preg_replace("/\%u([0-9A-F]{4,4})/e",  "'&#'.base_convert('\\1',16,10).';'", $text);
+	$popuptitle =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $popuptitle);
+	$text =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $text);
 }
 
 if (($is_gecko) && (!isset($Gecko_bookmarklet_fix))) {

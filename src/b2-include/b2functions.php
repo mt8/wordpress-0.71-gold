@@ -657,7 +657,6 @@ function gzip_compression() {
 }
 
 function alert_error($msg) { // displays a warning box with an error message (original by KYank)
-	global $$_SERVER;
 	?>
 	<html>
 	<head>
@@ -1071,6 +1070,11 @@ function pingback($content, $post_ID) {
 			$host_end = strpos($host_clear, '/');
 
 			// Another clear cut
+			// EN: $host_start was never set; http:// is already stripped above,
+			//     so the host name starts at offset 0 of $host_clear.
+			// JA: $host_start が未設定だった。http:// は上で除去済みのため、
+			//     ホスト名は $host_clear のオフセット 0 から始まる。
+			$host_start = 0;
 			$host_len = $host_end-$host_start;
 			$host = substr($host_clear, 0, $host_len);
 			debug_fwrite($log, 'host: '.$host."\n");
@@ -1234,6 +1238,33 @@ function balanceTags($text, $is_comment = 0) {
 	$newtext = str_replace("<    !--","< !--",$newtext);
 
 	return $newtext;
+}
+
+
+// EN: dbconnect() / rss_update() are referenced by the XML-RPC and
+//     mail-to-blog entry points (xmlrpc.php, b2mail.php) but are not
+//     defined anywhere in WordPress 0.71-gold itself -- calling them would
+//     raise a fatal error on PHP 8. They are provided here as safe no-ops:
+//       - dbconnect(): the database connection is already established by
+//         the global $wpdb (wpdb) instance created in wp-db.php.
+//       - rss_update(): the original RSS rebuild/ping routine is not
+//         shipped with this release; kept as a no-op so the publish path
+//         does not fatal and a local install does not ping outside hosts.
+// JA: dbconnect() / rss_update() は XML-RPC・メール投稿のエントリ
+//     ポイント (xmlrpc.php, b2mail.php) から参照されているが、
+//     WordPress 0.71-gold 本体には定義がなく、PHP 8 では呼び
+//     出すと致命的エラーになる。安全な空関数として提供する:
+//       - dbconnect(): DB 接続は wp-db.php で生成されるグローバル
+//         $wpdb (wpdb) インスタンスが既に確立している。
+//       - rss_update(): 本来の RSS 再生成/ping 処理はこのリリース
+//         には同梱されていない。投稿処理が落ちず、また
+//         ローカル環境が外部へ ping しないよう空関数とする。
+function dbconnect() {
+	// no-op: connection handled by the global $wpdb instance
+}
+
+function rss_update($blog_ID) {
+	// no-op: RSS rebuild/ping is not part of WordPress 0.71-gold
 }
 
 ?>

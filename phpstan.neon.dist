@@ -5,13 +5,16 @@
 #     WordPress 0.71 は WordPress コア自体(プラグイン/テーマではない)であり、
 #     関数はすべて src/ 内に定義されるため WordPress コアスタブは不要。
 #
-# EN: The legacy findings are captured in phpstan-baseline.neon so the tool
-#     stays green; they are reduced in a later "runtime warnings" Issue.
-# JA: レガシーな検出は phpstan-baseline.neon に取り込みツールを green に保つ。
-#     後続の「実行時警告」Issue で削減する。
-includes:
-    - phpstan-baseline.neon
+# EN: The bundled XML-RPC library lives in .inc files, which PHPStan does not
+#     analyse by default; scanFiles makes their classes/functions known to the
+#     analysis without reporting issues inside the third-party library itself.
+# JA: 同梱の XML-RPC ライブラリは .inc ファイルにあり、PHPStan は既定では
+#     解析対象にしない。scanFiles でそのクラス/関数を解析に認識させる
+#     (サードパーティライブラリ自体の問題は報告しない)。
 parameters:
     level: 0
     paths:
         - src
+    scanFiles:
+        - src/b2-include/xmlrpc.inc
+        - src/b2-include/xmlrpcs.inc

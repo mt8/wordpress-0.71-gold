@@ -1,5 +1,7 @@
 <?php
-require_once('b2config.php');
+// EN: this script lives in wp-links/, so b2config.php is one directory up.
+// JA: このスクリプトは wp-links/ にあるため b2config.php は一つ上の階層。
+require_once('../b2config.php');
 require_once($abspath.'/wp-links/links.config.php');
 require_once($abspath.$b2inc.'/b2functions.php');
 
