@@ -255,7 +255,15 @@ if ($pagenow != 'b2edit.php') {
 $where .= ' AND (post_status = "publish"';
 
 // Get private posts
-if ('' != intval($user_ID)) $where .= " OR post_author = $user_ID AND post_status != 'draft')"; else $where .= ')';
+// EN: Test the integer directly. PHP 8 changed string<->number comparison, so
+//     "'' != intval($user_ID)" is now true when $user_ID is unset (intval 0),
+//     which built an invalid SQL fragment. intval($user_ID) is truthy only for
+//     a real (non-zero) user id, matching the original intent on PHP 7 and 8.
+// JA: 整数を直接判定する。PHP 8 は文字列<->数値の比較を変更したため、$user_ID
+//     未設定時(intval は 0)に "'' != intval($user_ID)" が真となり不正な SQL 片を
+//     生成していた。intval($user_ID) は実在の(非ゼロの)user id でのみ真となり、
+//     PHP 7 / 8 の双方で本来の意図に一致する。
+if (intval($user_ID)) $where .= " OR post_author = $user_ID AND post_status != 'draft')"; else $where .= ')';
 $request = " SELECT $distinct * FROM $tableposts WHERE 1=1".$where." ORDER BY post_$orderby $limits";
 
 
