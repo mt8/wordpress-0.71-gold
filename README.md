@@ -90,12 +90,32 @@ JA: PHPUnit の初期スイートが、`b2-include/b2functions.php` の純粋な
 整形ヘルパー(`wptexturize`・`balanceTags`・`is_email`・`zeroise`・
 `mysql2date`)と CSRF トークンヘルパーを単体テストする。テストは `tests/`。
 
+## Publishing safely (static export) / 安全な公開（静的書き出し）
+
+```sh
+composer static-export     # or: php bin/static-export.php
+```
+
+EN: WordPress 0.71 must never be exposed to the public internet as a running
+PHP application. The intended workflow is: write posts in the **local**
+environment, export the site to **static HTML** with `bin/static-export.php`,
+and upload only the static files to a public server — which then runs no PHP
+and no database, so the 2003 codebase is never exposed. See
+`docs/static-export.md`.
+
+JA: WordPress 0.71 を、稼働中の PHP アプリケーションとして公開インターネット
+へ晒してはならない。想定するワークフローは: **ローカル**環境で投稿を書き、
+`bin/static-export.php` でサイトを**静的 HTML** へ書き出し、静的ファイルだけを
+公開サーバーへアップロードする — 公開サーバーは PHP も DB も動かさないため、
+2003 年のコードベースが晒されることはない。詳細は `docs/static-export.md`。
+
 ## Project layout / 構成
 
 | Path | Contents / 内容 |
 |------|-----------------|
 | `src/` | The WordPress 0.71-gold source — the actual modified codebase. / WordPress 0.71-gold のソース(改修対象の本体)。 |
 | `docs/` | Documentation. / ドキュメント。 |
+| `bin/` | Tooling scripts — the static-export script. / ツールスクリプト(静的書き出し)。 |
 | `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. / ローカルの PHP 8.3 + MySQL 8 環境。 |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. / 静的解析の設定。 |
 | `composer.json` | Dev tooling (phpcs / WPCS / PHPStan). / 開発ツール。 |
@@ -130,6 +150,7 @@ JA: すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に�
 |------|-----------------|
 | `docs/php83-migration.md` | Per-Issue migration log. / Issue 単位の移行ログ。 |
 | `docs/security-audit.md` | Security audit summary. / セキュリティ監査のまとめ。 |
+| `docs/static-export.md` | Static export & safe publishing. / 静的書き出しと安全な公開。 |
 | `docs/static-analysis.md` | phpcs / PHPStan tooling. / phpcs・PHPStan ツール。 |
 | `docs/docker-environment.md` | Docker environment details. / Docker 環境の詳細。 |
 
