@@ -62,16 +62,39 @@ auto-creates the `b2` database and the `user` account on first startup.
 JA: `db` サービスの環境変数はこれらの値と一致させており、MySQL は初回起動時に
 `b2` データベースと `user` アカウントを自動作成する。
 
-## Current limitations / 現時点の制約
+## Why not wp-env? / wp-env を採用しない理由
 
-EN: WordPress 0.71 does not fully run yet. Its `wpdb` class uses the ext/mysql
-API (`mysql_connect()` etc.), removed in PHP 7.0, so pages that touch the
-database will error. `phpinfo.php` and other DB-independent pages work. The
-mysqli migration and MySQL 8 SQL-compatibility fixes are tracked in later
-Issues. Running under wp-env (CLAUDE.md line 18) is also a later goal.
+EN: The official `@wordpress/env` (wp-env) tool was investigated (Issue #55)
+as an alternative to this hand-written Compose setup, but **it cannot host
+WordPress 0.71**. `wp-env start` fails immediately while reading its
+configuration:
 
-JA: WordPress 0.71 はまだ完全には動作しない。`wpdb` クラスは PHP 7.0 で廃止
-された ext/mysql API(`mysql_connect()` 等)を使用しているため、DB にアクセス
-するページはエラーになる。`phpinfo.php` など DB に依存しないページは動作する。
-mysqli への移行および MySQL 8 の SQL 互換性修正は後続 Issue で扱う。wp-env での
-動作(CLAUDE.md 18 行目)も後続の目標とする。
+```
+✖ ENOENT: no such file or directory, open '.../src/wp-includes/version.php'
+```
+
+wp-env detects the WordPress version by reading `wp-includes/version.php`, but
+the 2003-era b2/cafelog layout has no `wp-includes/` directory at all (it uses
+`b2-include/`). Beyond that first failure, wp-env also drives setup through
+WP-CLI (`wp core install`), a generated `wp-config.php`, and the modern
+`wp-load.php` / `wp-settings.php` bootstrap — none of which exist in
+WordPress 0.71. wp-env is fundamentally tied to modern WordPress, so the
+hand-written `docker-compose.yml` here is the appropriate local environment
+for this 2003 codebase.
+
+JA: 公式の `@wordpress/env`(wp-env)を、この手書き Compose 構成の代替として
+調査した(Issue #55)が、**WordPress 0.71 をホストできない**。`wp-env start`
+は設定読み込みの段階で即座に失敗する:
+
+```
+✖ ENOENT: no such file or directory, open '.../src/wp-includes/version.php'
+```
+
+wp-env は `wp-includes/version.php` を読んで WordPress のバージョンを判定
+するが、2003 年当時の b2/cafelog 構成には `wp-includes/` ディレクトリ自体が
+無い(`b2-include/` を使う)。この最初の失敗の先でも、wp-env は WP-CLI
+(`wp core install`)・生成される `wp-config.php`・モダンな `wp-load.php` /
+`wp-settings.php` ブートストラップに依存してセットアップを進めるが、いずれも
+WordPress 0.71 には存在しない。wp-env は本質的にモダン WordPress 専用で
+あるため、この 2003 年のコードベースには、ここにある手書きの
+`docker-compose.yml` が適切なローカル環境である。
