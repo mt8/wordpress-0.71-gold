@@ -145,14 +145,12 @@ $use_weblogsping = 0;
 
 // ** Cafelog.com ping **
 
-// EN: Cafelog ping settings. WordPress 0.71 references these (b2edit.php,
-//     xmlrpc.php, b2mail.php) but the original b2config.php never shipped
-//     them, so $cafelogID was an undefined variable. Defined here (disabled);
-//     Cafelog is long gone, so leave $use_cafelogping at 0.
-// JA: Cafelog ping 設定。WordPress 0.71 は b2edit.php / xmlrpc.php /
-//     b2mail.php で参照するが、元の b2config.php には無く $cafelogID が
-//     未定義変数だった。ここで定義する(無効)。Cafelog は既に消滅して
-//     いるため $use_cafelogping は 0 のままにする。
+// EN: Cafelog ping settings. The XML-RPC ping helpers that consumed these
+//     were removed in Issue #44; the variables are kept (disabled) as
+//     harmless config so any legacy reference still resolves.
+// JA: Cafelog ping 設定。これらを参照していた XML-RPC ping ヘルパーは
+//     Issue #44 で撤去した。変数は無害な設定として(無効のまま)残し、
+//     レガシーな参照があっても解決できるようにする。
 $use_cafelogping = 0;
 $cafelogID = '';
 

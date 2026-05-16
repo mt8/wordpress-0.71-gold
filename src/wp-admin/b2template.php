@@ -126,10 +126,8 @@ default:
 	?>
 </div>
 
-<div class="wrap"> 
-  <p>You can also edit the <a href="b2template.php?file=b2comments.php">comments 
-    template</a> or the <a href="b2template.php?file=b2commentspopup.php">popup 
-    comments template</a>, or edit any other file (provided it&#8217;s writable by 
+<div class="wrap">
+  <p>You can edit any file (provided it&#8217;s writable by
     the server, e.g. CHMOD 766).</p>
     <p>To edit a file, type its name here:</p>
   <form name="file" action="b2template.php" method="get">

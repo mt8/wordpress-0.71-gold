@@ -1528,3 +1528,217 @@ JA: `md5(パスワードハッシュ)` のベアラークッキーをサーバ�
 経路はエッジ機能であり、本制限は回避せず記録するにとどめる。XML-RPC の
 パスワードチェック(Latin-1 の `b2functions.php` の `user_pass_ok()`)は
 依然として平文比較であり、後続 Issue とした。
+
+## Issue #44: Remove the XML-RPC, comment, trackback and pingback features / XML-RPC・コメント・トラックバック・ピンバック機能を撤去
+
+### Summary / 概要
+
+EN: The XML-RPC server, the comment feature, trackback and pingback were
+removed completely from WordPress 0.71-gold. The user requested full deletion
+("丸ごといらない" — not needed at all), and trackback/pingback were removed
+together with comments. The blog front end (posts, archives, categories,
+search, feeds) and the admin (post create/edit/delete, categories, options,
+profile, links, users) keep working without them.
+
+JA: WordPress 0.71-gold から XML-RPC サーバ・コメント機能・トラックバック・
+ピンバックを完全に撤去した。ユーザーは完全削除(「丸ごといらない」)を希望し、
+トラックバック/ピンバックもコメントと一緒に撤去した。ブログ本体(投稿・
+アーカイブ・カテゴリ・検索・フィード)と管理画面(投稿の作成/編集/削除・
+カテゴリ・オプション・プロフィール・リンク・ユーザー)はそれら無しで動作し
+続ける。
+
+### A. Files deleted / 削除したファイル
+
+EN: Thirteen files were removed with `git rm`:
+
+- XML-RPC: `src/xmlrpc.php`, `src/b2-include/xmlrpc.inc`,
+  `src/b2-include/xmlrpcs.inc`
+- Comments: `src/b2comments.php`, `src/b2comments.post.php`,
+  `src/b2commentspopup.php`
+- Trackback: `src/b2trackback.php`, `src/b2trackbackpopup.php`
+- Pingback: `src/b2pingbacks.php`, `src/b2pingbackspopup.php`
+- Mail-to-blog: `src/b2mail.php` and `src/b2-include/class.POP3.php`
+  (b2mail depends on the XML-RPC library and the ping helpers being removed,
+  so it cannot work without them and is removed as collateral)
+- `src/b2.php`: a dead legacy alternate theme superseded by `src/index.php`;
+  it called `comments_popup_script()`, `comments_popup_link()` and
+  `include('b2comments.php')`, so leaving it would have left a file that
+  fatals. The modern entry point is `index.php`, so the dead stub was deleted.
+
+JA: 13 個のファイルを `git rm` で削除した:
+
+- XML-RPC: `src/xmlrpc.php`, `src/b2-include/xmlrpc.inc`,
+  `src/b2-include/xmlrpcs.inc`
+- コメント: `src/b2comments.php`, `src/b2comments.post.php`,
+  `src/b2commentspopup.php`
+- トラックバック: `src/b2trackback.php`, `src/b2trackbackpopup.php`
+- ピンバック: `src/b2pingbacks.php`, `src/b2pingbackspopup.php`
+- メール投稿: `src/b2mail.php` と `src/b2-include/class.POP3.php`
+  (b2mail は XML-RPC ライブラリと撤去対象の ping ヘルパーに依存しており、
+  それら無しでは動作しないため巻き添えで削除)
+- `src/b2.php`: `src/index.php` に置き換えられた死んだレガシー代替テーマ。
+  `comments_popup_script()`・`comments_popup_link()`・
+  `include('b2comments.php')` を呼んでおり、残すと fatal するファイルが残る。
+  現行のエントリポイントは `index.php` のため、死んだスタブを削除した。
+
+### B. References cleaned up / 参照の除去
+
+EN:
+
+- `src/blog.header.php` — removed the `require_once` of `xmlrpc.inc` /
+  `xmlrpcs.inc` and the `X-Pingback` HTTP header.
+- `src/wp-admin/b2header.php` — removed the `require_once` of `xmlrpc.inc` /
+  `xmlrpcs.inc`.
+- `src/index.php` (default theme) — removed the `<link rel="pingback">`, the
+  `comments_popup_script()` comment line, `comments_popup_link()`,
+  `trackback_rdf()` and `include('b2comments.php')`. The post loop, link
+  pages and everything else still work.
+- `src/wp-admin/b2edit.php` — removed the `editcomment` / `deletecomment` /
+  `editedcomment` switch cases, the `pingWeblogs()` / `pingCafelog()` /
+  `pingBlogs()` / `pingback()` / `trackback()` calls in the `post` and
+  `editpost` cases, the `$post_pingback` reads, and the
+  `DELETE FROM $tablecomments` query in the `delete` case.
+- `src/wp-admin/b2edit.showposts.php` — removed the comment-list section, the
+  edit/delete-comment links and the comment-count link; the post listing
+  still works.
+- `src/wp-admin/b2edit.form.php` — removed the `editcomment` branch of the
+  switch, the comment-editing form HTML, and the `$form_pingback` /
+  `$form_trackback` fields.
+- `src/wp-admin/b2template.php` — removed the dead "edit the comments
+  template" links pointing at the deleted `b2comments.php` /
+  `b2commentspopup.php`.
+- `phpstan.neon.dist` — removed the `scanFiles` entries for the deleted
+  `.inc` files and their now-obsolete explanatory comment.
+- `src/wp-admin/wp-install.php` — removed the `CREATE TABLE b2comments`
+  schema and its sample comment `INSERT` from the installer. The
+  password-generation logic was not touched.
+- `src/b2config.php` — the comment/ping config variables (`$tablecomments`,
+  `$use_cafelogping`, `$cafelogID`, `$use_trackback`, `$use_pingback`, the
+  Weblogs/Blo.gs ping and `b2mail` settings) were left in place as harmless
+  unused config; the misleading Cafelog comment that referenced the deleted
+  `xmlrpc.php` / `b2mail.php` was updated.
+
+JA:
+
+- `src/blog.header.php` — `xmlrpc.inc` / `xmlrpcs.inc` の `require_once` と
+  `X-Pingback` HTTP ヘッダーを除去した。
+- `src/wp-admin/b2header.php` — `xmlrpc.inc` / `xmlrpcs.inc` の
+  `require_once` を除去した。
+- `src/index.php`(既定テーマ)— `<link rel="pingback">`、
+  `comments_popup_script()` のコメント行、`comments_popup_link()`、
+  `trackback_rdf()`、`include('b2comments.php')` を除去した。投稿ループ・
+  ページ送り・その他はすべて動作する。
+- `src/wp-admin/b2edit.php` — `editcomment` / `deletecomment` /
+  `editedcomment` の switch ケース、`post` / `editpost` ケース内の
+  `pingWeblogs()` / `pingCafelog()` / `pingBlogs()` / `pingback()` /
+  `trackback()` 呼び出し、`$post_pingback` の読み取り、`delete` ケースの
+  `DELETE FROM $tablecomments` クエリを除去した。
+- `src/wp-admin/b2edit.showposts.php` — コメント一覧セクション、コメント
+  編集/削除リンク、コメント数リンクを除去した。投稿一覧は動作する。
+- `src/wp-admin/b2edit.form.php` — switch の `editcomment` 分岐、コメント
+  編集フォームの HTML、`$form_pingback` / `$form_trackback` フィールドを
+  除去した。
+- `src/wp-admin/b2template.php` — 削除済みの `b2comments.php` /
+  `b2commentspopup.php` を指す死んだ「コメントテンプレートを編集」リンクを
+  除去した。
+- `phpstan.neon.dist` — 削除した `.inc` ファイルの `scanFiles` エントリと、
+  それに関する不要になった説明コメントを除去した。
+- `src/wp-admin/wp-install.php` — インストーラから `CREATE TABLE b2comments`
+  スキーマとサンプルコメントの `INSERT` を除去した。パスワード生成ロジックは
+  変更していない。
+- `src/b2config.php` — コメント/ping 設定変数(`$tablecomments`、
+  `$use_cafelogping`、`$cafelogID`、`$use_trackback`、`$use_pingback`、
+  Weblogs/Blo.gs ping と `b2mail` の設定)は無害な未使用設定としてそのまま
+  残した。削除済みの `xmlrpc.php` / `b2mail.php` を参照していた誤解を招く
+  Cafelog コメントは更新した。
+
+### C. Functions removed / 撤去した関数
+
+EN: Before removing each function the whole `src/` tree was grepped to confirm
+no remaining callers. Removed from `src/b2-include/b2template.functions.php`
+(the whole comment/trackback tag block): `comments_number()`,
+`comments_link()`, `comments_popup_script()`, `comments_popup_link()`,
+`comment_ID()`, `comment_author()`, `comment_author_email()`,
+`comment_author_link()`, `comment_type()`, `comment_author_url()`,
+`comment_author_email_link()`, `comment_author_url_link()`,
+`comment_author_IP()`, `comment_text()`, `comment_date()`, `comment_time()`,
+`trackback_url()`, `trackback_rdf()`, and the `pingback_url` case of
+`get_bloginfo()`.
+
+Removed from `src/b2-include/b2functions.php` (Latin-1 / UTF-8 mixed file,
+edited byte-safely in binary mode): `pingWeblogs()`, `pingWeblogsRss()`,
+`pingCafelog()`, `pingBlogs()`, `trackback()`, `trackback_response()`,
+`xmlrpc_getposttitle()`, `xmlrpc_getpostcategory()`,
+`xmlrpc_removepostdata()`, `debug_fopen()`, `debug_fwrite()`,
+`debug_fclose()`, `pingback()`, `get_commentdata()` and `rss_update()`.
+
+JA: 各関数を削除する前に `src/` ツリー全体を grep し、残存する呼び出し元が
+無いことを確認した。`src/b2-include/b2template.functions.php` から(コメント/
+トラックバックタグのブロックごと)撤去: `comments_number()`、
+`comments_link()`、`comments_popup_script()`、`comments_popup_link()`、
+`comment_ID()`、`comment_author()`、`comment_author_email()`、
+`comment_author_link()`、`comment_type()`、`comment_author_url()`、
+`comment_author_email_link()`、`comment_author_url_link()`、
+`comment_author_IP()`、`comment_text()`、`comment_date()`、
+`comment_time()`、`trackback_url()`、`trackback_rdf()`、および
+`get_bloginfo()` の `pingback_url` ケース。
+
+`src/b2-include/b2functions.php`(Latin-1 / UTF-8 混在ファイル。バイナリ
+モードでバイト安全に編集)から撤去: `pingWeblogs()`、`pingWeblogsRss()`、
+`pingCafelog()`、`pingBlogs()`、`trackback()`、`trackback_response()`、
+`xmlrpc_getposttitle()`、`xmlrpc_getpostcategory()`、
+`xmlrpc_removepostdata()`、`debug_fopen()`、`debug_fwrite()`、
+`debug_fclose()`、`pingback()`、`get_commentdata()`、`rss_update()`。
+
+### D. Functions intentionally kept / 意図的に残した関数
+
+EN: `make_url_footnote()` in `b2functions.php` was *kept* — despite living
+next to the XML-RPC helpers, it is a content helper still called by
+`the_content_rss()` and `the_excerpt_rss()`. `dbconnect()` was kept (it is an
+unrelated no-op stub from an earlier Issue, out of scope here); only its
+comment was trimmed since it previously also described the now-removed
+`rss_update()`. No function had to be left with a broken caller.
+
+JA: `b2functions.php` の `make_url_footnote()` は*残した* — XML-RPC ヘルパー
+の隣にあるが、これは `the_content_rss()` と `the_excerpt_rss()` から今も
+呼ばれるコンテンツ補助関数である。`dbconnect()` も残した(以前の Issue 由来の
+無関係な no-op スタブで本 Issue のスコープ外)。`rss_update()` も説明していた
+コメントだけを刈り込んだ。呼び出し元が壊れたまま残った関数は無い。
+
+### Verification / 検証
+
+EN: `php -l` passes on every changed file and across all `src/**/*.php` (0
+syntax errors). `composer phpcs` reports 0 violations (41 files).
+`composer phpstan --memory-limit=1G` reports 0 errors (the default 128 MB
+OOMs on this repo — a pre-existing, unrelated limitation). A whole-tree grep
+confirms no remaining references to the deleted files or removed functions.
+`b2functions.php` stays valid UTF-8 with its Japanese comment bytes intact.
+
+Against the Docker environment on this branch (web container restarted to
+clear OPcache): the front end (`/` twice, `?cat=1`, `?m=202605`, `?p=1`)
+displays posts with 0 PHP fatals/warnings/deprecated and no comment links or
+pingback `<link>`. The admin (`b2edit.php`, `b2categories.php`,
+`b2options.php`, `b2profile.php`, `linkmanager.php`, `b2team.php`, plus
+`b2edit.php?action=edit`) loads with 0 PHP warnings/fatals. The removed entry
+points (`xmlrpc.php`, `b2comments*.php`, `b2trackback*.php`, `b2pingback*.php`,
+`b2mail.php`, `b2.php`) all return HTTP 404. Posting still works: a test post
+submitted through the `post` action (302 redirect) and appeared on the front
+page, then was removed.
+
+JA: `php -l` は変更した全ファイルおよび `src/**/*.php` 全体で通る(構文
+エラー 0)。`composer phpcs` は違反 0 件(41 ファイル)。
+`composer phpstan --memory-limit=1G` はエラー 0 件(既定の 128 MB はこの
+リポジトリで OOM する — 既知の無関係な制約)。ツリー全体の grep で削除した
+ファイルや撤去した関数への参照が残っていないことを確認した。
+`b2functions.php` は日本語コメントのバイトを保ったまま有効な UTF-8 を維持。
+
+本ブランチの Docker 環境に対し(OPcache を消すため web コンテナを再起動):
+フロントエンド(`/` を 2 回、`?cat=1`、`?m=202605`、`?p=1`)は PHP fatal/
+warning/deprecated 0 で投稿を表示し、コメントリンクもピンバック `<link>` も
+無い。管理画面(`b2edit.php`・`b2categories.php`・`b2options.php`・
+`b2profile.php`・linkmanager.php`・`b2team.php`、加えて
+`b2edit.php?action=edit`)は PHP 警告/fatal 0 で表示される。撤去した
+エントリポイント(`xmlrpc.php`・`b2comments*.php`・`b2trackback*.php`・
+`b2pingback*.php`・`b2mail.php`・`b2.php`)はすべて HTTP 404 を返す。投稿も
+動作する: `post` アクションで送信したテスト投稿が成功(302 リダイレクト)し
+フロントページに表示され、その後削除した。

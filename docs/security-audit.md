@@ -27,6 +27,23 @@ default, so it is not currently reachable.
 JA: (※) ファイルアップロードのコードは脆弱だが、既定で `$use_fileupload`
 が `0` のため現状は到達しない。
 
+EN: **Update (Issue #44).** The XML-RPC server, the comment feature, trackback
+and pingback were removed entirely (see `docs/php83-migration.md`). This
+deletes whole classes of attack surface rather than patching it: the
+comment-related parts of #35 (the `editcomment` / `deletecomment` handlers in
+`b2edit.php`) and of #37 (the commenter-controlled mail `From:` header in
+`b2comments.post.php`, and the XML-RPC `X-Mailer` exposure) no longer exist,
+and the unauthenticated XML-RPC endpoint (`xmlrpc.php`) is gone. The remaining
+items below describe the code as it was before that removal.
+
+JA: **更新(Issue #44)。** XML-RPC サーバ・コメント機能・トラックバック・
+ピンバックを完全に撤去した(`docs/php83-migration.md` 参照)。これはパッチ
+ではなく攻撃面そのものの削除である: #35 のコメント関連部分(`b2edit.php` の
+`editcomment` / `deletecomment` ハンドラ)と #37 のコメント関連部分
+(`b2comments.post.php` のコメント投稿者制御の `From:` ヘッダ、XML-RPC の
+`X-Mailer` 露出)は最早存在せず、未認証の XML-RPC エンドポイント
+(`xmlrpc.php`)も無くなった。以下の各項目は撤去前のコードを記述している。
+
 ## Details / 詳細
 
 ### 1. SQL injection (#31)

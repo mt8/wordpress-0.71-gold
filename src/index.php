@@ -18,8 +18,6 @@ require($abspath.'wp-links/links.php');
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
 	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo('rdf_url'); ?>" />
 	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo('rss2_url'); ?>" />
-	<link rel="pingback" href="<?php bloginfo('pingback_url'); ?>" />
-	<?php // comments_popup_script(); // off by default ?>
 </head>
 
 <body>
@@ -41,15 +39,10 @@ require($abspath.'wp-links/links.php');
 </div>
 
 <div class="feedback">
-	<?php link_pages('<br />Pages: ', '<br />', 'number'); ?> 
-	<?php comments_popup_link('Comments (0)', 'Comments (1)', 'Comments (%)'); ?> 
+	<?php link_pages('<br />Pages: ', '<br />', 'number'); ?>
 </div>
 
-<?php trackback_rdf(); ?>
-
-<?php include('b2comments.php'); ?>
-
-	<?php } } // end foreach, end if any posts ?> 
+	<?php } } // end foreach, end if any posts ?>
 
 </div>
 

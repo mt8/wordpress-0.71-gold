@@ -226,33 +226,10 @@ $result = $wpdb->query($query);
 <p>Categories are up and running...</p>
 
 <?php
-// $query = "DROP TABLE IF EXISTS $tablecomments";
-// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablecomments\" in the database.");
+// EN: The comment feature was removed in Issue #44; the b2comments table is
+//     no longer created.
+// JA: コメント機能は Issue #44 で撤去した。b2comments テーブルは作成しない。
 
-$query = "
-CREATE TABLE $tablecomments (
-  comment_ID int(11) unsigned NOT NULL auto_increment,
-  comment_post_ID int(11) NOT NULL default '0',
-  comment_author tinytext NOT NULL,
-  comment_author_email varchar(100) NOT NULL default '',
-  comment_author_url varchar(100) NOT NULL default '',
-  comment_author_IP varchar(100) NOT NULL default '',
-  comment_date datetime NOT NULL default '0000-00-00 00:00:00',
-  comment_content text NOT NULL,
-  comment_karma int(11) NOT NULL default '0',
-  PRIMARY KEY  (comment_ID)
-)
-";
-$q = $wpdb->query($query);
-
-$now = date('Y-m-d H:i:s');
-$query = "INSERT INTO $tablecomments (comment_post_ID, comment_author, comment_author_email, comment_author_url, comment_author_IP, comment_date, comment_content) VALUES ('1', 'Mr WordPress', 'mr@wordpress.org', 'http://wordpress.org', '127.0.0.1', '$now', 'Hi, this is a comment.<br />To delete a comment, just log in, and view the posts\' comments, there you will have the option to edit or delete them.')";
-$q = $wpdb->query($query);
-?>
-
-<p>Comments are groovy...</p>
-
-<?php
 // $query = "DROP TABLE IF EXISTS $tablesettings";
 // $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablesettings\" in the database.");
 
