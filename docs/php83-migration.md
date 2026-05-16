@@ -694,3 +694,91 @@ JA: XML-RPC エンドポイント(`xmlrpc.php`)には PHP 8 の*実行時*非互
 など。これらは phpcs/PHPStan では検出されず(`.inc` は問題解析の対象外)、
 専用の XML-RPC / 実行時警告 Issue で扱う。PHPStan を level 0 より上げることも
 スコープ外。
+
+---
+
+## Issue #24: Fix runtime warnings on the admin screens / 管理画面の実行時警告を修正
+
+EN: Logged in as admin and swept the WordPress 0.71 admin screens. No
+fatal/parse errors, but many PHP 8 runtime warnings (undefined variables,
+property/array access on null, duplicate `define()`). All are fixed.
+
+JA: 管理者でログインし WordPress 0.71 の管理画面を巡回した。致命的/構文
+エラーは無いが、PHP 8 実行時警告(未定義変数・null へのプロパティ/配列
+アクセス・`define()` 重複)が多数あった。すべて修正した。
+
+### Changes / 変更内容
+
+EN:
+1. `b2config.php`: guard the four `DB_*` `define()`s with `if (!defined())`.
+   Some admin pages process `b2config.php` twice (a plain `require` after an
+   `include_once`), which raised `Constant DB_HOST already defined` etc. The
+   guard makes the file safe to include repeatedly.
+2. `b2edit.form.php`: initialise `$post_status`, `$comment_status`,
+   `$ping_status`, `$post_password`, `$form_prevstatus` with defaults so the
+   new-post screen does not read undefined variables (the `edit` case still
+   overrides them from the stored post).
+3. `b2functions.php`: `dropdown_categories()` and `touch_time()` guard their
+   `$postdata` access with `isset()` (it is null on the new-post screen);
+   `get_postdata()` returns `false` for a non-existent post id instead of an
+   array of nulls.
+4. `b2edit.php`: `case 'edit'` now uses `get_postdata($post) or die(...)`, so
+   editing a non-existent post fails cleanly (same pattern as `case 'delete'`)
+   instead of cascading property-on-null warnings.
+5. `b2edit.showposts.php`: `empty($showposts)` instead of `!$showposts`;
+   initialise `$besp_selected`; guard `$postdata["Category"]`; fix two wrong
+   variable names (`$row` → `$category` / `$post`).
+6. `linkmanager.php`: guard `$_COOKIE["links_show_cat_id"]` and `$link_url`.
+   The `Cannot modify header information` warning was a knock-on of those
+   warnings printing before `setcookie()`, so it is resolved too.
+7. `linkcategories.php`: guard `$cat_id` on the edit-category dropdown.
+8. `links.import.php`: guard `$_GET['step']`.
+
+JA:
+1. `b2config.php`: 4 つの `DB_*` `define()` を `if (!defined())` でガード。
+   一部の管理画面は `b2config.php` を二重に処理し(`include_once` の後に
+   素の `require`)、`Constant DB_HOST already defined` 等が出ていた。
+   ガードにより繰り返し読み込んでも安全になる。
+2. `b2edit.form.php`: `$post_status`・`$comment_status`・`$ping_status`・
+   `$post_password`・`$form_prevstatus` を既定値で初期化し、新規投稿画面が
+   未定義変数を読まないようにした(`edit` の場合は保存済み投稿で上書き)。
+3. `b2functions.php`: `dropdown_categories()` と `touch_time()` は
+   `$postdata`(新規投稿画面では null)へのアクセスを `isset()` でガード。
+   `get_postdata()` は存在しない投稿 ID に対し null の配列ではなく `false`
+   を返す。
+4. `b2edit.php`: `case 'edit'` を `get_postdata($post) or die(...)` にし、
+   存在しない投稿の編集が(`case 'delete'` と同じ形で)きれいに失敗する
+   ようにした。null へのプロパティアクセス警告の連鎖が無くなる。
+5. `b2edit.showposts.php`: `!$showposts` を `empty($showposts)` に変更、
+   `$besp_selected` を初期化、`$postdata["Category"]` をガード、誤った
+   変数名 2 箇所(`$row` → `$category` / `$post`)を修正。
+6. `linkmanager.php`: `$_COOKIE["links_show_cat_id"]` と `$link_url` を
+   ガード。`Cannot modify header information` 警告は上記の警告が
+   `setcookie()` より前に出力されたことによる二次的なもので、併せて解消。
+7. `linkcategories.php`: カテゴリ編集ドロップダウンの `$cat_id` をガード。
+8. `links.import.php`: `$_GET['step']` をガード。
+
+### Verification / 検証
+
+EN: Logged in as admin, every admin screen -- b2edit.php (new post / edit /
+non-existent post), b2categories, b2options, b2profile, b2team, linkmanager,
+linkcategories, b2upload, b2sidebar, links.import -- loads with **0 PHP
+warnings / notices / deprecations / fatals**. Editing a non-existent post now
+shows a clean "Oops, no post with this ID" message. The blog front end and the
+static analysis tools (phpcs 0, PHPStan level 0) are unchanged.
+
+JA: 管理者でログインし、全管理画面 -- b2edit.php(新規/編集/存在しない投稿)、
+b2categories、b2options、b2profile、b2team、linkmanager、linkcategories、
+b2upload、b2sidebar、links.import -- が **PHP 警告/notice/非推奨/致命的
+エラー 0** で表示される。存在しない投稿の編集は「Oops, no post with this ID」
+と正しく表示される。ブログ本体と静的解析(phpcs 0、PHPStan level 0)は不変。
+
+### Out of scope / スコープ外
+
+EN: The blog front end's category / archive pages still emit two pre-existing
+legacy warnings (`b2template.functions.php` lines 825 and 105); they exist on
+`main` as well and belong to a separate front-end runtime-warning cleanup.
+
+JA: ブログ本体の category / archive ページには既存のレガシー警告が 2 件残る
+(`b2template.functions.php` の 825 行・105 行)。`main` にも存在し、フロント
+エンドの実行時警告の別 Issue で扱う。
