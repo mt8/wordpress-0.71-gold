@@ -151,8 +151,10 @@ function xmlrpc_debugmsg($m) {
 class xmlrpc_server {
   var $dmap=array();
 
-  function xmlrpc_server($dispMap, $serviceNow=1) {
-		global $HTTP_RAW_POST_DATA;
+  // EN: PHP4-style constructor renamed to __construct() (PHP 8 removed them).
+  // JA: PHP4 形式コンストラクタを __construct() に改名(PHP 8 で廃止)。
+  function __construct($dispMap, $serviceNow=1) {
+		global $raw_post_data;
 		// dispMap is a despatch array of methods
 		// mapped to function names and signatures
 		// if a method
@@ -212,14 +214,14 @@ class xmlrpc_server {
 	}
 
   function parseRequest($data="") {
-	global $_xh,$HTTP_RAW_POST_DATA;
+	global $_xh,$raw_post_data;
 	global $xmlrpcerr, $xmlrpcstr, $xmlrpcerrxml, $xmlrpc_defencoding,
 		$_xmlrpcs_dmap;
 
 	
 
 	if ($data=="") {
-	  $data=$HTTP_RAW_POST_DATA;
+	  $data=$raw_post_data;
 	}
 	$parser = xml_parser_create($xmlrpc_defencoding);
 
@@ -295,13 +297,13 @@ class xmlrpc_server {
   }
 
   function echoInput() {
-	global $HTTP_RAW_POST_DATA;
+	global $raw_post_data;
 
 	// a debugging routine: just echos back the input
 	// packet as a string value
 
 	$r=new xmlrpcresp;
-	$r->xv=new xmlrpcval( "'Aha said I: '" . $HTTP_RAW_POST_DATA, "string");
+	$r->xv=new xmlrpcval( "'Aha said I: '" . $raw_post_data, "string");
 	print $r->serialize();
   }
 }

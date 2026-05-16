@@ -192,7 +192,7 @@ $b2smiliestrans = array(
     ':D'        => 'icon_biggrin.gif',
     ':-D'       => 'icon_biggrin.gif',
     ':grin:'    => 'icon_biggrin.gif',
-    ':)'        => 'icon_smile.gif',
+    
     ':-)'       => 'icon_smile.gif',
     ':smile:'   => 'icon_smile.gif',
     ':('        => 'icon_sad.gif',

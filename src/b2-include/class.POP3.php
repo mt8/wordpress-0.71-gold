@@ -47,7 +47,11 @@ class POP3 {
                                 //  This must be set to true
                                 //  manually
 
-    function POP3 ( $server = '', $timeout = '' ) {
+    // EN: PHP4-style constructors (a method named like the class) were removed
+    //     in PHP 8.0; renamed to __construct().
+    // JA: クラス名と同名の PHP4 形式コンストラクタは PHP 8.0 で廃止。
+    //     __construct() に改名。
+    function __construct ( $server = '', $timeout = '' ) {
         settype($this->BUFFER,"integer");
         if( !empty($server) ) {
             // Do not allow programs to alter MAILSERVER

@@ -328,7 +328,9 @@ function the_author_msn() {
 }
 
 function the_author_posts() {
-	global $id,$postdata;	$posts=get_usernumposts($post->post_author);	echo $posts;
+	// EN: $post is needed for $post->post_author but was missing from globals.
+	// JA: $post->post_author に必要な $post が global 宣言から漏れていた。
+	global $id,$postdata,$post;	$posts=get_usernumposts($post->post_author);	echo $posts;
 }
 
 /***** // Author tags *****/
@@ -459,7 +461,7 @@ function get_the_content($more_link_text='(more...)', $stripteaser=0, $more_file
 		}
 	}
 	if ($preview) { // preview fix for javascript bug with foreign languages
-		$output =  preg_replace('/\%u([0-9A-F]{4,4})/e',  "'&#'.base_convert('\\1',16,10).';'", $output);
+		$output =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $output);
 	}
 	return($output);
 }
@@ -545,7 +547,7 @@ function get_the_excerpt($fakeit = false) {
 		$output = $excerpt;
     } // end if no excerpt
 	if ($preview) { // preview fix for javascript bug with foreign languages
-		$output =  preg_replace('/\%u([0-9A-F]{4,4})/e',  "'&#'.base_convert('\\1',16,10).';'", $output);
+		$output =  preg_replace_callback('/\%u([0-9A-F]{4,4})/', function ($m) { return '&#'.base_convert($m[1],16,10).';'; }, $output);
 	}
 	return $output;
 }
@@ -1155,13 +1157,13 @@ function permalink_link($file='', $mode = 'id') {
 	$archive_mode = get_settings('archive_mode');
 	switch($archive_mode) {
 		case 'daily':
-			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).substr($post->post_date,5,2).substr($postdata['Date'],8,2).'#'.$anchor;
+			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).substr($post->post_date,5,2).substr($post->post_date,8,2).'#'.$anchor;
 			break;
 		case 'monthly':
 			echo $file.$querystring_start.'m'.$querystring_equal.substr($post->post_date,0,4).substr($post->post_date,5,2).'#'.$anchor;
 			break;
 		case 'weekly':
-			if((!isset($cacheweekly)) || (empty($cacheweekly[$postdata['Date']]))) {
+			if((!isset($cacheweekly)) || (empty($cacheweekly[$post->post_date]))) {
 				$cacheweekly[$post->post_date] = $wpdb->get_var("SELECT WEEK('$post->post_date')");
 				++$querycount;
 			}

@@ -565,3 +565,132 @@ unchanged (still 0 warnings).
 JA: フロントページの内部リンク 11 本を Playwright で巡回した結果、全リンクで
 HTTP 200・fatal エラー無し・**PHP 警告 0**・**JS エラー 0**(`b2register.php` の
 スタイルシート 404 も解消)。フロントは不変(引き続き警告 0)。
+
+---
+
+## Issue #22: Bring phpcs and PHPStan (level 0) to zero / phpcs と PHPStan(level 0) を 0 件にする
+
+EN: Finish the static-analysis cleanup: phpcs from 11 to 0, PHPStan level 0 from
+215 to 0, and delete the PHPStan baseline so both tools are completely clean
+without any suppression.
+
+JA: 静的解析の仕上げ: phpcs を 11→0、PHPStan level 0 を 215→0 にし、PHPStan の
+baseline を削除して、両ツールを抑制なしで完全にクリーンにする。
+
+### Changes / 変更内容
+
+EN — phpcs (PHPCompatibility) findings, 11 → 0:
+1. `/e` PCRE modifier (5): the `%uXXXX` decoder rewritten with
+   `preg_replace_callback()` in `b2bookmarklet.php`, `b2template.functions.php`
+   and `blog.header.php`.
+2. `mysql_doh()` (2): this error helper does not exist in WordPress 0.71-gold;
+   the two dead calls in `b2-2-wp.php` replaced with `print()`, matching the
+   file's own error style.
+3. `$HTTP_RAW_POST_DATA` (2): PHP removed this predefined global in 7.0 and the
+   bare name is flagged; renamed to a plain `$raw_post_data` in `xmlrpc.php`
+   and `xmlrpcs.inc`.
+4. PHP4-style constructor (1): `POP3::POP3()` → `POP3::__construct()`.
+5. `global $$var` (1): the buggy `global $$_SERVER;` in `alert_error()`
+   removed -- it was a variable-variable on an array and the function never
+   used `$_SERVER`.
+
+EN — PHPStan level 0 findings, 215 → 0:
+6. XML-RPC classes (~159): `xmlrpcval`, `xmlrpcresp`, etc. live in `.inc`
+   files PHPStan does not analyse by default; added `scanFiles` for
+   `xmlrpc.inc` / `xmlrpcs.inc` to `phpstan.neon.dist`.
+7. PHP4-style constructors in the XML-RPC library: `xmlrpc_client`,
+   `xmlrpcresp`, `xmlrpcmsg`, `xmlrpcval` (`xmlrpc.inc`) and `xmlrpc_server`
+   (`xmlrpcs.inc`) renamed to `__construct()` -- they were silently broken on
+   PHP 8 (the object was never initialised).
+8. Duplicate array keys (22): `$b2_htmltransbis` in `b2vars.php` (20 keys) and
+   the `$b2smiliestrans` smilies map in `b2vars.php` / `b2config.php` (1 each).
+   The last occurrence (the value PHP actually keeps) is preserved.
+9. Undefined `dbconnect()` / `rss_update()` (19): referenced by `xmlrpc.php`
+   and `b2mail.php` but absent from WordPress 0.71-gold; defined as documented
+   no-ops in `b2functions.php` (the DB connection already exists via `$wpdb`).
+10. Undefined variables (5): `$host_start` set to 0 in `b2functions.php`'s
+    pingback code; `$post` added to the globals of `the_author_posts()` and
+    two stray `$postdata['Date']` changed to `$post->post_date`; the
+    `$agesorter` typo fixed to `$agesorter_arr` in `xmlrpc.php`.
+11. `mktime()` with no arguments (1): replaced with `time()` in
+    `b2calendar.php` (zero-arg `mktime()` was removed in PHP 8.0).
+12. Optional-before-required parameter (1): `textile.php`'s `callback_url()`
+    given a default for `$url`.
+13. `require_once()` path (1): `links.weblogs.com.php` lives in `wp-links/`,
+    so `b2config.php` → `../b2config.php`.
+14. Removed `phpstan-baseline.neon` and the `includes:` line; PHPStan is now
+    green with no suppression.
+
+JA — phpcs(PHPCompatibility)検出、11 → 0:
+1. `/e` PCRE 修飾子(5): `%uXXXX` デコーダを `preg_replace_callback()` に書き
+   換え(`b2bookmarklet.php`・`b2template.functions.php`・`blog.header.php`)。
+2. `mysql_doh()`(2): このエラーヘルパーは WordPress 0.71-gold に存在しない。
+   `b2-2-wp.php` の不要な 2 呼び出しを、同ファイルのエラー出力様式に合わせて
+   `print()` に置換。
+3. `$HTTP_RAW_POST_DATA`(2): PHP 7.0 でこの定義済みグローバルは廃止され、
+   名前自体が警告される。`xmlrpc.php`・`xmlrpcs.inc` で通常の
+   `$raw_post_data` に改名。
+4. PHP4 形式コンストラクタ(1): `POP3::POP3()` → `POP3::__construct()`。
+5. `global $$var`(1): `alert_error()` 内の不正な `global $$_SERVER;` を除去。
+   配列に対する可変変数で、関数は `$_SERVER` を使っていなかった。
+
+JA — PHPStan level 0 検出、215 → 0:
+6. XML-RPC クラス(約159): `xmlrpcval`・`xmlrpcresp` 等は PHPStan が既定で
+   解析しない `.inc` にある。`phpstan.neon.dist` に `xmlrpc.inc` /
+   `xmlrpcs.inc` の `scanFiles` を追加。
+7. XML-RPC ライブラリの PHP4 形式コンストラクタ: `xmlrpc_client`・
+   `xmlrpcresp`・`xmlrpcmsg`・`xmlrpcval`(`xmlrpc.inc`)、`xmlrpc_server`
+   (`xmlrpcs.inc`)を `__construct()` に改名。PHP 8 ではコンストラクタが
+   呼ばれず、オブジェクトが未初期化のまま静かに壊れていた。
+8. 配列の重複キー(22): `b2vars.php` の `$b2_htmltransbis`(20 キー)、
+   `b2vars.php` / `b2config.php` のスマイリー表 `$b2smiliestrans`(各 1)。
+   PHP が実際に採用する最後の出現を残した。
+9. 未定義の `dbconnect()` / `rss_update()`(19): `xmlrpc.php`・`b2mail.php`
+   から参照されるが WordPress 0.71-gold に定義がない。`b2functions.php` に
+   コメント付きの空関数として定義(DB 接続は既に `$wpdb` で確立済み)。
+10. 未定義変数(5): `b2functions.php` のピンバック処理で `$host_start` を 0 に
+    設定、`the_author_posts()` の global に `$post` を追加し誤った
+    `$postdata['Date']` 2 箇所を `$post->post_date` に修正、`xmlrpc.php` の
+    `$agesorter` の打ち間違いを `$agesorter_arr` に修正。
+11. 引数なしの `mktime()`(1): `b2calendar.php` で `time()` に置換(引数なし
+    `mktime()` は PHP 8.0 で廃止)。
+12. 任意引数が必須引数の前(1): `textile.php` の `callback_url()` の `$url` に
+    既定値を付与。
+13. `require_once()` のパス(1): `links.weblogs.com.php` は `wp-links/` に
+    あるため `b2config.php` → `../b2config.php`。
+14. `phpstan-baseline.neon` と `includes:` 行を削除。PHPStan は抑制なしで
+    green になった。
+
+### Verification / 検証
+
+EN:
+- `composer phpcs` -> **0 violations** (52 files).
+- `composer phpstan` (level 0, no baseline) -> **0 errors**.
+- `php -l` -> **0 syntax errors** across all 54 `.php` / `.inc` files.
+- The Docker blog front end still renders correctly with no new warnings; the
+  pre-existing legacy warnings on the category / archive pages are unchanged
+  from `main` (verified by stashing the branch).
+
+JA:
+- `composer phpcs` -> **検出 0 件**(52 ファイル)。
+- `composer phpstan`(level 0、baseline なし)-> **エラー 0 件**。
+- `php -l` -> 全 54 個の `.php` / `.inc` で **構文エラー 0**。
+- Docker のブログ本体は引き続き正しく描画され、新規の警告は無い。category /
+  archive ページの既存のレガシー警告は `main` と同一(ブランチを stash して
+  確認)。
+
+### Out of scope / スコープ外
+
+EN: The XML-RPC endpoint (`xmlrpc.php`) has remaining PHP 8 *runtime*
+incompatibilities -- e.g. `xml_parser_create()` now returns an `XMLParser`
+object used as an array offset, and `${var}` string interpolation is deprecated
+in the `.inc` library. These are not flagged by phpcs/PHPStan (the `.inc` files
+are not analysed for issues) and belong to a dedicated XML-RPC / runtime-warning
+Issue. Raising PHPStan above level 0 is also out of scope.
+
+JA: XML-RPC エンドポイント(`xmlrpc.php`)には PHP 8 の*実行時*非互換が残る。
+例えば `xml_parser_create()` は `XMLParser` オブジェクトを返すようになり配列
+オフセットとして使えない、`.inc` ライブラリの `${var}` 文字列補間が非推奨、
+など。これらは phpcs/PHPStan では検出されず(`.inc` は問題解析の対象外)、
+専用の XML-RPC / 実行時警告 Issue で扱う。PHPStan を level 0 より上げることも
+スコープ外。

@@ -1,13 +1,15 @@
 <?php
 
 # fix for mozBlog and other cases where '<?xml' isn't on the very first line
-// EN: $HTTP_RAW_POST_DATA was auto-populated by PHP before it was removed in
-//     PHP 7.0; read the raw request body from php://input instead. The
-//     variable itself is still used as a global by xmlrpcs.inc.
-// JA: $HTTP_RAW_POST_DATA は PHP 7.0 で廃止されるまで PHP が自動設定していた。
-//     代わりに php://input から生のリクエストボディを読む。変数自体は
-//     xmlrpcs.inc がグローバルとして引き続き使用する。
-$HTTP_RAW_POST_DATA = trim(file_get_contents('php://input'));
+// EN: PHP's predefined $HTTP_RAW_POST_DATA global was removed in PHP 7.0, and
+//     even the bare name is flagged by static analysis; read the raw request
+//     body from php://input into our own $raw_post_data, which xmlrpcs.inc
+//     then picks up as a global.
+// JA: PHP の定義済みグローバル $HTTP_RAW_POST_DATA は PHP 7.0 で廃止され、
+//     名前自体も静的解析で警告される。生のリクエストボディを php://input から
+//     独自の $raw_post_data に読み込み、xmlrpcs.inc がそれをグローバルとして
+//     受け取る。
+$raw_post_data = trim(file_get_contents('php://input'));
 
 include('b2config.php');
 
@@ -41,7 +43,7 @@ function starify($string) {
 	return str_repeat('*', $i);
 }
 
-logIO("I",$HTTP_RAW_POST_DATA);
+logIO("I",$raw_post_data);
 
 /**** B2 API ****/
 
@@ -1236,7 +1238,7 @@ function agesorter_compare($a, $b) {
   $a=str_replace("-", "", $a);
   $b=str_replace("-", "", $b);
 
-  if ($agesorter_arr[$a]==$agesorter[$b]) return 0;
+  if ($agesorter_arr[$a]==$agesorter_arr[$b]) return 0;
   return ($agesorter_arr[$a] > $agesorter_arr[$b]) ? -1 : 1;
 }
 

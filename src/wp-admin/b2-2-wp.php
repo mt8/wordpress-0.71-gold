@@ -146,7 +146,7 @@ if (!$got_links) {
         }
     } else {
         $query = "ALTER TABLE $tablelinks ADD COLUMN link_updated DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00'";
-        $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("Doh, couldn't add column.", $query, mysqli_error($wpdb->dbh));
+        $q = mysqli_query($wpdb->dbh, $query) or print("Doh, couldn't add column.<br />" . $query . "<br />" . mysqli_error($wpdb->dbh));
         echo "<p>Added column link_updated...</p>\n";
     }
     echo "<p>Looking for column link_rel...</p>\n";
@@ -158,7 +158,7 @@ if (!$got_links) {
         }
     } else {
         $query = "ALTER TABLE $tablelinks ADD COLUMN link_rel varchar(255) NOT NULL DEFAULT '' ";
-        $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("Doh, couldn't add column.", $query, mysqli_error($wpdb->dbh));
+        $q = mysqli_query($wpdb->dbh, $query) or print("Doh, couldn't add column.<br />" . $query . "<br />" . mysqli_error($wpdb->dbh));
         echo "<p>Added column link_rel...</p>\n";
     }
     $got_links = true;
