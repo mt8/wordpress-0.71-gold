@@ -34,7 +34,7 @@ if (!isset($rss_language)) { $rss_language = 'en'; }
 		<rdf:Seq>
 		<?php $items_count = 0; foreach ($posts as $post) { start_b2(); ?>
 			<rdf:li rdf:resource="<?php permalink_single_rss() ?>"/>
-		<?php $b2_items[] = $row; $items_count++; if (($items_count == $posts_per_rss) && empty($m)) { break; } } ?>
+		<?php $items_count++; if (($items_count == $posts_per_rss) && empty($m)) { break; } } ?>
 		</rdf:Seq>
 	</items>
 </channel>
