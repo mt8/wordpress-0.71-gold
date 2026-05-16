@@ -169,6 +169,7 @@ JA: すべての変更は GitHub Issue 単位で `docs/php83-migration.md` に�
 | `docs/static-export.md` | Static export & safe publishing. / 静的書き出しと安全な公開。 |
 | `docs/static-analysis.md` | phpcs / PHPStan tooling. / phpcs・PHPStan ツール。 |
 | `docs/docker-environment.md` | Docker environment details. / Docker 環境の詳細。 |
+| `docs/gutenberg-investigation.md` | Gutenberg port feasibility investigation. / Gutenberg 移植可否の調査。 |
 
 ## License / ライセンス
 
