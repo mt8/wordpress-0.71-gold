@@ -379,3 +379,79 @@ JA: 残りの `/e` `preg_replace()` 修飾子 — `%u` デコーダおよび `$b
 既定はすべて無効) — および非 fatal な `E_WARNING` / `E_DEPRECATED`(例:
 `apply_filters()` の `$tags` タイプミス、`wptexturize()` の未初期化 `$output`)は
 後続 Issue に先送りする。
+
+---
+
+## Issue #13: Replace the compatibility shims with native rewrites, add static analysis / 互換シムをネイティブ書き直しに置換し、静的解析を導入
+
+EN: Static analysis tooling was introduced, and its findings led to dropping the
+compatibility-shim approach entirely: the `mysql_*` and `ereg`/`each`/
+`get_magic_quotes_gpc` shims were replaced with native PHP 8 / mysqli code.
+See `docs/static-analysis.md` for the tooling.
+
+JA: 静的解析ツールを導入し、その検出結果を受けて互換シム方式を全廃した。
+`mysql_*` および `ereg`/`each`/`get_magic_quotes_gpc` のシムを、ネイティブな
+PHP 8 / mysqli コードへ置き換えた。ツールについては `docs/static-analysis.md`
+を参照。
+
+### Changes (per commit) / 変更内容(コミット単位)
+
+EN:
+1. Add static-analysis tooling: `composer.json` (phpcs, PHPCompatibility,
+   phpstan), `phpcs.xml.dist`, `phpstan.neon.dist`.
+2. Rewrite the `wpdb` class to native `mysqli_*` (the constructor now does
+   `mysqli_report(MYSQLI_REPORT_OFF)` and `SET SESSION sql_mode=''`).
+3. Convert the `mysqli`-compatible result functions (`mysql_fetch_*`,
+   `mysql_num_*`, `mysql_free_result`) project-wide.
+4. Rewrite the direct `mysql_*` callers (19 files) to `mysqli_*` with
+   `$wpdb->dbh`; add `global $wpdb;` to 16 functions.
+5. Fix `wpdb::query()` to fetch only from a `mysqli_result`.
+6. Delete `src/b2-include/mysql-shim.php`.
+7. `each()` -> `foreach` (3 sites).
+8. Remove `get_magic_quotes_gpc()` conditionals (10 sites).
+9. Read the XML-RPC body from `php://input` instead of `$HTTP_RAW_POST_DATA`.
+10. `ereg`/`ereg_replace` -> PCRE (16 sites).
+11. Delete `src/b2-include/php-compat.php`, `docker/php-compat.ini`, and the
+    Dockerfile `auto_prepend_file` line.
+12. Add `phpstan-baseline.neon`.
+
+JA:
+1. 静的解析ツールを追加: `composer.json`(phpcs, PHPCompatibility, phpstan)、
+   `phpcs.xml.dist`、`phpstan.neon.dist`。
+2. `wpdb` クラスをネイティブ `mysqli_*` へ書き直し(コンストラクタが
+   `mysqli_report(MYSQLI_REPORT_OFF)` と `SET SESSION sql_mode=''` を実行)。
+3. `mysqli` 互換の結果取得関数(`mysql_fetch_*`、`mysql_num_*`、
+   `mysql_free_result`)をプロジェクト全体で変換。
+4. 直接の `mysql_*` 呼び出し(19 ファイル)を `$wpdb->dbh` 付き `mysqli_*` へ
+   書き直し、16 関数に `global $wpdb;` を追加。
+5. `wpdb::query()` が `mysqli_result` のときだけ取得するよう修正。
+6. `src/b2-include/mysql-shim.php` を削除。
+7. `each()` -> `foreach`(3 箇所)。
+8. `get_magic_quotes_gpc()` の条件を除去(10 箇所)。
+9. XML-RPC ボディを `$HTTP_RAW_POST_DATA` ではなく `php://input` から読む。
+10. `ereg`/`ereg_replace` -> PCRE(16 箇所)。
+11. `src/b2-include/php-compat.php`、`docker/php-compat.ini`、Dockerfile の
+    `auto_prepend_file` 行を削除。
+12. `phpstan-baseline.neon` を追加。
+
+### Verification / 検証
+
+EN: PHPCompatibility (testVersion 8.3) violations dropped from **234 to 14**;
+the shim-related findings are fully eliminated. In the Docker environment the
+installer completes and the blog front end displays the post, with no fatal
+error and no SQL error and no compatibility shim loaded.
+
+JA: PHPCompatibility(testVersion 8.3)の検出は **234 件から 14 件**へ減少し、
+シム関連の検出は完全に解消。Docker 環境でインストーラが完走し、ブログ本体が
+投稿を表示する。fatal エラー・SQL エラーは無く、互換シムも読み込まれない。
+
+### Out of scope / スコープ外
+
+EN: The runtime `E_WARNING` / `E_DEPRECATED` notices (undefined variables,
+dynamic properties, `${var}` interpolation, `define()` 3rd argument, the `/e`
+modifier on rarely-hit paths, the `POP3` old-style constructor) are handled in a
+separate later Issue.
+
+JA: 実行時の `E_WARNING` / `E_DEPRECATED`(未定義変数、動的プロパティ、`${var}`
+補間、`define()` 第3引数、ほとんど通らないパスの `/e` 修飾子、`POP3` 旧式
+コンストラクタ)は、別の後続 Issue で扱う。
