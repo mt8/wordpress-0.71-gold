@@ -109,7 +109,11 @@ case 'editedcat':
 		die ('Cheatin&#8217; uh?');
 	
 	$cat_name = addslashes($_POST["cat_name"]);
-	$cat_ID = addslashes($_POST["cat_ID"]);
+	// EN: Cast the category id to int -- it is used unquoted in SQL
+	//     (WHERE cat_ID = $cat_ID); addslashes() does not protect it.
+	// JA: カテゴリ ID を整数にキャスト -- SQL でクォート無し
+	//     (WHERE cat_ID = $cat_ID)で使われ、addslashes() では保護できない。
+	$cat_ID = (int) $_POST["cat_ID"];
 
 	$query = "UPDATE $tablecategories SET cat_name='$cat_name' WHERE cat_ID = $cat_ID";
 	$result = mysqli_query($wpdb->dbh, $query) or die("Couldn't edit category <b>$cat_name</b>: ".mysqli_error($wpdb->dbh));

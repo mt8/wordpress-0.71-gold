@@ -38,7 +38,10 @@ function update_links() {
     foreach ($all_links as $id => $val) {
         if ($val[1]) {
             //echo("executing: $sql\n");
-            $wpdb->query("UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $val[0]");
+            // EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id = ...).
+            // JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id = ...)で使われる。
+            $link_id = (int) $val[0];
+            $wpdb->query("UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $link_id");
         }
     } // end while
 }

@@ -124,7 +124,9 @@ switch ($action) {
       $standalone = 1;
       include_once('b2header.php');
 
-      $link_id = $_POST["link_id"];
+      // EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id=$link_id).
+      // JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id=$link_id)で使われる。
+      $link_id = (int) $_POST["link_id"];
       $link_url = $_POST["linkurl"];
       $link_name = $_POST["name"];
       $link_image = $_POST["image"];
@@ -167,7 +169,9 @@ switch ($action) {
     $standalone = 1;
     include_once('b2header.php');
 
-    $link_id = $_POST["link_id"];
+    // EN: Cast the link id to int -- it reaches SQL (WHERE link_id = '$link_id').
+    // JA: リンク ID を整数にキャスト -- SQL(WHERE link_id = '$link_id')に渡る。
+    $link_id = (int) $_POST["link_id"];
 
     if ($user_level < $minadminlevel)
       die ("Cheatin' uh ?");
@@ -196,6 +200,11 @@ switch ($action) {
       die("You have no right to edit the links for this blog.<br />Ask for a promotion to your <a href=\"mailto:$admin_email\">blog admin</a>. :)");
     }
 
+    // EN: Cast the link id to int -- $link_id comes from $_GET/$_POST (via
+    //     $b2varstoreset) and is used unquoted in SQL (WHERE link_id = $link_id).
+    // JA: リンク ID を整数にキャスト -- $link_id は $_GET/$_POST 由来($b2varstoreset
+    //     経由)で、SQL でクォート無し(WHERE link_id = $link_id)で使われる。
+    $link_id = (int) $link_id;
     $sql = "SELECT link_url, link_name, link_image, link_target, link_description, link_visible, link_category AS cat_id, link_rating, link_rel " .
       " FROM $tablelinks " .
       " WHERE link_id = $link_id";

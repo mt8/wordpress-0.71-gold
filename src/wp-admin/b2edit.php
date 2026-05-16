@@ -124,7 +124,9 @@ switch($action) {
         $standalone = 0;
         require_once('b2header.php');
 
-        $post = $_GET['post'];
+        // EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID=$post).
+        // JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID=$post)で使われる。
+        $post = (int) $_GET['post'];
         if ($user_level > 0) {
             $postdata = get_postdata($post) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
             $authordata = get_userdata($postdata["Author_ID"]);
@@ -165,7 +167,9 @@ switch($action) {
         if (!isset($blog_ID)) {
             $blog_ID = 1;
         }
-        $post_ID = $_POST["post_ID"];
+        // EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $post_ID).
+        // JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $post_ID)で使われる。
+        $post_ID = (int) $_POST["post_ID"];
         $post_category = intval($_POST["post_category"]);
         $post_autobr = intval($_POST["post_autobr"]);
         // EN: 'editpost' never read $post_pingback; default to 0 when
@@ -241,7 +245,9 @@ switch($action) {
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
-        $post = $_GET['post'];
+        // EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID=$post).
+        // JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID=$post)で使われる。
+        $post = (int) $_GET['post'];
         $postdata=get_postdata($post) or die("Oops, no post with this ID. <a href=\"b2edit.php\">Go back</a> !");
         $authordata = get_userdata($postdata["Author_ID"]);
 
@@ -277,7 +283,9 @@ switch($action) {
             die ('Cheatin&#8217; uh?');
         }
 
-        $comment = $_GET['comment'];
+        // EN: Cast the comment id to int -- it reaches SQL via get_commentdata().
+        // JA: コメント ID を整数にキャスト -- get_commentdata() 経由で SQL に渡る。
+        $comment = (int) $_GET['comment'];
         $commentdata = get_commentdata($comment, 1) or die('Oops, no comment with this ID. <a href="javascript:history.go(-1)">Go back</a>!');
         $content = $commentdata['comment_content'];
         $content = format_to_edit($content);
@@ -294,8 +302,12 @@ switch($action) {
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
-        $comment = $_GET['comment'];
-        $p = $_GET['p'];
+        // EN: Cast the ids to int -- $comment is used unquoted in SQL
+        //     (WHERE comment_ID=$comment); $p is echoed into the redirect URL.
+        // JA: ID を整数にキャスト -- $comment は SQL でクォート無し
+        //     (WHERE comment_ID=$comment)、$p はリダイレクト URL に出力される。
+        $comment = (int) $_GET['comment'];
+        $p = (int) $_GET['p'];
         $commentdata=get_commentdata($comment) or die("Oops, no comment with this ID. <a href=\"b2edit.php\">Go back</a> !");
 
         $query = "DELETE FROM $tablecomments WHERE comment_ID=$comment";
@@ -313,8 +325,14 @@ switch($action) {
         if ($user_level == 0)
             die ("Cheatin' uh ?");
 
-        $comment_ID = $_POST['comment_ID'];
-        $comment_post_ID = $_POST['comment_post_ID'];
+        // EN: Cast the ids to int -- $comment_ID is used unquoted in SQL
+        //     (WHERE comment_ID=$comment_ID); $comment_post_ID is echoed into
+        //     the redirect URL.
+        // JA: ID を整数にキャスト -- $comment_ID は SQL でクォート無し
+        //     (WHERE comment_ID=$comment_ID)、$comment_post_ID はリダイレクト
+        //     URL に出力される。
+        $comment_ID = (int) $_POST['comment_ID'];
+        $comment_post_ID = (int) $_POST['comment_post_ID'];
         $newcomment_author = $_POST['newcomment_author'];
         $newcomment_author_email = $_POST['newcomment_author_email'];
         $newcomment_author_url = $_POST['newcomment_author_url'];

@@ -881,3 +881,149 @@ draft -> publish の遷移を含む)、削除のいずれも **HTTP 302** と
 **PHP 警告 0** でリダイレクトされ、投稿は DB に正しく作成/更新/削除される。
 管理画面・ブログ本体・静的解析(phpcs 0、PHPStan level 0)は不変。
 検証に使った一時的なテスト投稿は後で削除した。
+
+---
+
+## Issue #31: Fix SQL injection in numeric id contexts / 数値 ID コンテキストの SQL インジェクションを修正
+
+EN: A security audit (Issue #31) found that WordPress 0.71 builds every SQL
+query by string interpolation. The only defence is `addslashes()` applied to
+`$_GET` / `$_POST` / `$_COOKIE` (magic_quotes emulation), which does **not**
+protect **numeric / unquoted** contexts: `WHERE ID = $post` with `$post` taken
+straight from `$_GET` is directly injectable (e.g. `?post=1 OR 1=1`).
+
+The agreed, behaviour-preserving fix is the one the Issue itself recommends:
+cast every numeric id to integer with `(int)`. A full prepared-statements
+rewrite is explicitly out of scope. The cast is applied at the point the id is
+read from `$_GET` / `$_POST` (so the variable is clean everywhere it is later
+used), and inside functions for ids that arrive as parameters. Casting a
+genuine numeric id to int does not change behaviour; an injection payload such
+as `1 OR 1=1` collapses to the integer `1`, and a non-numeric payload to `0`
+(an invalid id, handled cleanly by the existing `... or die()` guards).
+
+JA: セキュリティ監査(Issue #31)で、WordPress 0.71 はすべての SQL クエリを
+文字列連結で組み立てていることが判明した。唯一の防御は `$_GET` / `$_POST` /
+`$_COOKIE` への `addslashes()`(magic_quotes 模倣)で、これは**数値・クォート
+無し**のコンテキストを**保護しない**。`WHERE ID = $post`(`$post` は `$_GET`
+由来)は直接インジェクション可能(例: `?post=1 OR 1=1`)。
+
+合意した挙動保存の修正は、Issue 自身が推奨するもの — 数値 ID をすべて `(int)`
+で整数にキャストする。プリペアドステートメントへの全面書き換えは明示的に
+スコープ外。キャストは ID を `$_GET` / `$_POST` から読む箇所(以降の利用箇所
+すべてで変数が安全になる)、および ID を引数で受け取る関数の内部に適用する。
+正当な数値 ID を整数にキャストしても挙動は変わらず、`1 OR 1=1` のような
+インジェクション文字列は整数 `1` に縮退し、非数値の文字列は `0`(不正な ID、
+既存の `... or die()` ガードで安全に処理される)になる。
+
+### Changes / 変更内容
+
+EN:
+1. `wp-admin/b2edit.php`: cast `$post` (`$_GET['post']`, `edit` / `delete`
+   cases), `$post_ID` (`$_POST['post_ID']`, `editpost`), `$comment`
+   (`$_GET['comment']`, `editcomment` / `deletecomment`), `$p`
+   (`$_GET['p']`), `$comment_ID` and `$comment_post_ID`
+   (`$_POST`, `editedcomment`).
+2. `wp-admin/b2categories.php`: cast `$cat_ID` in the `editedcat` case (it was
+   `addslashes()`-ed and then used unquoted in `WHERE cat_ID = $cat_ID`; the
+   `Delete` case already used `intval()`).
+3. `wp-admin/b2team.php`: cast `$id` (`$_GET['id']`) in the `promote` and
+   `delete` cases.
+4. `wp-admin/b2profile.php`: cast `$user_ID` before the profile `UPDATE`.
+5. `wp-admin/linkmanager.php`: cast `$link_id` in the `Save` and `Delete`
+   cases (`$_POST['link_id']`) and in `linkedit` (it arrives via the
+   `$b2varstoreset` loop from `$_GET` / `$_POST`).
+6. `b2-include/b2functions.php`: cast the id parameter inside `get_userdata()`,
+   `get_usernumposts()`, `get_postdata()` and `get_commentdata()` -- these are
+   reached with request-derived ids from many call sites.
+7. `b2comments.post.php`: cast `$comment_post_ID` (`$_POST`).
+8. `b2trackback.php`: cast `$tb_id` (both the GET form and the
+   request-URI form) and `$id` in the included render branch.
+9. `b2commentspopup.php`, `b2comments.php`, `b2pingbacks.php`,
+   `b2pingbackspopup.php`, `b2trackbackpopup.php`: cast `$id` before the
+   per-post comment / pingback / trackback queries.
+10. `xmlrpc.php`: cast `$post_ID` in the pingback handler (it is derived from
+    the remote pingback URL) and after `scalarval()` in the `editPost`,
+    `deletePost` and `getPost` XML-RPC methods.
+11. `wp-links/links.php`: cast the `$id` parameter inside `get_linkcatname()`
+    and `get_autotoggle()` (`get_autotoggle()` is called with the
+    request-supplied `$_POST['category']`).
+12. `wp-links/links.weblogs.com.php`: cast the link id before the
+    `link_updated` `UPDATE`.
+
+JA:
+1. `wp-admin/b2edit.php`: `$post`(`$_GET['post']`、`edit` / `delete`)、
+   `$post_ID`(`$_POST['post_ID']`、`editpost`)、`$comment`
+   (`$_GET['comment']`、`editcomment` / `deletecomment`)、`$p`
+   (`$_GET['p']`)、`$comment_ID` と `$comment_post_ID`
+   (`$_POST`、`editedcomment`)をキャスト。
+2. `wp-admin/b2categories.php`: `editedcat` の `$cat_ID` をキャスト(`addslashes()`
+   されてから `WHERE cat_ID = $cat_ID` でクォート無しで使われていた。`Delete`
+   は既に `intval()` を使用)。
+3. `wp-admin/b2team.php`: `promote` と `delete` の `$id`(`$_GET['id']`)を
+   キャスト。
+4. `wp-admin/b2profile.php`: プロフィール `UPDATE` の前で `$user_ID` をキャスト。
+5. `wp-admin/linkmanager.php`: `Save` と `Delete` の `$link_id`
+   (`$_POST['link_id']`)、および `linkedit`(`$b2varstoreset` ループ経由で
+   `$_GET` / `$_POST` から渡る)の `$link_id` をキャスト。
+6. `b2-include/b2functions.php`: `get_userdata()`・`get_usernumposts()`・
+   `get_postdata()`・`get_commentdata()` の内部で ID 引数をキャスト —
+   これらは多数の呼び出し元からリクエスト由来の ID で到達する。
+7. `b2comments.post.php`: `$comment_post_ID`(`$_POST`)をキャスト。
+8. `b2trackback.php`: `$tb_id`(GET 形式とリクエスト URI 形式の両方)と、
+   インクルードされる描画分岐の `$id` をキャスト。
+9. `b2commentspopup.php`・`b2comments.php`・`b2pingbacks.php`・
+   `b2pingbackspopup.php`・`b2trackbackpopup.php`: 投稿ごとのコメント /
+   ピンバック / トラックバッククエリの前で `$id` をキャスト。
+10. `xmlrpc.php`: ピンバックハンドラの `$post_ID`(リモートのピンバック URL
+    由来)、および `editPost`・`deletePost`・`getPost` の XML-RPC メソッドで
+    `scalarval()` 後の `$post_ID` をキャスト。
+11. `wp-links/links.php`: `get_linkcatname()` と `get_autotoggle()` の内部で
+    `$id` 引数をキャスト(`get_autotoggle()` はリクエスト由来の
+    `$_POST['category']` で呼ばれる)。
+12. `wp-links/links.weblogs.com.php`: `link_updated` の `UPDATE` の前で
+    リンク ID をキャスト。
+
+### Verification / 検証
+
+EN:
+- `php -l` -> **0 syntax errors** across all 16 changed files.
+- `composer phpcs` -> **0 violations** (52 files).
+- `composer phpstan` (`--memory-limit=1G`) -> **0 errors**.
+- In the Docker environment the blog front end and the admin (login +
+  `b2edit.php`, `b2categories.php`, `b2team.php`, `linkmanager.php`,
+  `b2profile.php`) load with **0 PHP warnings / fatals**; the seeded post is
+  still displayed.
+- Injection sanity check: with 21 posts in the database, the home page lists
+  20 posts, but `index.php?p=1%20OR%201=1` returns **exactly one** post
+  (post #1, "Hello world!") -- the `OR 1=1` does not leak the other posts.
+  `?p=0%20OR%201=1` and `?p=abc` collapse to an invalid id and return 0 posts.
+  On the admin, `b2edit.php?action=edit&post=0%20OR%201=1` shows the clean
+  "Oops, no post with this ID" message.
+
+JA:
+- `php -l` -> 変更した全 16 ファイルで **構文エラー 0**。
+- `composer phpcs` -> **検出 0 件**(52 ファイル)。
+- `composer phpstan`(`--memory-limit=1G`)-> **エラー 0 件**。
+- Docker 環境で、ブログ本体および管理画面(ログイン + `b2edit.php`・
+  `b2categories.php`・`b2team.php`・`linkmanager.php`・`b2profile.php`)が
+  **PHP 警告 / fatal 0** で表示され、初期投稿も引き続き表示される。
+- インジェクションの動作確認: DB に 21 件の投稿がある状態で、ホームページは
+  20 件を表示するが、`index.php?p=1%20OR%201=1` は**ちょうど 1 件**(投稿 #1
+  「Hello world!」)を返す — `OR 1=1` は他の投稿を漏らさない。
+  `?p=0%20OR%201=1` と `?p=abc` は不正な ID に縮退し 0 件を返す。管理画面では
+  `b2edit.php?action=edit&post=0%20OR%201=1` が「Oops, no post with this ID」
+  と正しく表示される。
+
+### Out of scope / スコープ外
+
+EN: A full migration to `mysqli` prepared statements / bound parameters is the
+ideal long-term fix but is explicitly out of scope for this Issue -- the `(int)`
+casts are the agreed, behaviour-preserving fix and exactly Issue #31's stated
+recommendation. String-valued inputs used inside quoted SQL contexts remain
+protected only by `addslashes()`; hardening those is separate follow-up work.
+
+JA: `mysqli` のプリペアドステートメント/バインドへの全面移行が理想的な長期
+対応だが、本 Issue では明示的にスコープ外 — `(int)` キャストが合意した挙動
+保存の修正であり、Issue #31 が述べる推奨対応そのものである。クォート付き SQL
+コンテキストで使われる文字列入力は引き続き `addslashes()` のみで保護される。
+その強化は別の後続作業とする。

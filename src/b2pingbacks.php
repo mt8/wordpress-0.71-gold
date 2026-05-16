@@ -3,6 +3,9 @@
 	<?php // Do not delete these lines
 	if (basename($_SERVER["SCRIPT_FILENAME"]) == "b2pingbacks.php")
 		die ("please, do not load this page directly");
+	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE comment_post_ID = $id).
+	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE comment_post_ID = $id)で使われる。
+	$id = (int) $id;
 	$queryc = "SELECT * FROM $tablecomments WHERE comment_post_ID = $id AND comment_content LIKE '%<pingback />%' ORDER BY comment_date";
 	$resultc = mysqli_query($wpdb->dbh, $queryc); if ($resultc) {
 	?>

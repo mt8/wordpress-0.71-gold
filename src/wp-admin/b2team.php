@@ -29,7 +29,9 @@ case 'promote':
 		header('Location: b2team.php');
 	}
 
-	$id = $_GET["id"];
+	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $id).
+	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $id)で使われる。
+	$id = (int) $_GET["id"];
 	$prom = $_GET["prom"];
 
 	$user_data = get_userdata($id);
@@ -55,7 +57,11 @@ case 'delete':
 	$standalone = 1;
 	require_once('b2header.php');
 
-	$id = $_GET["id"];
+	// EN: Cast the user id to int -- it is used unquoted in SQL
+	//     (WHERE ID = $id / WHERE post_author = $id).
+	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し
+	//     (WHERE ID = $id / WHERE post_author = $id)で使われる。
+	$id = (int) $_GET["id"];
 
 	if (!$id) {
 		header('Location: b2team.php');
