@@ -39,8 +39,8 @@ $smilies_directory = '/smilies';
 //     add_filter()(b2template.functions.php で定義)を呼ぶため、テンプレート
 //     関数を先に読み込む必要がある。この 3 ファイルはいずれも DB 接続を
 //     張らないため、ここで require して安全である。
-require __DIR__ . '/../src/b2-include/b2functions.php';
-require __DIR__ . '/../src/b2-include/b2template.functions.php';
+require __DIR__ . '/../../../src/b2-include/b2functions.php';
+require __DIR__ . '/../../../src/b2-include/b2template.functions.php';
 
 // EN: b2vars.php is a Latin-1 file that emits notices/deprecations as it
 //     builds its translation tables from an incomplete CLI environment;
@@ -63,7 +63,7 @@ require __DIR__ . '/../src/b2-include/b2template.functions.php';
 //     include されるため、これはテストランナー向けにそれを再現するだけである。
 (static function () use ($smilies_directory): void {
     $previous_reporting = error_reporting(0);
-    require __DIR__ . '/../src/b2-include/b2vars.php';
+    require __DIR__ . '/../../../src/b2-include/b2vars.php';
     error_reporting($previous_reporting);
 
     foreach (
@@ -84,7 +84,7 @@ require __DIR__ . '/../src/b2-include/b2template.functions.php';
 
 // EN: The textile formatter is a standalone string-in / HTML-out library.
 // JA: textile フォーマッタは単独の「文字列入力 / HTML 出力」ライブラリ。
-require __DIR__ . '/../src/b2-include/textile.php';
+require __DIR__ . '/../../../src/b2-include/textile.php';
 
 // EN: Test-support classes (the fake $wpdb and the shared base TestCase).
 // JA: テスト補助クラス(偽の $wpdb と共有ベース TestCase)。
