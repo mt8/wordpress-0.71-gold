@@ -21,12 +21,22 @@ runs on a server. Deployed to GitHub Pages from `tools/playground/`; see the
 ## Requirements
 
 - Docker (with Docker Compose v2)
+- Node.js 20+ (for the `tools/` packages, the Playwright E2E suite and the
+  block editor build)
 
 ## Quick start
 
 ```sh
-docker compose up -d --build
+git clone https://github.com/mt8/wordpress-0.71-gold.git
+cd wordpress-0.71-gold
+npm install                # install the tools/ workspace packages
+npx 071-env start          # build and start the PHP 8.3 / MySQL 8 environment
 ```
+
+`npx 071-env start` builds the `web` image and starts the environment. The
+Docker Compose files now live under `tools/env/`, so a plain
+`docker compose up` from the repository root no longer works — `071-env` is
+the documented way to start the environment.
 
 Then open the installer at
 <http://localhost:8080/wp-admin/wp-install.php> and follow it. Afterwards:
@@ -35,20 +45,37 @@ Then open the installer at
 - Admin screen: <http://localhost:8080/wp-admin/b2edit.php>
 
 ```sh
-docker compose down       # stop
-docker compose down -v    # stop and drop the database volume
+npx 071-env stop           # stop without removing the environment
+npx 071-env destroy        # stop and drop the database volume
 ```
 
 ## Environment
 
 | Service | Image | Role |
 |---------|-------|------|
-| `web`   | `php:8.3-apache` + `mysqli` (built from `Dockerfile`) | Apache + PHP 8.3, serves `./src` |
+| `web`   | `php:8.3-apache` + `mysqli` (built from `tools/env/Dockerfile`) | Apache + PHP 8.3, serves `./src` |
 | `db`    | `mysql:8.0` (official) | MySQL 8 database `b2` (user `user` / `pass`) |
 
-Both base images are official; the only customization is the `Dockerfile`
+Both base images are official; the only customization is `tools/env/Dockerfile`
 adding the `mysqli` extension. Database credentials live in `src/b2config.php`
-and match `docker-compose.yml`, so no configuration is needed for local use.
+and match `tools/env/docker-compose.yml`, so no configuration is needed for
+local use.
+
+## Tooling (`tools/`)
+
+The `tools/` directory holds the 0.71-specific tooling packages. The first
+three are npm workspaces, so `npm install` at the repository root installs
+them all.
+
+| Package | Path | Run | What it is |
+|---------|------|-----|------------|
+| `071-cli` | `tools/cli` | `npx 071 <command>` | wp-cli-style CLI for WordPress 0.71; includes `071 export` (static export). See [`tools/cli/README.md`](tools/cli/README.md). |
+| `071-env` | `tools/env` | `npx 071-env <command>` | wp-env-style manager for the PHP 8.3 / MySQL 8 Docker environment. See [`tools/env/README.md`](tools/env/README.md). |
+| `071-now` | `tools/playground` | `npm run dev --workspace tools/playground` | wp-now / Playground-style in-browser WordPress 0.71. See [`tools/playground/README.md`](tools/playground/README.md). |
+| block editor | `tools/block-editor` | `cd tools/block-editor && npm install && npm run build` | Build source for the custom block editor; build output goes to `src/block-editor/assets/`. See [`tools/block-editor/README.md`](tools/block-editor/README.md). |
+
+`npx` always works. To run the bare `071` / `071-env` commands (without the
+`npx` prefix), `npm link` the package — e.g. `npm link --workspace tools/cli`.
 
 ## Static analysis
 
@@ -212,12 +239,22 @@ PHP 8.3 を WebAssembly へコンパイルし、データベースはブラウ�
 ## 必要環境
 
 - Docker(Docker Compose v2)
+- Node.js 20 以上(`tools/` パッケージ、Playwright E2E、ブロックエディタの
+  ビルドに必要)
 
 ## クイックスタート
 
 ```sh
-docker compose up -d --build
+git clone https://github.com/mt8/wordpress-0.71-gold.git
+cd wordpress-0.71-gold
+npm install                # tools/ ワークスペースパッケージを導入
+npx 071-env start          # PHP 8.3 / MySQL 8 環境をビルドして起動
 ```
+
+`npx 071-env start` は `web` イメージをビルドし、環境を起動する。Docker
+Compose ファイルは `tools/env/` 配下へ移ったため、リポジトリ直下での素の
+`docker compose up` はもう動かない — 環境起動は `071-env` で行うのが
+ドキュメント上の手順である。
 
 起動後、<http://localhost:8080/wp-admin/wp-install.php> のインストーラを
 開いて進める。完了後:
@@ -226,20 +263,36 @@ docker compose up -d --build
 - 管理画面: <http://localhost:8080/wp-admin/b2edit.php>
 
 ```sh
-docker compose down       # 停止
-docker compose down -v    # 停止し DB ボリュームも削除
+npx 071-env stop           # 環境を削除せずに停止
+npx 071-env destroy        # 停止し DB ボリュームも削除
 ```
 
 ## 環境
 
 | サービス | イメージ | 役割 |
 |---------|---------|------|
-| `web`   | `php:8.3-apache` + `mysqli`(`Dockerfile` からビルド) | Apache + PHP 8.3、`./src` を配信 |
+| `web`   | `php:8.3-apache` + `mysqli`(`tools/env/Dockerfile` からビルド) | Apache + PHP 8.3、`./src` を配信 |
 | `db`    | `mysql:8.0`(公式) | MySQL 8 データベース `b2`(ユーザー `user` / `pass`) |
 
-ベースイメージはいずれも公式。カスタマイズは `Dockerfile` で `mysqli`
-拡張を追加する 1 点のみ。DB の認証情報は `src/b2config.php` にあり
-`docker-compose.yml` と一致しているため、ローカル利用では設定不要。
+ベースイメージはいずれも公式。カスタマイズは `tools/env/Dockerfile` で
+`mysqli` 拡張を追加する 1 点のみ。DB の認証情報は `src/b2config.php` にあり
+`tools/env/docker-compose.yml` と一致しているため、ローカル利用では設定不要。
+
+## ツール(`tools/`)
+
+`tools/` ディレクトリには 0.71 専用のツールパッケージが置かれている。先頭の
+3 つは npm workspaces であるため、リポジトリ直下での `npm install` で
+まとめて導入される。
+
+| パッケージ | パス | 実行 | 内容 |
+|-----------|------|------|------|
+| `071-cli` | `tools/cli` | `npx 071 <command>` | WordPress 0.71 向けの wp-cli 風 CLI。`071 export`(静的書き出し)を含む。[`tools/cli/README.md`](tools/cli/README.md) を参照。 |
+| `071-env` | `tools/env` | `npx 071-env <command>` | PHP 8.3 / MySQL 8 の Docker 環境を扱う wp-env 風マネージャ。[`tools/env/README.md`](tools/env/README.md) を参照。 |
+| `071-now` | `tools/playground` | `npm run dev --workspace tools/playground` | wp-now / Playground 風のブラウザ内 WordPress 0.71。[`tools/playground/README.md`](tools/playground/README.md) を参照。 |
+| ブロックエディタ | `tools/block-editor` | `cd tools/block-editor && npm install && npm run build` | カスタムブロックエディタのビルドソース。ビルド出力は `src/block-editor/assets/` へ。[`tools/block-editor/README.md`](tools/block-editor/README.md) を参照。 |
+
+`npx` は常に動く。素の `071` / `071-env` コマンド(`npx` 接頭辞なし)で
+実行するには、パッケージを `npm link` する — 例: `npm link --workspace tools/cli`。
 
 ## 静的解析
 
