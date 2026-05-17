@@ -376,9 +376,30 @@ The playground's end-to-end tests live outside this workspace, in the
 project's Playwright suite at `tests/playground/` (Issue #141) — see
 [Testing](#testing) below.
 
+## Running it
+
+`071-now` is a one-command launcher, in the spirit of `wp-now` (`npx
+@wp-now/wp-now start`). From anywhere in the repository:
+
+```
+npx 071-now
+```
+
+`tools/playground` is an npm workspace, so after `npm install` at the
+repository root the `071-now` bin is linked into `node_modules/.bin/` and
+`npx 071-now` works from any directory in the repo — exactly like `npx
+071` and `npx 071-env`. It builds the 071-now overlay, starts the
+playground's Vite server, opens the default browser at the playground
+URL and prints that URL. A `start` subcommand and `--help` are accepted
+as aliases, and `--port <port>` overrides the default port. The launcher
+is `bin/071-now.mjs`.
+
+Building the overlay (the block-editor build) needs **Node ≥ 22.12**.
+
 ## Commands
 
 ```
+npx 071-now        build the overlay, start Vite and open the browser
 npm run build      build the overlay and the Vite bundle
 npm run dev        Vite dev server
 npm run preview    serve the production build
