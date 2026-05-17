@@ -8,22 +8,27 @@ to WebAssembly via `@php-wasm/web`, reading posts from an in-browser
 SQLite database. No MySQL server, no web server.
 
 It began as the **feasibility spike** of Issue #108 (a proof of concept
-that rendered the front page) and is now being grown into a usable
-browser-based blog. Step 1 of that full build (Issue #116) serves the
-blog through a **service worker** so it has its CSS and is navigable.
-Step 2 (Issue #118) trims the php-wasm bundle to PHP 8.3 only. Step 3
-(Issue #120) makes the **WordPress 0.71 admin** work — the admin opens
-already logged in, and a post can be created, edited and a category
-managed through it, with the change reflected on the front page.
-Step 4 (Issue #122) **persists the SQLite database** in the browser, so
-content created through the admin survives a page reload / tab close.
-Step 5 (Issue #124) makes **image upload** work — an image uploaded
-through the classic admin's `b2upload.php` is stored in the php-wasm
-VFS, served on the blog, and persisted so it survives a reload too.
+that rendered the front page) and was then grown into a usable
+browser-based blog over six steps. Step 1 of that full build (Issue
+#116) serves the blog through a **service worker** so it has its CSS
+and is navigable. Step 2 (Issue #118) trims the php-wasm bundle to PHP
+8.3 only. Step 3 (Issue #120) makes the **WordPress 0.71 admin** work —
+the admin opens already logged in, and a post can be created, edited
+and a category managed through it, with the change reflected on the
+front page. Step 4 (Issue #122) **persists the SQLite database** in the
+browser, so content created through the admin survives a page reload /
+tab close. Step 5 (Issue #124) makes **image upload** work — an image
+uploaded through the classic admin's `b2upload.php` is stored in the
+php-wasm VFS, served on the blog, and persisted so it survives a reload
+too. Step 6 (Issue #126) is the **final polish**: a fresh playground
+opens on a small seeded demo blog, a loading splash covers the php-wasm
+boot, and the host page frames the playground and links back to the
+repository.
 
 The spike's findings, including the chosen database approach and the
-remaining work for a full `071-now` build, are in
-`docs/071-now-spike.md`.
+remaining work for the full `071-now` build, are in
+`docs/071-now-spike.md`; the build's six-step phasing is recorded in
+`docs/071-tooling.md` section 5.
 
 ## How it works
 
@@ -183,6 +188,36 @@ makes it work in the playground and persists the uploaded images.
 directory creation, the media persistence layer and the reset all live
 under `tools/playground/`.
 
+## The polished playground
+
+Step 6 (Issue #126) turns the working build into a presentable
+browser-based WordPress 0.71.
+
+- **Seed content.** `db/seed.php` builds a small demo blog rather than a
+  single placeholder post: an admin user, three categories and several
+  published posts spread across them, each with a distinct `post_date`
+  so the front page lists them newest-first under date headings. A
+  fresh playground therefore opens on a real WordPress 0.71 blog —
+  showing 0.71's post, category and author rendering — and the reset
+  control returns to exactly this state. The newest post keeps the title
+  and body the headless verifier expects, so the seed stays in step with
+  `test/verify.mjs`.
+- **Loading UI.** php-wasm's boot fetches and starts the ~40 MB PHP 8.3
+  WebAssembly runtime, which takes a few seconds. `index.html` shows a
+  loading splash — a spinner and a short explanation — over the blank
+  blog iframe meanwhile; `src/main.js` mirrors the boot phase into it
+  and fades it out once the iframe has actually rendered the front page,
+  so the splash is replaced by the live blog rather than by a blank
+  frame.
+- **Playground chrome.** `index.html` carries a slim title bar above the
+  blog stating plainly what this is — WordPress 0.71 (2003), running
+  entirely in the browser via WebAssembly PHP — with a link back to the
+  GitHub repository, alongside the existing boot-status line and the
+  reset control.
+
+These changes live entirely in `index.html`, `src/main.js` and
+`db/seed.php` under `tools/playground/`; `src/` is untouched.
+
 ## Layout
 
 ```
@@ -221,14 +256,17 @@ npm run verify     build, serve, and verify in headless Chromium
 ```
 
 `npm run verify` confirms, in a real browser, that the WordPress 0.71
-blog is served through the service worker: the front page renders with
-its CSS, and a visitor can click through to a post page and a category
-page. It then exercises the admin — opening it logged in, creating and
-editing a post and adding a category through the admin's own forms, and
-confirming each change on the front page. It then checks persistence
-— creating a post, reloading the page and asserting the post is still
-present, then exercising the reset. Finally it checks image upload —
-uploading an image through `b2upload.php`, asserting it is stored and
-served from the VFS, reloading and asserting it survived, then
-asserting the reset clears it — with no console errors. It writes
+blog is served through the service worker: a loading splash covers the
+php-wasm boot and is replaced by the blog, the host page frames the
+playground and links to the repository, the front page renders with its
+CSS and the seeded demo blog (several posts across a couple of
+categories), and a visitor can click through to a post page and a
+category page. It then exercises the admin — opening it logged in,
+creating and editing a post and adding a category through the admin's
+own forms, and confirming each change on the front page. It then checks
+persistence — creating a post, reloading the page and asserting the
+post is still present, then exercising the reset. Finally it checks
+image upload — uploading an image through `b2upload.php`, asserting it
+is stored and served from the VFS, reloading and asserting it survived,
+then asserting the reset clears it — with no console errors. It writes
 `test/071-now-frontpage.png` and `test/071-now-admin.png`.
