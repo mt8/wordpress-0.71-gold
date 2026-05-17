@@ -80,6 +80,103 @@ const EDITOR_SETTINGS = {
 	// EN: hasFixedToolbar=false keeps the floating per-block toolbar.
 	// JA: hasFixedToolbar=false でフローティングの各ブロックツールバーを保つ。
 	hasFixedToolbar: false,
+	// EN: mediaUpload is the integration seam @wordpress/block-editor uses for
+	//     uploads. The Image / Gallery / Cover blocks call it instead of
+	//     hard-coding the REST API (WordPress 0.71 has none). Each file is
+	//     POSTed as multipart/form-data to the api/upload.php JSON endpoint --
+	//     a sibling of load.php / save.php, so it is reached at the relative
+	//     URL 'upload.php' just like editor.php's loadEndpoint / saveEndpoint
+	//     defaults. The endpoint replies { id, url, alt }; onFileChange is
+	//     called with the resulting media objects so the Image block's upload
+	//     button works. credentials:'include' carries 0.71's auth cookies.
+	// JA: mediaUpload は @wordpress/block-editor がアップロードに用いる統合点。
+	//     画像 / ギャラリー / カバーブロックは REST API をハードコードせず
+	//     (WordPress 0.71 には無い)これを呼ぶ。各ファイルを
+	//     multipart/form-data として api/upload.php の JSON エンドポイントへ
+	//     POST する -- load.php / save.php と並ぶため、editor.php の
+	//     loadEndpoint / saveEndpoint の既定と同じく相対 URL 'upload.php' で
+	//     到達する。エンドポイントは { id, url, alt } を返し、得たメディア
+	//     オブジェクトで onFileChange を呼ぶことで画像ブロックの
+	//     アップロードボタンが機能する。credentials:'include' が 0.71 の
+	//     認証クッキーを運ぶ。
+	mediaUpload( { filesList, allowedTypes, onFileChange, onError } ) {
+		const files = Array.from( filesList || [] );
+		if ( files.length === 0 ) {
+			return;
+		}
+
+		// EN: Optional client-side type pre-filter. allowedTypes is a list of
+		//     MIME types or top-level types (e.g. 'image'); the server still
+		//     enforces its own allow-list, this is only for a fast UX reject.
+		// JA: 任意のクライアント側タイプ事前フィルタ。allowedTypes は MIME
+		//     タイプまたは最上位タイプ(例 'image')の一覧。サーバーは独自の
+		//     許可リストを引き続き強制し、これは素早い UX 拒否のためだけ。
+		const typeAllowed = ( file ) => {
+			if ( ! allowedTypes || allowedTypes.length === 0 ) {
+				return true;
+			}
+			return allowedTypes.some( ( type ) =>
+				type.includes( '/' )
+					? file.type === type
+					: file.type.startsWith( `${ type }/` )
+			);
+		};
+
+		const uploadOne = ( file ) => {
+			const body = new FormData();
+			body.append( 'file', file );
+			return fetch( 'upload.php', {
+				method: 'POST',
+				credentials: 'include',
+				body,
+			} )
+				.then( ( res ) =>
+					res.json().then( ( data ) => {
+						if ( ! res.ok ) {
+							throw new Error(
+								data && data.error
+									? data.error
+									: `upload failed: HTTP ${ res.status }`
+							);
+						}
+						return data;
+					} )
+				)
+				.then( ( data ) => ( {
+					id: data.id,
+					url: data.url,
+					alt: data.alt || '',
+				} ) );
+		};
+
+		files.forEach( ( file ) => {
+			if ( ! typeAllowed( file ) ) {
+				if ( onError ) {
+					onError( {
+						code: 'MIME_TYPE_NOT_ALLOWED_FOR_USER',
+						file,
+						message: `${ file.name }: file type not allowed.`,
+					} );
+				}
+				return;
+			}
+			uploadOne( file )
+				.then( ( media ) => {
+					if ( onFileChange ) {
+						onFileChange( [ media ] );
+					}
+				} )
+				.catch( ( err ) => {
+					if ( onError ) {
+						onError( {
+							code: 'GENERAL',
+							file,
+							message: String( err.message || err ),
+						} );
+					}
+				} );
+		} );
+	},
 	__experimentalFeatures: {
 		appearanceTools: true,
 		typography: {
