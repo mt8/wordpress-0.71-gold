@@ -3,8 +3,9 @@
  * Block-editor prototype -- boot page.
  *
  * EN: Issue #65 experimental prototype. Serves the HTML shell that loads the
- *     bundled custom block editor (built from ../app/ by `npm run build` into
- *     ../assets/) and mounts it for a chosen post id. Usage: open
+ *     bundled custom block editor (built from tools/block-editor/ by
+ *     `npm run build` into ../assets/) and mounts it for a chosen post id.
+ *     Usage: open
  *     editor.php?post=ID in a browser while logged in to WordPress 0.71's
  *     admin.
  *
@@ -13,8 +14,9 @@
  *     and an isNew flag, so the editor starts empty and the first save INSERTs
  *     a fresh b2posts row instead of UPDATE-ing an existing one.
  * JA: Issue #65 の実験的試作。バンドル済みのカスタムブロックエディタ
- *     (../app/ から `npm run build` で ../assets/ へビルド)を読み込み、
- *     選んだ投稿 ID に対してマウントする HTML シェルを配信する。使い方:
+ *     (tools/block-editor/ から `npm run build` で ../assets/ へビルド)を
+ *     読み込み、選んだ投稿 ID に対してマウントする HTML シェルを配信する。
+ *     使い方:
  *     WordPress 0.71 の管理画面にログインした状態で、ブラウザで
  *     editor.php?post=ID を開く。
  *
@@ -72,16 +74,16 @@ header( 'Content-Type: text/html; charset=utf-8' );
 <div class="be-missing">
 	<h1>Block editor bundle not built</h1>
 	<p>EN: The prototype bundle was not found. Build it first:</p>
-	<pre><code>cd src/block-editor/app
+	<pre><code>cd tools/block-editor
 npm install
 npm run build</code></pre>
 	<p>The build writes to <code>src/block-editor/assets/</code>, which this
-	page then loads. See <code>src/block-editor/app/README.md</code>.</p>
+	page then loads. See <code>tools/block-editor/README.md</code>.</p>
 	<hr />
 	<p>JA: 試作バンドルが見つかりません。先にビルドしてください
 	(上のコマンド)。ビルドは <code>src/block-editor/assets/</code> へ
 	出力され、本ページがそれを読み込みます。詳細は
-	<code>src/block-editor/app/README.md</code> を参照。</p>
+	<code>tools/block-editor/README.md</code> を参照。</p>
 </div>
 <?php else : ?>
 <div id="block-editor-root"></div>
