@@ -11,29 +11,40 @@ const {
 } = require( './helpers/playground' );
 
 /**
- * EN: 071-now playground persistence E2E spec (Issue #141; supersedes
- *     the persistence checks of the bespoke
- *     tools/playground/test/verify.mjs).
+ * EN: 071-now playground persistence E2E spec (Issue #141; the reset
+ *     coverage extended to a full reset in Issue #144; supersedes the
+ *     persistence checks of the bespoke tools/playground/test/verify.mjs).
  *
  *     Verifies that the in-browser SQLite database persists across a
- *     page reload, and that the reset control returns the playground to
- *     its fresh seeded state (Issue #122). A uniquely named post is
- *     created through the admin, the whole page is reloaded (a fresh
- *     php-wasm instance with a fresh virtual filesystem) and the post is
- *     asserted still present -- the database was restored from OPFS /
- *     IndexedDB rather than re-seeded. The reset is then triggered,
- *     which clears the persisted store and reloads; the created post is
- *     asserted gone and the original seeded post back.
- * JA: 071-now playground の永続化 E2E spec(Issue #141。手書きの
+ *     page reload, and that the reset control is a full environment
+ *     reset (Issue #144) -- it returns the playground to exactly the
+ *     state of a brand-new first visit. A uniquely named post is created
+ *     through the admin, the whole page is reloaded (a fresh php-wasm
+ *     instance with a fresh virtual filesystem) and the post is asserted
+ *     still present -- the database was restored from OPFS / IndexedDB
+ *     rather than re-seeded. Before the reset, marker state is planted in
+ *     every store the playground keeps -- the Cache API and Web Storage
+ *     -- and the reset is then triggered. After it, the created post is
+ *     asserted gone and the original seeded post back, and -- the Issue
+ *     #144 additions -- the planted Cache API entry and Web Storage
+ *     markers are asserted cleared and no service worker registration is
+ *     left behind, so the playground is a pristine first visit.
+ * JA: 071-now playground の永続化 E2E spec(Issue #141。リセット検証を
+ *     Issue #144 で完全リセットへ拡張。手書きの
  *     tools/playground/test/verify.mjs の永続化チェックを置き換える)。
  *
  *     ブラウザ内 SQLite データベースがページのリロードを越えて残り、
- *     リセット操作が playground を新しいシード済み状態へ戻すことを検証
- *     する(Issue #122)。一意な名前の投稿を管理画面から作成し、ページ
- *     全体をリロードし(新しい仮想ファイルシステムを持つ新しい php-wasm
- *     インスタンス)、投稿が残っていることを検証する -- データベースは
- *     再シードではなく OPFS / IndexedDB から復元された。続いてリセットを
- *     起動し、作成した投稿が消え元のシード投稿が戻ることを検証する。
+ *     リセット操作が完全な環境リセット(Issue #144)であること -- playground
+ *     を新規初回訪問とまったく同じ状態へ戻すこと -- を検証する。一意な
+ *     名前の投稿を管理画面から作成し、ページ全体をリロードし(新しい仮想
+ *     ファイルシステムを持つ新しい php-wasm インスタンス)、投稿が残って
+ *     いることを検証する -- データベースは再シードではなく OPFS /
+ *     IndexedDB から復元された。リセット前に playground が持つすべての
+ *     ストア -- Cache API と Web Storage -- へマーカー状態を植え、続いて
+ *     リセットを起動する。リセット後、作成投稿が消え元のシード投稿が
+ *     戻ること、そして -- Issue #144 の追加 -- 植えた Cache API エントリと
+ *     Web Storage マーカーがクリアされサービスワーカー登録が残らないこと
+ *     を検証し、playground が新規初回訪問であることを確かめる。
  */
 
 // EN: The newest seeded post -- present after a reset returns the blog
@@ -42,8 +53,17 @@ const {
 //     戻った後に存在する。
 const SEEDED_TITLE = 'Hello world from 071-now';
 
+// EN: A Cache API cache name and Web Storage keys planted before the
+//     reset so the reset's full-state clearing (Issue #144) can be
+//     asserted: a full reset must leave neither behind.
+// JA: リセット前に植える Cache API キャッシュ名と Web Storage キー。
+//     リセットの完全状態クリア(Issue #144)を検証するため -- 完全リセット
+//     はどちらも残してはならない。
+const RESET_MARKER_CACHE = '071-now-reset-marker-cache';
+const RESET_MARKER_KEY = '071-now-reset-marker';
+
 test.describe( 'Playground persistence', () => {
-	test( 'database survives a reload and the reset returns to a fresh seed', async ( {
+	test( 'database survives a reload and the reset is a full first-visit reset', async ( {
 		page,
 	} ) => {
 		// EN: A unique marker so the spec is unaffected by any post an
@@ -117,18 +137,93 @@ test.describe( 'Playground persistence', () => {
 			'created post should survive a page reload'
 		);
 
-		// EN: Reset -- clear the persisted store and reload. The created
-		//     post must be gone and the original seeded post back.
-		// JA: リセット -- 永続化ストアをクリアしリロードする。作成投稿は
-		//     消え元のシード投稿が戻るはず。
+		// EN: A service worker must be registered and controlling the
+		//     page -- the playground routes the blog through it. The
+		//     reset must later leave none behind (Issue #144).
+		// JA: サービスワーカーが登録されページを制御しているはず --
+		//     playground はブログをそれ経由でルーティングする。
+		const swBeforeReset = await page.evaluate( async () => {
+			const registrations =
+				await navigator.serviceWorker.getRegistrations();
+			return registrations.length;
+		} );
+		expect(
+			swBeforeReset,
+			'a service worker should be registered before the reset'
+		).toBeGreaterThan( 0 );
+
+		// EN: Plant marker state in the stores a full reset must clear
+		//     (Issue #144): a Cache API cache and a key in each of
+		//     sessionStorage / localStorage. The reset has to leave none
+		//     of these, the way a first visit has none.
+		// JA: 完全リセットがクリアすべきストア(Issue #144)へマーカー状態を
+		//     植える -- Cache API キャッシュと sessionStorage /
+		//     localStorage の各キー。リセットはこれらを残してはならない。
+		await page.evaluate(
+			async ( { cacheName, key } ) => {
+				const cache = await caches.open( cacheName );
+				await cache.put(
+					'/071-now-reset-marker',
+					new Response( 'marker' )
+				);
+				sessionStorage.setItem( key, '1' );
+				localStorage.setItem( key, '1' );
+			},
+			{ cacheName: RESET_MARKER_CACHE, key: RESET_MARKER_KEY }
+		);
+
+		// EN: Reset -- a full environment reset (Issue #144). The created
+		//     post must be gone and the original seeded post back, and
+		//     all the planted state cleared.
+		// JA: リセット -- 完全な環境リセット(Issue #144)。作成投稿は消え
+		//     元のシード投稿が戻り、植えた状態はすべてクリアされるはず。
 		await resetAndWaitForBoot( page );
 		const afterResetRestored = await page.evaluate(
 			() => window.__071now.databaseRestored
 		);
 		expect(
 			afterResetRestored,
-			'reset should clear the persistent store'
+			'reset should clear the persistent database store'
 		).toBe( false );
+
+		// EN: No uploaded media may survive the reset either.
+		// JA: アップロードメディアもリセットを越えて残ってはならない。
+		const mediaAfterReset = await page.evaluate(
+			() => window.__071now.mediaRestoredCount
+		);
+		expect(
+			mediaAfterReset,
+			'reset should clear the persisted uploaded media'
+		).toBe( 0 );
+
+		// EN: The full reset (Issue #144) must have cleared the Cache API
+		//     and Web Storage markers planted above -- a first visit has
+		//     none of them.
+		// JA: 完全リセット(Issue #144)は上で植えた Cache API と Web
+		//     Storage のマーカーをクリアしているはず -- 初回訪問には無い。
+		const leftoverState = await page.evaluate(
+			async ( { cacheName, key } ) => {
+				const cacheNames = await caches.keys();
+				return {
+					markerCachePresent: cacheNames.includes( cacheName ),
+					sessionMarker: sessionStorage.getItem( key ),
+					localMarker: localStorage.getItem( key ),
+				};
+			},
+			{ cacheName: RESET_MARKER_CACHE, key: RESET_MARKER_KEY }
+		);
+		expect(
+			leftoverState.markerCachePresent,
+			'reset should delete the Cache API caches'
+		).toBe( false );
+		expect(
+			leftoverState.sessionMarker,
+			'reset should clear sessionStorage'
+		).toBeNull();
+		expect(
+			leftoverState.localMarker,
+			'reset should clear localStorage'
+		).toBeNull();
 
 		const frontAfterReset = await gotoBlog( page, '/index.php' );
 		expectTrue(
