@@ -9,9 +9,9 @@ const { execFileSync } = require( 'node:child_process' );
  *     name), and teardown deletes ONLY the rows that carry that marker. The
  *     developer's existing posts and categories are never touched.
  *
- *     Seeding is done via SQL (`docker compose exec -T db mysql ...`) because
- *     direct SQL is the most reliable way to put the small shared b2 database
- *     into a known state, independent of the legacy admin UI.
+ *     Seeding is done via SQL (`docker compose ... exec -T db mysql ...`)
+ *     because direct SQL is the most reliable way to put the small shared b2
+ *     database into a known state, independent of the legacy admin UI.
  *
  * JA: WordPress 0.71-gold E2E スイート用のテストデータヘルパー。
  *
@@ -20,7 +20,7 @@ const { execFileSync } = require( 'node:child_process' );
  *     マーカーを持つ行のみを削除する。開発者の既存の投稿・カテゴリには一切
  *     触れない。
  *
- *     データ投入は SQL (`docker compose exec -T db mysql ...`) で行う。
+ *     データ投入は SQL (`docker compose ... exec -T db mysql ...`) で行う。
  *     レガシーな管理 UI に依存せず、小さな共有 b2 データベースを既知の状態に
  *     置く最も確実な方法だからである。
  */
@@ -31,9 +31,17 @@ const E2E_MARKER = 'E2E:';
 
 const path = require( 'node:path' );
 
-// EN: docker-compose.yml lives at the repo root; helpers are two levels below.
-// JA: docker-compose.yml はリポジトリ直下。ヘルパーはその 2 階層下にある。
-const COMPOSE_FILE = path.resolve( __dirname, '..', '..', 'docker-compose.yml' );
+// EN: This helper is at tests/e2e/helpers/; the repo root is three levels up.
+// JA: 本ヘルパーは tests/e2e/helpers/ にあり、リポジトリルートは 3 階層上。
+const REPO_ROOT = path.resolve( __dirname, '..', '..', '..' );
+
+// EN: The Compose file lives in tools/env/. Its in-file relative paths are
+//     repo-root-relative, so `docker compose` is given `--project-directory`
+//     pointing at the repo root -- matching how 071-env invokes Compose.
+// JA: Compose ファイルは tools/env/ にある。ファイル内の相対パスはリポジトリ
+//     ルート基準であるため、`docker compose` には `--project-directory` を
+//     リポジトリルート向けに渡す -- 071-env の Compose 呼び出しと一致させる。
+const COMPOSE_FILE = path.join( REPO_ROOT, 'tools', 'env', 'docker-compose.yml' );
 
 // EN: Pin the Compose project name so the helper always targets the same
 //     running containers, no matter which directory (or git worktree) the
@@ -62,6 +70,8 @@ function runSql( sql ) {
 		'docker',
 		[
 			'compose',
+			'--project-directory',
+			REPO_ROOT,
 			'-p',
 			COMPOSE_PROJECT,
 			'-f',
