@@ -162,9 +162,15 @@ real 0.71 schema, translated by the same code the live blog uses.
 - **Persistence.** The SQLite database lives in the php-wasm virtual
   filesystem and is discarded when the tab closes. A full build would
   persist it (IndexedDB / OPFS), as WordPress Playground does.
-- **Bundle size.** `@php-wasm/web` bundles every PHP version it
-  supports (5.2–8.5); the build emits ~9 MB of `.wasm`/`.data` assets.
-  A full build should trim this to PHP 8.3 only.
+- **Bundle size — resolved in the full build, step 2 (Issue #118).**
+  `@php-wasm/web` depends on one package per PHP version it supports
+  (5.2–8.5) and statically `import`s every one, so a plain build shipped
+  all eight runtimes — about 290 MB of `.wasm`. Step 2 of the full build
+  adds a Vite plugin (`071-now-trim-php-wasm-versions` in
+  `tools/playground/vite.config.js`) that resolves the seven non-8.3
+  `@php-wasm/web-<v>` packages to inert stub modules, so Rollup never
+  pulls their runtimes into the build. The build now emits only the
+  PHP 8.3 runtime — the asyncify and JSPI `.wasm` flavors, 40 MB total.
 
 ## Risks for a full `071-now` build
 
@@ -368,9 +374,16 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
 - **永続化。** SQLite データベースは php-wasm 仮想ファイルシステム上に
   あり、タブを閉じると失われる。本格実装は WordPress Playground と同様、
   これを永続化する（IndexedDB / OPFS）。
-- **バンドルサイズ。** `@php-wasm/web` は対応する全 PHP バージョン
-  （5.2〜8.5）をバンドルし、ビルドは約 9 MB の `.wasm`/`.data` アセット
-  を出力する。本格実装は PHP 8.3 のみへ絞るべきである。
+- **バンドルサイズ — 本格実装のステップ 2（Issue #118）で解決。**
+  `@php-wasm/web` は対応する各 PHP バージョン（5.2〜8.5）ごとに 1 つの
+  パッケージへ依存し、そのすべてを静的に `import` するため、素のビルドは
+  8 つのランタイム（約 290 MB の `.wasm`）をすべて同梱していた。本格実装
+  のステップ 2 は Vite プラグイン（`tools/playground/vite.config.js` の
+  `071-now-trim-php-wasm-versions`）を追加し、8.3 以外の 7 つの
+  `@php-wasm/web-<v>` パッケージを不活性なスタブモジュールへ解決する。
+  これにより Rollup はそれらのランタイムをビルドへ取り込まない。ビルドは
+  現在 PHP 8.3 のランタイム — asyncify と JSPI の `.wasm`、合計 40 MB —
+  のみを出力する。
 
 ## 本格 `071-now` 実装のリスク
 

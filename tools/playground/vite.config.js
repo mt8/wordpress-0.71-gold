@@ -1,11 +1,107 @@
-// EN: Vite config for the 071-now feasibility spike (Issue #108).
+// EN: Vite config for the 071-now playground (Issue #108, #116, #118).
 //
-//     Bundles the browser app that boots @php-wasm/web. Two things need
-//     care: the WebAssembly PHP runtime ships large .wasm/.data assets
-//     that must not be inlined as base64, and php-wasm's threading code
-//     wants cross-origin isolation headers in dev.
-// JA: 071-now 実現可能性検証(Issue #108)向けの Vite 設定。
+//     Bundles the browser app that boots @php-wasm/web. Three things
+//     need care: the WebAssembly PHP runtime ships large .wasm/.data
+//     assets that must not be inlined as base64; php-wasm's threading
+//     code wants cross-origin isolation headers in dev; and @php-wasm/web
+//     statically references every PHP version it supports (5.2-8.5), so
+//     the build must be told to ship only the PHP 8.3 runtime.
+// JA: 071-now playground(Issue #108・#116・#118)向けの Vite 設定。
 import { defineConfig } from 'vite';
+
+// EN: The only PHP version 071-now runs. WordPress 0.71-gold is being
+//     ported to PHP 8.3, so the playground boots @php-wasm/web with
+//     '8.3' (see src/main.js) and never any other version.
+// JA: 071-now が動かす唯一の PHP バージョン。
+const TARGET_PHP_VERSION = '8.3';
+
+// EN: The per-version php-wasm web packages 071-now must NOT bundle.
+//     @php-wasm/web depends on one package per supported PHP version
+//     (@php-wasm/web-5-2 ... @php-wasm/web-8-5) and its getPHPLoaderModule
+//     / getIntlExtensionPath functions are a switch whose every case is a
+//     static `await import('@php-wasm/web-<v>')`. Rollup resolves every
+//     one of those literal-string imports at build time, so a plain build
+//     ships all eight PHP runtimes -- roughly 290 MB of .wasm. Only the
+//     '8.3' case is ever reached at runtime; the rest are dead branches.
+// JA: 071-now がバンドルしてはならないバージョン別 php-wasm web パッケージ。
+//     @php-wasm/web は対応 PHP バージョンごとに 1 パッケージへ依存し、その
+//     getPHPLoaderModule / getIntlExtensionPath は全 case が静的な
+//     `await import('@php-wasm/web-<v>')` の switch である。Rollup は
+//     それらのリテラル import をビルド時に解決するため、素のビルドは
+//     8 つの PHP ランタイム(約 290 MB の .wasm)を同梱する。実行時に到達
+//     するのは '8.3' の case だけで、残りは到達しない分岐である。
+const UNUSED_PHP_WASM_PACKAGES = [
+	'@php-wasm/web-5-2',
+	'@php-wasm/web-7-4',
+	'@php-wasm/web-8-0',
+	'@php-wasm/web-8-1',
+	'@php-wasm/web-8-2',
+	'@php-wasm/web-8-4',
+	'@php-wasm/web-8-5',
+];
+
+/**
+ * EN: Trim the php-wasm bundle to the PHP 8.3 runtime only (Issue #118).
+ *
+ *     Resolves every @php-wasm/web-<v> package other than the PHP 8.3
+ *     one to an inert stub module. The stub re-exports the same surface
+ *     (`getPHPLoaderModule`, `getIntlExtensionPath`, `jspi`) so the named
+ *     imports in @php-wasm/web still resolve, but it carries no `.wasm`
+ *     import -- so Rollup never pulls those runtimes into the build. The
+ *     stub's functions throw if called, which never happens: src/main.js
+ *     loads '8.3', so getPHPLoaderModule only ever takes the 8.3 branch.
+ * JA: php-wasm バンドルを PHP 8.3 ランタイムのみへ絞る(Issue #118)。
+ *
+ *     PHP 8.3 以外の @php-wasm/web-<v> パッケージをすべて不活性なスタブ
+ *     モジュールへ解決する。スタブは同じ表面(`getPHPLoaderModule`・
+ *     `getIntlExtensionPath`・`jspi`)を再エクスポートするので
+ *     @php-wasm/web の名前付き import は解決できるが、`.wasm` の import を
+ *     持たないため Rollup はそれらのランタイムをビルドへ取り込まない。
+ *     スタブの関数は呼ばれれば throw するが、src/main.js は '8.3' を
+ *     読み込むため呼ばれることはない。
+ *
+ * @return {import('vite').Plugin} The Vite plugin.
+ */
+function trimPhpWasmToTargetVersion() {
+	const virtualPrefix = '\0php-wasm-unused-version-stub:';
+	return {
+		name: '071-now-trim-php-wasm-versions',
+		// EN: Resolve these specifiers before Vite's own resolver maps
+		//     them to the real on-disk packages.
+		// JA: Vite 自身のリゾルバが実パッケージへ解決する前に解決する。
+		enforce: 'pre',
+		resolveId( source ) {
+			if ( UNUSED_PHP_WASM_PACKAGES.includes( source ) ) {
+				return virtualPrefix + source;
+			}
+			return null;
+		},
+		load( id ) {
+			if ( id.startsWith( virtualPrefix ) ) {
+				const pkg = id.slice( virtualPrefix.length );
+				return [
+					`// 071-now: stub for ${ pkg } -- 071-now ships only`,
+					`// the PHP ${ TARGET_PHP_VERSION } runtime (Issue #118).`,
+					'const unreachable = ( name ) => {',
+					'\tthrow new Error(',
+					"\t\t`071-now bundles only PHP " +
+						TARGET_PHP_VERSION +
+						"; ${ name } from " +
+						pkg +
+						' was called`',
+					'\t);',
+					'};',
+					'export const getPHPLoaderModule = () =>',
+					"\tunreachable( 'getPHPLoaderModule' );",
+					'export const getIntlExtensionPath = () =>',
+					"\tunreachable( 'getIntlExtensionPath' );",
+					'export const jspi = false;',
+				].join( '\n' );
+			}
+			return null;
+		},
+	};
+}
 
 /**
  * EN: Stub the optional Intl ICU data import in @php-wasm/web.
@@ -45,7 +141,7 @@ function stubPhpWasmIntlData() {
 }
 
 export default defineConfig( {
-	plugins: [ stubPhpWasmIntlData() ],
+	plugins: [ stubPhpWasmIntlData(), trimPhpWasmToTargetVersion() ],
 	// EN: @php-wasm/web imports its .wasm / .data runtime files as plain
 	//     module imports expecting a URL string (emscripten loads them
 	//     itself). Treating them as static assets makes Vite emit a URL,
