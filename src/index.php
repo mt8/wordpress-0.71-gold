@@ -80,7 +80,6 @@ if ( $posts ) {
 <li>Other:
 	<ul>
 		<li><a href="b2login.php">login</a></li>
-		<li><a href="b2register.php">register</a></li>
 	</ul>
 </li>
 <li>Meta:
