@@ -5,6 +5,9 @@
   "description": "Feasibility spike: browser-based WordPress 0.71 on @php-wasm/web, wp-now / WordPress Playground in spirit (Issue #108).",
   "license": "GPL-2.0-or-later",
   "type": "module",
+  "bin": {
+    "071-now": "bin/071-now.mjs"
+  },
   "scripts": {
     "build:overlay": "node scripts/build-overlay.mjs",
     "build": "node scripts/build-overlay.mjs && vite build",
