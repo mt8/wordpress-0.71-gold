@@ -33,7 +33,7 @@ import {
 } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, sep } from 'node:path';
+import { dirname, join } from 'node:path';
 
 // EN: This file is tools/playground/scripts/build-overlay.mjs, so the
 //     playground package is one level up and the repo root is three.
@@ -44,6 +44,7 @@ const playgroundDir = join( here, '..' );
 const repoRoot = join( playgroundDir, '..', '..' );
 
 const srcDir = join( repoRoot, 'src' );
+const toolsDir = join( repoRoot, 'tools' );
 const wpDir = join( playgroundDir, 'wp' );
 const dbDir = join( playgroundDir, 'db' );
 
@@ -54,11 +55,11 @@ if ( ! existsSync( srcDir ) ) {
 
 // EN: Build the block-editor app so its bundle lands in the overlay.
 //
-//     The block editor (src/block-editor/) is a custom @wordpress/
-//     block-editor app over a thin WordPress 0.71 JSON backend. Its
-//     React app, src/block-editor/app/, is a self-contained package
-//     with its own package.json and package-lock.json -- deliberately
-//     not a repo-root workspace -- and `npm run build` there writes the
+//     The block editor is a custom @wordpress/block-editor app over a
+//     thin WordPress 0.71 JSON backend. Its React app, tools/
+//     block-editor/, is a self-contained package with its own
+//     package.json and package-lock.json -- deliberately not a
+//     repo-root workspace -- and `npm run build` there writes the
 //     bundle and the Vite manifest to src/block-editor/assets/, a
 //     git-ignored build artifact. src/block-editor/api/editor.php reads
 //     that manifest to serve the editor; without the bundle it shows a
@@ -74,16 +75,15 @@ if ( ! existsSync( srcDir ) ) {
 // JA: ブロックエディタアプリをビルドし、そのバンドルをオーバーレイへ
 //     入れる。
 //
-//     ブロックエディタ(src/block-editor/)は、薄い WordPress 0.71 の
-//     JSON バックエンド上のカスタム @wordpress/block-editor アプリで
-//     ある。その React アプリ src/block-editor/app/ は独自の
-//     package.json と package-lock.json を持つ自己完結したパッケージ
-//     であり(意図的にリポジトリルートのワークスペースにしていない)、
-//     そこで `npm run build` するとバンドルと Vite マニフェストが
-//     src/block-editor/assets/(git 管理外のビルド成果物)へ書き出される。
-//     src/block-editor/api/editor.php はそのマニフェストを読んでエディタ
-//     を配信する。バンドルが無いと「Block editor bundle not built」
-//     フォールバックを表示する。
+//     ブロックエディタは、薄い WordPress 0.71 の JSON バックエンド上の
+//     カスタム @wordpress/block-editor アプリである。その React アプリ
+//     tools/block-editor/ は独自の package.json と package-lock.json を
+//     持つ自己完結したパッケージであり(意図的にリポジトリルートの
+//     ワークスペースにしていない)、そこで `npm run build` するとバンドルと
+//     Vite マニフェストが src/block-editor/assets/(git 管理外のビルド
+//     成果物)へ書き出される。src/block-editor/api/editor.php はその
+//     マニフェストを読んでエディタを配信する。バンドルが無いと
+//     「Block editor bundle not built」フォールバックを表示する。
 //
 //     playground のオーバーレイは src/ のスナップショットなので、
 //     スナップショット取得時に src/block-editor/assets/ が存在して
@@ -91,7 +91,7 @@ if ( ! existsSync( srcDir ) ) {
 //     ここでアプリをビルドし、オーバーレイが常に新しいバンドルを持つ
 //     ようにする。ビルドは src/block-editor/assets/(git 管理外)にのみ
 //     書き込み、src/ 自体はそれ以外変更しない。
-const blockEditorAppDir = join( srcDir, 'block-editor', 'app' );
+const blockEditorAppDir = join( toolsDir, 'block-editor' );
 const blockEditorAssetsDir = join( srcDir, 'block-editor', 'assets' );
 
 /**
@@ -136,33 +136,22 @@ if ( ! existsSync( join( blockEditorAssetsDir, '.vite', 'manifest.json' ) ) ) {
 
 // EN: Fresh snapshot of the WordPress 0.71 source.
 //
-//     The block editor's build inputs are excluded from the snapshot:
-//     src/block-editor/app/ holds the React source, its node_modules
-//     (~450 MB) and the Vite config -- build inputs the in-browser blog
-//     never serves. Only src/block-editor/assets/, the build OUTPUT
-//     produced just above, belongs in the overlay (editor.php loads it).
-//     Skipping app/ keeps the overlay -- and the import.meta.glob bundle
-//     that inlines wp/ into the playground app -- from ballooning by
-//     hundreds of megabytes of dependency trees.
+//     The block editor's build inputs -- the React source, its
+//     node_modules and the Vite config -- live in tools/block-editor/,
+//     outside src/, so the snapshot of src/ naturally excludes them.
+//     Only src/block-editor/assets/, the build OUTPUT produced just
+//     above, is under src/ and belongs in the overlay (editor.php loads
+//     it).
 // JA: WordPress 0.71 ソースの新規スナップショット。
 //
-//     ブロックエディタのビルド入力はスナップショットから除外する。
-//     src/block-editor/app/ は React ソース・その node_modules(約 450 MB)
-//     ・Vite 設定 -- ブラウザ内ブログが配信しないビルド入力 -- を持つ。
-//     オーバーレイに属するのは直前にビルドした出力 src/block-editor/
-//     assets/ だけ(editor.php がそれを読み込む)。app/ を飛ばすことで、
-//     オーバーレイ(と wp/ を playground アプリへインライン化する
-//     import.meta.glob バンドル)が依存ツリーで肥大化するのを防ぐ。
-const blockEditorAppMarker =
-	join( srcDir, 'block-editor', 'app' ) + sep;
+//     ブロックエディタのビルド入力 -- React ソース・その node_modules・
+//     Vite 設定 -- は src/ の外の tools/block-editor/ にあるため、src/
+//     のスナップショットは自然にそれらを除外する。src/ 配下にあるのは
+//     直前にビルドした出力 src/block-editor/assets/ だけで、これが
+//     オーバーレイに属する(editor.php がそれを読み込む)。
 rmSync( wpDir, { recursive: true, force: true } );
 mkdirSync( wpDir, { recursive: true } );
-cpSync( srcDir, wpDir, {
-	recursive: true,
-	filter: ( source ) =>
-		source !== join( srcDir, 'block-editor', 'app' ) &&
-		! source.startsWith( blockEditorAppMarker ),
-} );
+cpSync( srcDir, wpDir, { recursive: true } );
 
 // EN: The 071-now database layer files, copied into b2-include/ so the
 //     in-browser blog and the boot shim can reach them via the virtual
