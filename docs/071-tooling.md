@@ -89,6 +89,7 @@ environment variable, or a default of `./src`.
 071 link     list | get <id> | create | delete <id>
 071 option   list | get <name> | set <name> <value>      # b2settings
 071 db       query <sql> | tables
+071 export   run                                          # static-site export
 ```
 
 Global flags: `--format=table|json|csv|count|ids` (default `table`),
@@ -109,6 +110,14 @@ The command surface starts with `post` / `user` / `category` / `option` /
 `db` and extends to `comment` / `link`. It is deliberately scoped to what
 0.71 supports — there are no taxonomies beyond the single post category, no
 post meta, no REST.
+
+The `export` group is the one outlier: instead of reading or writing the
+database it crawls the running blog over HTTP and writes a self-contained
+static HTML site under `static-export/` — the safe way to publish a 2003-era
+blog. It is the former standalone `bin/static-export.php` script, folded into
+the CLI; `composer static-export` is kept as a thin alias for `071 export`.
+Because it makes no database access it does not use the headless bootstrap of
+section 3.3. See `docs/static-export.md`.
 
 ### 3.5 Where it runs
 
@@ -132,6 +141,12 @@ command group plus `cli.feature` for the entry point; they cover every verb,
 every `--format` variant, `--fields`, and the error cases. A PHP
 `FeatureContext` (`tools/cli/features/bootstrap/FeatureContext.php`) runs the `071`
 CLI as a child process and asserts on its STDOUT / STDERR / exit code.
+
+The `export` group is the exception to the per-group database coverage:
+`export.feature` covers the help text, the unknown-verb error, and the
+unreachable-blog failure path, because a full export run crawls a running blog
+over HTTP — which the database-only harness does not provide. The full export
+run is verified manually against the running Docker environment.
 
 **Database isolation.** The suite never touches the developer's `b2`
 database. `tools/cli/tests/docker-compose.yml` is a **separate Docker Compose
@@ -413,6 +428,7 @@ Node の `bin` シムは、本ツールが他の npm パッケージと同様に
 071 link     list | get <id> | create | delete <id>
 071 option   list | get <name> | set <name> <value>      # b2settings
 071 db       query <sql> | tables
+071 export   run                                          # static-site export
 ```
 
 グローバルフラグ: `--format=table|json|csv|count|ids`（既定 `table`）・
@@ -432,6 +448,14 @@ $ 071 post list --fields=ID,post_title,post_status
 コマンド体系は `post` / `user` / `category` / `option` / `db` から始め、
 `comment` / `link` へ拡張する。0.71 がサポートする範囲に意図的に限定する
 — 単一の投稿カテゴリーを超えるタクソノミーも、ポストメタも、REST も無い。
+
+`export` グループはただ一つの例外である: データベースを読み書きする代わりに
+稼働中のブログを HTTP でクロールし、`static-export/` 配下に自己完結した静的
+HTML サイトを書き出す — 2003 年当時のブログを安全に公開する方法である。
+これはかつての単独スクリプト `bin/static-export.php` を CLI へ畳み込んだ
+ものである。`composer static-export` は `071 export` の薄いエイリアスとして
+残す。データベースアクセスを行わないため、セクション 3.3 のヘッドレス
+ブートストラップは使わない。`docs/static-export.md` を参照。
 
 ### 3.5 実行場所
 
@@ -454,6 +478,12 @@ $ 071 post list --fields=ID,post_title,post_status
 `--fields`、エラーケースをカバーする。PHP の `FeatureContext`
 （`tools/cli/features/bootstrap/FeatureContext.php`）は `071` CLI を子プロセスとして
 実行し、その STDOUT / STDERR / 終了コードに対してアサートする。
+
+`export` グループはグループごとのデータベースカバレッジの例外である:
+`export.feature` はヘルプテキスト、未知の動詞エラー、到達不能ブログの失敗
+経路をカバーする。完全な書き出し実行は稼働中のブログを HTTP でクロールする
+ため — データベース専用のハーネスはそれを提供しない。完全な書き出し実行は
+稼働中の Docker 環境に対して手動で検証する。
 
 **データベース分離。** スイートは開発者の `b2` データベースに決して触れない。
 `tools/cli/tests/docker-compose.yml` は**別の Docker Compose プロジェクト**

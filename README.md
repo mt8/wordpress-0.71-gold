@@ -102,15 +102,16 @@ be running first. See `docs/php83-migration.md` (Issue #60) for details.
 ## Publishing safely (static export)
 
 ```sh
-composer static-export     # or: php bin/static-export.php
+071 export                 # or: composer static-export
 ```
 
 WordPress 0.71 must never be exposed to the public internet as a running
 PHP application. The intended workflow is: write posts in the **local**
-environment, export the site to **static HTML** with `bin/static-export.php`,
-and upload only the static files to a public server — which then runs no PHP
-and no database, so the 2003 codebase is never exposed. See
-`docs/static-export.md`.
+environment, export the site to **static HTML** with `071 export` (the
+`export` command group of `071-cli`), and upload only the static files to a
+public server — which then runs no PHP and no database, so the 2003 codebase
+is never exposed. `composer static-export` is a thin alias for `071 export`.
+See `docs/static-export.md`.
 
 ## Block editor
 
@@ -142,7 +143,7 @@ front end keeps rendering the post normally.
 | `tests/phpunit/` | PHPUnit unit tests (`tests/`) and support classes (`includes/`). |
 | `tests/e2e/` | Playwright E2E specs and test-data helpers. |
 | `docs/` | Documentation. |
-| `bin/` | Tooling scripts — the static-export script. |
+| `tools/` | 0.71-specific tooling packages — `071-cli` (`tools/cli`, includes the static export), `071-env`, `071-now`. |
 | `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. |
 | `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). |
@@ -283,14 +284,16 @@ Playwright の E2E スイート(`tests/e2e/`)が、稼働中の Docker ブログ
 ## 安全な公開（静的書き出し）
 
 ```sh
-composer static-export     # or: php bin/static-export.php
+071 export                 # or: composer static-export
 ```
 
 WordPress 0.71 を、稼働中の PHP アプリケーションとして公開インターネット
 へ晒してはならない。想定するワークフローは: **ローカル**環境で投稿を書き、
-`bin/static-export.php` でサイトを**静的 HTML** へ書き出し、静的ファイルだけを
-公開サーバーへアップロードする — 公開サーバーは PHP も DB も動かさないため、
-2003 年のコードベースが晒されることはない。詳細は `docs/static-export.md`。
+`071 export`（`071-cli` の `export` コマンドグループ）でサイトを**静的 HTML**
+へ書き出し、静的ファイルだけを公開サーバーへアップロードする — 公開サーバーは
+PHP も DB も動かさないため、2003 年のコードベースが晒されることはない。
+`composer static-export` は `071 export` の薄いエイリアスである。詳細は
+`docs/static-export.md`。
 
 ## ブロックエディタ
 
@@ -323,7 +326,7 @@ npm run build
 | `tests/phpunit/` | PHPUnit 単体テスト(`tests/`)と補助クラス(`includes/`)。 |
 | `tests/e2e/` | Playwright E2E spec とテストデータヘルパー。 |
 | `docs/` | ドキュメント。 |
-| `bin/` | ツールスクリプト(静的書き出し)。 |
+| `tools/` | 0.71 専用のツールパッケージ — `071-cli`（`tools/cli`、静的書き出しを含む）・`071-env`・`071-now`。 |
 | `Dockerfile`, `docker-compose.yml` | ローカルの PHP 8.3 + MySQL 8 環境。 |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | 静的解析の設定。 |
 | `composer.json` | PHP 開発ツール(phpcs / WPCS / PHPStan / PHPUnit)。 |

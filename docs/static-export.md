@@ -5,7 +5,7 @@ A way to **publish** a WordPress 0.71-gold blog safely. WordPress 0.71 is
 PHP application. Instead:
 
 1. Write and manage posts in the **local** environment (`docker compose up`).
-2. Export the whole site to **static HTML** with `bin/static-export.php`.
+2. Export the whole site to **static HTML** with `071 export`.
 3. Upload only the static files to a public server.
 
 The public server runs **no PHP and no database**, so the 2003 codebase is
@@ -13,18 +13,31 @@ never exposed — the published site has essentially no attack surface.
 
 ## Usage
 
+The static export is the `export` command group of
+[`071-cli`](../tools/cli/README.md):
+
 ```sh
 docker compose up -d            # the local blog must be running
-composer static-export          # or: php bin/static-export.php
+071 export                      # or: composer static-export
 ```
 
-The export is written to `static-export/` (git-ignored). Environment
-variables `EXPORT_BLOG_URL` (default `http://localhost:8080`) and
-`EXPORT_OUT_DIR` (default `./static-export`) override the defaults.
+`composer static-export` is a thin alias for `071 export`. The export is
+written to `static-export/` (git-ignored).
+
+The blog base URL and output directory are resolved, in order, from the
+command flags, then the environment variables, then the built-in defaults:
+
+| Setting | Flag | Environment variable | Default |
+|---|---|---|---|
+| Blog base URL | `--blog-url=<url>` | `EXPORT_BLOG_URL` | `http://localhost:8080` |
+| Output directory | `--out-dir=<dir>` | `EXPORT_OUT_DIR` | `./static-export` |
+
+`071 export run` is accepted as an explicit synonym for `071 export`.
 
 ## What it does
 
-`bin/static-export.php` crawls the running local blog and:
+The export is a **read-only HTTP crawl** of the running blog — it never
+touches the database. It crawls the running local blog and:
 
 - exports the home page, every post (`?p=`), every category (`?cat=`), every
   monthly archive (`?m=`), and the three feeds;
@@ -61,6 +74,17 @@ storage, a CDN, GitHub Pages, a plain web server, …). Nothing else is needed.
   on the static site — harmless, but a custom theme can omit them.
 - The exported feeds have their internal links relativised; they are a static
   archive snapshot rather than a live feed.
+- `071 export` exits with a non-zero status and a plain-text error if the blog
+  is unreachable (start the local environment first).
+
+## Testing
+
+The `071 export` command is covered by the 071-cli Behat suite
+(`tools/cli/features/export.feature`): the help text, the unknown-verb error,
+and the unreachable-blog failure path. A full export run crawls a running
+blog over HTTP, which the database-only Behat harness does not provide, so the
+full run is verified manually against the running Docker environment with
+`071 export`.
 
 ---
 
@@ -71,7 +95,7 @@ WordPress 0.71 は 2003 年当時のコードであり、稼働中の PHP アプ
 として公開インターネットに晒してはならない。代わりに:
 
 1. **ローカル**環境(`docker compose up`)で投稿を書き・管理する。
-2. `bin/static-export.php` でサイト全体を**静的 HTML** に書き出す。
+2. `071 export` でサイト全体を**静的 HTML** に書き出す。
 3. 静的ファイルだけを公開サーバーへアップロードする。
 
 公開サーバーは **PHP も DB も動かさない**ため、2003 年のコードベースが晒され
@@ -79,18 +103,31 @@ WordPress 0.71 は 2003 年当時のコードであり、稼働中の PHP アプ
 
 ## 使い方
 
+静的書き出しは [`071-cli`](../tools/cli/README.md) の `export` コマンド
+グループである:
+
 ```sh
 docker compose up -d            # the local blog must be running
-composer static-export          # or: php bin/static-export.php
+071 export                      # or: composer static-export
 ```
 
-書き出しは `static-export/`(git 管理外)に生成される。環境変数
-`EXPORT_BLOG_URL`(既定 `http://localhost:8080`)と `EXPORT_OUT_DIR`
-(既定 `./static-export`)で既定値を上書きできる。
+`composer static-export` は `071 export` の薄いエイリアスである。書き出しは
+`static-export/`(git 管理外)に生成される。
+
+ブログのベース URL と出力ディレクトリは、コマンドフラグ、次に環境変数、次に
+組み込みの既定値の順に解決される:
+
+| 設定 | フラグ | 環境変数 | 既定値 |
+|---|---|---|---|
+| ブログのベース URL | `--blog-url=<url>` | `EXPORT_BLOG_URL` | `http://localhost:8080` |
+| 出力ディレクトリ | `--out-dir=<dir>` | `EXPORT_OUT_DIR` | `./static-export` |
+
+`071 export run` は `071 export` の明示的な同義語として受け付けられる。
 
 ## 動作
 
-`bin/static-export.php` は稼働中のローカルブログをクロールし:
+書き出しは稼働中のブログに対する**読み取り専用の HTTP クロール**であり、
+データベースには一切触れない。稼働中のローカルブログをクロールし:
 
 - トップページ・全投稿(`?p=`)・全カテゴリ(`?cat=`)・全月別アーカイブ
   (`?m=`)・3 つのフィードを書き出す;
@@ -127,3 +164,14 @@ CDN、GitHub Pages、素の Web サーバー など)へアップロードする�
   リンクになる(無害だが、独自テーマで除くこともできる)。
 - 書き出したフィードは内部リンクが相対化されており、ライブのフィードでは
   なく静的なアーカイブのスナップショットである。
+- ブログに到達できない場合、`071 export` は非ゼロの終了ステータスと
+  プレーンテキストのエラーで終了する(まずローカル環境を起動すること)。
+
+## テスト
+
+`071 export` コマンドは 071-cli の Behat スイート
+(`tools/cli/features/export.feature`)でカバーされている: ヘルプテキスト、
+未知の動詞エラー、到達不能ブログの失敗経路である。完全な書き出し実行は
+稼働中のブログを HTTP でクロールするが、データベース専用の Behat ハーネスは
+それを提供しないため、完全な実行は稼働中の Docker 環境に対して `071 export`
+で手動検証する。
