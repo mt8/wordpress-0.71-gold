@@ -8,7 +8,20 @@
  *     は周囲の枠 -- 上部バー・固定ブロックツールバー・ドキュメント概観
  *     パネル・キャンバス・設定サイドバー -- だけを整える。
  */
+/*
+ * EN: --be-header-h is the height of the fixed editor header (.be-toolbar)
+ *     that sits above the writing flow. The writing flow's min-height is
+ *     derived from it -- calc(100dvh - var(--be-header-h)) -- so the editing
+ *     area fills exactly the space left below the header. Naming the value
+ *     keeps the calc self-documenting and adjustable in one place.
+ * JA: --be-header-h は writing flow の上にある固定エディタヘッダー
+ *     (.be-toolbar)の高さ。writing flow の min-height はこれから導出する
+ *     -- calc(100dvh - var(--be-header-h)) -- ため、編集エリアはヘッダー
+ *     下に残る領域をちょうど満たす。値に名前を付けることで calc が自己
+ *     説明的になり、1 箇所で調整できる。
+ */
 .be-app {
+	--be-header-h: 52px;
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
@@ -86,10 +99,33 @@
 	min-width: 0;
 }
 
+/*
+ * EN: The writing flow -- the @wordpress/block-editor editable content area.
+ *     min-height makes it at least one screenful tall, so the editing area
+ *     always fills the screen even with little content (a large click target
+ *     / room to type). 100dvh is the dynamic viewport height: on mobile it
+ *     tracks the visible area as the browser chrome shows/hides, where 100vh
+ *     would overshoot. The header (.be-toolbar) sits above the writing flow,
+ *     so its height is subtracted -- the editing area fills the space left
+ *     below the header rather than overflowing the viewport. The plain vh
+ *     declaration is the fallback for browsers without dvh support; the dvh
+ *     declaration that follows overrides it where dvh is understood.
+ * JA: writing flow -- @wordpress/block-editor の編集可能なコンテンツ領域。
+ *     min-height で少なくとも画面 1 つ分の高さにし、内容が少なくても編集
+ *     エリアが常に画面を満たすようにする(大きなクリック対象／入力する
+ *     余地)。100dvh は動的ビューポート高さ: モバイルではブラウザクローム
+ *     の表示／非表示に追従して可視領域を追う。100vh では超過する。
+ *     ヘッダー(.be-toolbar)が writing flow の上にあるため、その高さを
+ *     差し引く -- 編集エリアはヘッダー下に残る領域を満たし、ビューポートを
+ *     はみ出さない。素の vh 宣言は dvh 非対応ブラウザ向けフォールバック。
+ *     続く dvh 宣言が dvh を解釈するブラウザでそれを上書きする。
+ */
 .be-canvas .block-editor-writing-flow {
 	flex: 1;
 	padding: 2rem;
 	overflow: auto;
+	min-height: calc(100vh - var(--be-header-h));
+	min-height: calc(100dvh - var(--be-header-h));
 }
 
 /*
@@ -140,6 +176,21 @@
  *     これでヘッダーの各操作子が読め、ビューポート内に収まる。
  */
 @media ( max-width: 782px ) {
+	/*
+	 * EN: Below 782px the header wraps the right-hand group (front-end link
+	 *     + save button) onto its own full row, so the toolbar is two rows
+	 *     tall. --be-header-h is raised to match, keeping the writing flow's
+	 *     calc(100dvh - var(--be-header-h)) correct on the mobile layout.
+	 * JA: 782px 未満ではヘッダーが右側グループ(フロントエンドリンク +
+	 *     保存ボタン)を独立した全幅の行へ折り返すため、ツールバーは 2 行分
+	 *     の高さになる。それに合わせて --be-header-h を上げ、モバイル
+	 *     レイアウトでも writing flow の calc(100dvh - var(--be-header-h))
+	 *     を正しく保つ。
+	 */
+	.be-app {
+		--be-header-h: 96px;
+	}
+
 	.be-toolbar {
 		flex-wrap: wrap;
 		gap: 0.5rem;
@@ -270,13 +321,25 @@
 	/*
 	 * EN: Tighter canvas padding for the phone width, and let the writing
 	 *     flow grow with its content so the page scrolls as a whole rather
-	 *     than trapping the canvas in a short nested scroll box.
+	 *     than trapping the canvas in a short nested scroll box. The
+	 *     min-height (still calc(100dvh - var(--be-header-h)), with the
+	 *     mobile --be-header-h of 96px set above) is kept so the editing
+	 *     area fills the screen here too; it is restated for clarity and
+	 *     to make the responsive intent explicit at both layouts. The vh
+	 *     declaration stays as the fallback for browsers without dvh.
 	 * JA: スマホ幅向けにキャンバスの余白を詰め、書き込みフローを内容に
 	 *     合わせて伸ばす。キャンバスを短い入れ子のスクロールボックスに
-	 *     閉じ込めず、ページ全体でスクロールさせる。
+	 *     閉じ込めず、ページ全体でスクロールさせる。min-height(上で設定
+	 *     したモバイルの --be-header-h = 96px を使う
+	 *     calc(100dvh - var(--be-header-h)))は、ここでも編集エリアが
+	 *     画面を満たすよう維持する。明確さのため、また両レイアウトで
+	 *     レスポンシブの意図を明示するため再掲する。vh 宣言は dvh 非対応
+	 *     ブラウザ向けフォールバックとして残す。
 	 */
 	.be-canvas .block-editor-writing-flow {
 		padding: 1rem;
 		overflow: visible;
+		min-height: calc(100vh - var(--be-header-h));
+		min-height: calc(100dvh - var(--be-header-h));
 	}
 }
