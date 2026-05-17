@@ -72,14 +72,6 @@ if ( $posts ) {
 	<?php list_cats( 0, 'All', 'name' ); ?>
 	</ul>
 </li>
-<li>Search:
-	<form id="searchform" method="get" action="<?php echo htmlspecialchars( $PHP_SELF ); /*$siteurl."/".$blogfilename*/ ?>">
-	<div>
-		<input type="text" name="s" size="15" /><br />
-		<input type="submit" name="submit" value="search" />
-	</div>
-	</form>
-</li>
 <li>Archives:
 	<ul>
 	<?php get_archives( 'monthly' ); ?>
@@ -88,7 +80,6 @@ if ( $posts ) {
 <li>Other:
 	<ul>
 		<li><a href="b2login.php">login</a></li>
-		<li><a href="b2register.php">register</a></li>
 	</ul>
 </li>
 <li>Meta:
