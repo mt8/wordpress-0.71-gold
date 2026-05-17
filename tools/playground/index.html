@@ -3,9 +3,14 @@
   EN: 071-now host page (Issue #116, full build 1/6). Loads the browser
       app that boots @php-wasm/web and serves WordPress 0.71 through a
       service worker so the in-browser blog has its CSS and navigation.
+      The toolbar carries a reset control (Issue #122) that clears the
+      persisted SQLite database and returns the blog to its fresh seeded
+      state.
   JA: 071-now ホストページ(Issue #116、フル実装 1/6)。@php-wasm/web を
       起動し、サービスワーカー経由で WordPress 0.71 を配信するブラウザ
-      アプリを読み込む(ブラウザ内ブログに CSS と遷移が備わる)。
+      アプリを読み込む(ブラウザ内ブログに CSS と遷移が備わる)。ツール
+      バーには永続化された SQLite データベースをクリアしブログを新しい
+      シード済み状態へ戻すリセット操作(Issue #122)を備える。
 -->
 <html lang="en">
 	<head>
@@ -14,17 +19,44 @@
 		<title>071-now &mdash; browser-based WordPress 0.71</title>
 		<style>
 			html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
-			#status {
-				padding: 6px 12px; font: 13px/1.5 monospace;
-				background: #1d2327; color: #c3c4c7;
+			#toolbar {
+				display: flex; align-items: center; gap: 12px;
+				background: #1d2327;
 			}
-			#status.ok { background: #00450c; color: #b8e6bf; }
-			#status.err { background: #5c0000; color: #ffb3b3; }
+			#status {
+				flex: 1; padding: 6px 12px; font: 13px/1.5 monospace;
+				color: #c3c4c7;
+			}
+			#toolbar.ok #status { color: #b8e6bf; }
+			#toolbar.err #status { color: #ffb3b3; }
+			#toolbar.ok { background: #00450c; }
+			#toolbar.err { background: #5c0000; }
+			#reset {
+				margin: 4px 10px; padding: 3px 12px; cursor: pointer;
+				font: 12px/1.5 system-ui, sans-serif;
+				background: #2271b1; color: #fff;
+				border: 0; border-radius: 3px;
+			}
+			#reset:hover:not(:disabled) { background: #135e96; }
+			#reset:disabled { opacity: 0.5; cursor: default; }
 			#blog { width: 100%; height: calc(100% - 33px); border: 0; }
 		</style>
 	</head>
 	<body>
-		<div id="status">071-now: booting php-wasm&hellip;</div>
+		<!--
+		  EN: The toolbar holds the boot status line and the reset
+		      control. Reset clears the persisted SQLite database and
+		      reloads, returning the blog to its fresh seeded state.
+		  JA: ツールバーは起動ステータス行とリセット操作を持つ。リセットは
+		      永続化された SQLite データベースをクリアして再読み込みし、
+		      ブログを新しいシード済み状態へ戻す。
+		-->
+		<div id="toolbar">
+			<div id="status">071-now: booting php-wasm&hellip;</div>
+			<button id="reset" type="button" title="Clear the persisted database and re-seed">
+				Reset database
+			</button>
+		</div>
 		<!--
 		  EN: The blog is served through the service worker at a scoped
 		      same-origin path; src is set by src/main.js once php-wasm
