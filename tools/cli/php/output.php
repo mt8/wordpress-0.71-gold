@@ -2,13 +2,9 @@
 /**
  * 071-cli -- output formatting.
  *
- * EN: Renders command results in the formats described in
+ * Renders command results in the formats described in
  *     docs/071-tooling.md section 3.4: table (default), json, csv, count, ids.
  *     The --fields flag restricts which columns are shown.
- * JA: docs/071-tooling.md セクション 3.4 に記載の形式 -- table(既定)・json・
- *     csv・count・ids -- でコマンド結果を描画する。--fields フラグは表示する
- *     カラムを限定する。
- *
  * @package 071-cli
  */
 
@@ -66,9 +62,7 @@ function cli_row_to_array( $row ): array {
 /**
  * Render a list of rows in the requested format and return an exit code.
  *
- * EN: This is the single rendering path for every list-style command.
- * JA: すべての一覧系コマンドの単一の描画経路である。
- *
+ * This is the single rendering path for every list-style command.
  * @param array<int, object|array<string, mixed>> $rows  Result rows.
  * @param array<string, string|bool>              $flags Parsed global flags.
  * @param array<int, string>|null                 $idKeyHint Field name to use
@@ -83,9 +77,8 @@ function cli_render( array $rows, array $flags, ?array $idKeyHint = null ): int 
 
 	$normalised = array_map( 'cli_row_to_array', $rows );
 
-	// EN: Determine the column set: explicit --fields, else the keys of the
+	// Determine the column set: explicit --fields, else the keys of the
 	//     first row.
-	// JA: カラム集合を決める: 明示的な --fields、無ければ最初の行のキー。
 	if ( null !== $fields ) {
 		$columns = $fields;
 	} elseif ( count( $normalised ) > 0 ) {
@@ -142,11 +135,8 @@ function cli_render( array $rows, array $flags, ?array $idKeyHint = null ): int 
 /**
  * Render a single row (e.g. `get`) in the requested format.
  *
- * EN: For table format a single row is shown as a two-column field/value grid;
+ * For table format a single row is shown as a two-column field/value grid;
  *     other formats reuse cli_render with the row wrapped in a one-item list.
- * JA: table 形式では単一行を field/value の 2 カラムグリッドで表示する。
- *     他の形式は行を 1 件のリストに包んで cli_render を再利用する。
- *
  * @param object|array<string, mixed> $row   Single result row.
  * @param array<string, string|bool>  $flags Parsed global flags.
  * @return int Always 0.
@@ -255,8 +245,7 @@ function cli_table_row( array $columns, array $cells, array $widths ): string {
 	$line = '|';
 	foreach ( $columns as $i => $col ) {
 		$cell = isset( $cells[ $i ] ) ? cli_scalar( $cells[ $i ] ) : '';
-		// EN: Collapse newlines so a multiline cell does not break the grid.
-		// JA: 複数行セルがグリッドを崩さないよう改行を折り畳む。
+		// Collapse newlines so a multiline cell does not break the grid.
 		$cell  = str_replace( array( "\r\n", "\n", "\r" ), ' ', $cell );
 		$pad   = $widths[ $col ] - cli_display_width( $cell );
 		$line .= ' ' . $cell . str_repeat( ' ', max( 0, $pad ) ) . ' |';

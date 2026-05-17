@@ -1,9 +1,6 @@
-# EN: Functional coverage of the `071 category` command group: list / get /
+# Functional coverage of the `071 category` command group: list / get /
 #     create / delete (0.71 has no category update verb), --format variants,
 #     and the category-specific error cases.
-# JA: `071 category` コマンドグループの機能カバレッジ: list / get / create /
-#     delete(0.71 にカテゴリーの update 動詞は無い)、--format バリアント、
-#     カテゴリー固有のエラーケース。
 Feature: The category command group
   In order to manage WordPress 0.71 post categories
   As a 071-cli user

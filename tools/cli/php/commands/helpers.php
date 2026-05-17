@@ -2,11 +2,8 @@
 /**
  * 071-cli -- shared helpers for the command modules.
  *
- * EN: Small utilities used by more than one command group: argument lookup,
+ * Small utilities used by more than one command group: argument lookup,
  *     id validation, and the assoc-data extraction used by create / update.
- * JA: 複数のコマンドグループで使う小さなユーティリティ群: 引数の取得、id の
- *     検証、create / update が使う連想データの抽出。
- *
  * @package 071-cli
  */
 
@@ -48,11 +45,8 @@ function cli_require_id( array $args, int $index = 0 ): int {
 /**
  * Collect the field=value pairs supplied as flags for create / update.
  *
- * EN: Global flags (format, fields, path, db*) and --help are excluded; every
+ * Global flags (format, fields, path, db*) and --help are excluded; every
  *     other --key=value flag is treated as a column assignment.
- * JA: グローバルフラグ(format・fields・path・db*)と --help は除外し、それ以外の
- *     --key=value フラグはカラム代入として扱う。
- *
  * @param array<string, string|bool> $flags    Parsed global flags.
  * @param array<int, string>         $allowed  Column names accepted for the
  *                                             target table.
@@ -69,8 +63,7 @@ function cli_data_from_flags( array $flags, array $allowed ): array {
 		if ( ! in_array( $key, $allowed, true ) ) {
 			cli_fail( "unknown field '--$key'. Accepted: " . implode( ', ', $allowed ) . '.' );
 		}
-		// EN: A bare boolean flag (no =value) is treated as an empty string.
-		// JA: 値の無い素の真偽値フラグは空文字列として扱う。
+		// A bare boolean flag (no =value) is treated as an empty string.
 		$data[ $key ] = is_string( $value ) ? $value : '';
 	}
 

@@ -1,11 +1,7 @@
-# EN: Functional coverage of the `071 post` command group: list / get /
+# Functional coverage of the `071 post` command group: list / get /
 #     create / update / delete, every --format variant, --fields, and the
 #     post-specific error cases. Every scenario runs against the freshly
 #     reseeded test database (see FeatureContext).
-# JA: `071 post` コマンドグループの機能カバレッジ: list / get / create /
-#     update / delete、すべての --format バリアント、--fields、投稿固有の
-#     エラーケース。各シナリオは再投入直後のテストデータベースに対して
-#     実行される(FeatureContext を参照)。
 Feature: The post command group
   In order to manage WordPress 0.71 posts
   As a 071-cli user

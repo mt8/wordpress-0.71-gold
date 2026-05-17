@@ -2,13 +2,9 @@
 /**
  * 071-cli -- `comment` command group.
  *
- * EN: Manage WordPress 0.71 comments in the b2comments table.
+ * Manage WordPress 0.71 comments in the b2comments table.
  *     Verbs: list | get <id> | delete <id> (per docs/071-tooling.md
  *     section 3.4).
- * JA: WordPress 0.71 のコメント(b2comments テーブル)を管理する。
- *     動詞: list | get <id> | delete <id>(docs/071-tooling.md
- *     セクション 3.4 のとおり)。
- *
  * @package 071-cli
  */
 

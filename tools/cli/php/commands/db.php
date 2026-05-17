@@ -2,15 +2,10 @@
 /**
  * 071-cli -- `db` command group.
  *
- * EN: Run raw SQL against WordPress 0.71's database.
+ * Run raw SQL against WordPress 0.71's database.
  *     Verbs: query <sql> | tables.
  *     `query` runs any statement through 0.71's $wpdb: a SELECT is rendered
  *     as a result set, a non-SELECT reports the affected-row count.
- * JA: WordPress 0.71 のデータベースに対し生の SQL を実行する。
- *     動詞: query <sql> | tables。
- *     `query` は 0.71 の $wpdb を通じて任意の文を実行する: SELECT は結果
- *     セットとして描画し、SELECT 以外は影響行数を報告する。
- *
  * @package 071-cli
  */
 
@@ -32,8 +27,7 @@ function cli_cmd_db( string $verb, array $args, array $flags ): int {
 	switch ( $verb ) {
 		case 'query':
 			$sql = cli_require_arg( $args, 0, 'SQL statement' );
-			// EN: Surface SQL errors as a CLI failure rather than HTML output.
-			// JA: SQL エラーは HTML 出力ではなく CLI の失敗として表面化させる。
+			// Surface SQL errors as a CLI failure rather than HTML output.
 			$wpdb->show_errors = false;
 			$result            = $wpdb->query( $sql );
 
@@ -46,10 +40,8 @@ function cli_cmd_db( string $verb, array $args, array $flags ): int {
 				return cli_render( $wpdb->last_result, $flags );
 			}
 
-			// EN: A SELECT that matched nothing returns an empty result; a
+			// A SELECT that matched nothing returns an empty result; a
 			//     non-SELECT reports its affected-row count.
-			// JA: 何も一致しない SELECT は空の結果を返す。SELECT 以外は
-			//     影響行数を報告する。
 			if ( preg_match( '/^\s*select\b/i', $sql ) ) {
 				return cli_render( array(), $flags );
 			}

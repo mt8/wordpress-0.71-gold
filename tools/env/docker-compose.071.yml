@@ -1,4 +1,4 @@
-# EN: Compose override file used by 071-env. It is layered on top of the
+# Compose override file used by 071-env. It is layered on top of the
 #     base tools/env/docker-compose.yml -- every 071-env Compose invocation
 #     passes both files
 #     (`-f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml`).
@@ -13,26 +13,9 @@
 #     The `./tools/cli` host path is repository-root-relative; like the base
 #     file it resolves against the project directory, which 071-env sets to
 #     the repository root with `--project-directory`.
-# JA: 071-env が使う Compose オーバーライドファイル。ベースの
-#     tools/env/docker-compose.yml の上に重ねる -- 071-env の各 Compose
-#     呼び出しは両ファイルを渡す
-#     (`-f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml`)。
-#
-#     唯一の目的は、リポジトリの `tools/cli/` ディレクトリを読み取り専用で
-#     `web` コンテナ内 /opt/071-cli にバインドマウントし、`071-env run cli`
-#     がコンテナ内で 071-cli の PHP CLI を実行できるようにすることである。
-#     `tools/cli/` は Apache のドキュメントルートの外にある (Web 配信される
-#     のは `./src` のみ)。これは CLI を HTTP で到達不能にするための意図的な
-#     配置である。docs/071-tooling.md セクション 4.3 を参照。
-#
-#     `./tools/cli` のホストパスはリポジトリルート基準である。ベースファイル
-#     と同様、プロジェクトディレクトリから解決され、071-env が
-#     `--project-directory` でリポジトリルートに設定する。
 services:
   web:
     volumes:
-      # EN: Read-only bind mount of the 071-cli package; `:ro` keeps the
+      # Read-only bind mount of the 071-cli package; `:ro` keeps the
       #     container from writing back into the repository.
-      # JA: 071-cli パッケージの読み取り専用バインドマウント。`:ro` により
-      #     コンテナがリポジトリへ書き戻すことを防ぐ。
       - ./tools/cli:/opt/071-cli:ro

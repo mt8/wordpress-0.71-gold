@@ -1,9 +1,6 @@
-# EN: Functional coverage of the `071 user` command group: list / get /
+# Functional coverage of the `071 user` command group: list / get /
 #     create / update / delete, --format variants, --fields, and the
 #     user-specific error cases (missing --user_login, duplicate login).
-# JA: `071 user` コマンドグループの機能カバレッジ: list / get / create /
-#     update / delete、--format バリアント、--fields、ユーザー固有の
-#     エラーケース(--user_login の欠如、ログイン重複)。
 Feature: The user command group
   In order to manage WordPress 0.71 users
   As a 071-cli user

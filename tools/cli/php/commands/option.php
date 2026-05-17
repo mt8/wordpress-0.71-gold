@@ -2,19 +2,12 @@
 /**
  * 071-cli -- `option` command group.
  *
- * EN: Read and write WordPress 0.71's blog settings in the b2settings table.
+ * Read and write WordPress 0.71's blog settings in the b2settings table.
  *     Verbs: list | get <name> | set <name> <value>.
  *     0.71 stores settings not as key/value rows but as the columns of a
  *     single b2settings row (ID = 1): posts_per_page, what_to_show,
  *     archive_mode, time_difference, AutoBR, time_format, date_format. Each
  *     such column is an "option" name here.
- * JA: WordPress 0.71 のブログ設定(b2settings テーブル)を読み書きする。
- *     動詞: list | get <name> | set <name> <value>。
- *     0.71 は設定をキー/値の行ではなく、単一の b2settings 行(ID = 1)の
- *     カラムとして保持する: posts_per_page・what_to_show・archive_mode・
- *     time_difference・AutoBR・time_format・date_format。ここでは各カラムが
- *     「オプション」名となる。
- *
  * @package 071-cli
  */
 

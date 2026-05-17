@@ -2,15 +2,10 @@
 /**
  * 071-cli -- `category` command group.
  *
- * EN: Manage WordPress 0.71 post categories in the b2categories table.
+ * Manage WordPress 0.71 post categories in the b2categories table.
  *     Verbs: list | get <id> | create | delete <id>.
  *     0.71 has a single flat post category list -- no hierarchy, no
  *     taxonomies -- so there is no `update` verb in the design.
- * JA: WordPress 0.71 の投稿カテゴリー(b2categories テーブル)を管理する。
- *     動詞: list | get <id> | create | delete <id>。
- *     0.71 は単一のフラットな投稿カテゴリー一覧のみ持つ -- 階層もタクソノミーも
- *     無い -- ため、設計上 `update` 動詞は無い。
- *
  * @package 071-cli
  */
 

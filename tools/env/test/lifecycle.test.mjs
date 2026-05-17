@@ -1,13 +1,9 @@
 /*
- * EN: Unit tests for tools/env/src/lifecycle.mjs -- lifecycle-hook lookup and
+ * Unit tests for tools/env/src/lifecycle.mjs -- lifecycle-hook lookup and
  *     dispatch. `lifecycleCommand` is pure; `runLifecycleScript` is exercised
  *     with harmless shell commands (`true`, `false`, `echo`) so it stays fast
  *     and side-effect-free. stdout / stderr are captured to keep the run
  *     quiet.
- * JA: tools/env/src/lifecycle.mjs の単体テスト -- ライフサイクルフックの検索と
- *     ディスパッチ。`lifecycleCommand` は純粋関数で、`runLifecycleScript` は
- *     無害なシェルコマンド (`true`・`false`・`echo`) で検証し、高速かつ副作用
- *     無しに保つ。実行を静かにするため stdout / stderr を捕捉する。
  */
 
 import test from 'node:test';
@@ -39,9 +35,7 @@ test( 'lifecycleCommand: afterStart and beforeDestroy are looked up independentl
 } );
 
 /**
- * EN: Run `fn` with stdout / stderr captured, returning the captured streams.
- * JA: stdout / stderr を捕捉して `fn` を実行し、捕捉したストリームを返す。
- *
+ * Run `fn` with stdout / stderr captured, returning the captured streams.
  * @param {() => *} fn The body to run.
  * @returns {{ result: *, stdout: string, stderr: string }}
  */

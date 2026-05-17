@@ -2,13 +2,9 @@
 /**
  * 071-cli -- `link` command group.
  *
- * EN: Manage WordPress 0.71 blogroll links in the b2links table.
+ * Manage WordPress 0.71 blogroll links in the b2links table.
  *     Verbs: list | get <id> | create | delete <id> (per
  *     docs/071-tooling.md section 3.4).
- * JA: WordPress 0.71 のブログロールリンク(b2links テーブル)を管理する。
- *     動詞: list | get <id> | create | delete <id>(docs/071-tooling.md
- *     セクション 3.4 のとおり)。
- *
  * @package 071-cli
  */
 

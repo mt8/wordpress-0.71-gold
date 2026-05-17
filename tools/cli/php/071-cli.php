@@ -2,28 +2,19 @@
 /**
  * 071-cli -- PHP CLI entry point for WordPress 0.71.
  *
- * EN: wp-cli-style command-line interface for WordPress 0.71 (b2/cafelog).
+ * wp-cli-style command-line interface for WordPress 0.71 (b2/cafelog).
  *     Parses argv, routes `<group> <verb> [args] [--flags]` to the command
  *     modules under commands/, and renders their results. See
  *     docs/071-tooling.md sections 3.2-3.4.
- * JA: WordPress 0.71 (b2/cafelog) 向けの wp-cli 風コマンドラインインター
- *     フェース。argv を解析し、`<group> <verb> [args] [--flags]` を
- *     commands/ 配下のコマンドモジュールへルーティングし、その結果を描画
- *     する。docs/071-tooling.md セクション 3.2-3.4 を参照。
- *
  * @package 071-cli
  */
 
 declare(strict_types=1);
 
-// EN: WordPress 0.71's 2003-era code legitimately triggers E_WARNING /
+// WordPress 0.71's 2003-era code legitimately triggers E_WARNING /
 //     E_NOTICE under PHP 8 (e.g. wpdb::get_var indexing an empty result set).
 //     On a CLI those must not bleed into stdout and corrupt table / JSON
 //     output. Errors are kept logged to stderr; fatal errors still surface.
-// JA: WordPress 0.71 の 2003 年当時のコードは PHP 8 で E_WARNING / E_NOTICE を
-//     正当に発生させる(例: 空の結果セットを添字参照する wpdb::get_var)。
-//     CLI ではこれらが stdout に漏れて table / JSON 出力を壊してはならない。
-//     エラーは stderr へのログとして残し、致命的エラーは引き続き表面化する。
 ini_set( 'display_errors', 'stderr' );
 error_reporting( E_ALL & ~E_WARNING & ~E_NOTICE & ~E_DEPRECATED );
 
@@ -44,11 +35,8 @@ function cli_fail( string $message ) {
 /**
  * Parse the raw argv into positional arguments and flags.
  *
- * EN: Recognises `--flag` (boolean true) and `--flag=value`. Everything else
+ * Recognises `--flag` (boolean true) and `--flag=value`. Everything else
  *     is a positional argument, in order.
- * JA: `--flag`(真偽値 true)と `--flag=value` を認識する。それ以外は順序を
- *     保った位置引数となる。
- *
  * @param array<int, string> $argv Raw argv, excluding the script name.
  * @return array{0: array<int, string>, 1: array<string, string|bool>}
  */
@@ -126,8 +114,7 @@ function cli_main( array $argv ): int {
 	$group = $positional[0] ?? '';
 	$verb  = $positional[1] ?? '';
 
-	// EN: `071`, `071 --help` and `071 help` all show top-level usage.
-	// JA: `071`・`071 --help`・`071 help` はすべてトップレベルの使い方を表示。
+	// `071`, `071 --help` and `071 help` all show top-level usage.
 	if ( '' === $group || 'help' === $group || ( isset( $flags['help'] ) && '' === $group ) ) {
 		cli_print_usage();
 		return 0;
@@ -152,10 +139,8 @@ function cli_main( array $argv ): int {
 		cli_fail( "command handler '$handler' not defined." );
 	}
 
-	// EN: db / option commands take a name or SQL string, not numeric ids;
+	// db / option commands take a name or SQL string, not numeric ids;
 	//     every group receives the remaining positionals after <group> <verb>.
-	// JA: db / option コマンドは数値 id ではなく名前や SQL 文字列を取る。
-	//     各グループは <group> <verb> 以降の残りの位置引数を受け取る。
 	$rest = array_slice( $positional, 2 );
 
 	return (int) $handler( $verb, $rest, $flags );

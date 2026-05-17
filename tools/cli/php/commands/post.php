@@ -2,11 +2,8 @@
 /**
  * 071-cli -- `post` command group.
  *
- * EN: Manage WordPress 0.71 posts in the b2posts table.
+ * Manage WordPress 0.71 posts in the b2posts table.
  *     Verbs: list | get <id> | create | update <id> | delete <id>.
- * JA: WordPress 0.71 の投稿(b2posts テーブル)を管理する。
- *     動詞: list | get <id> | create | update <id> | delete <id>。
- *
  * @package 071-cli
  */
 

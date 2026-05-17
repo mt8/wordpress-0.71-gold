@@ -1,11 +1,7 @@
-# EN: Functional coverage of the `071 db` command group: query / tables. A
+# Functional coverage of the `071 db` command group: query / tables. A
 #     SELECT is rendered as a result set, a non-SELECT reports its affected-row
 #     count, and a SQL error is surfaced as a CLI failure (plain text, not
 #     HTML). Covers --format variants and the db-specific error cases.
-# JA: `071 db` コマンドグループの機能カバレッジ: query / tables。SELECT は
-#     結果セットとして描画され、SELECT 以外は影響行数を報告し、SQL エラーは
-#     CLI の失敗(HTML ではなくプレーンテキスト)として表面化する。--format
-#     バリアントと db 固有のエラーケースをカバーする。
 Feature: The db command group
   In order to run raw SQL against WordPress 0.71's database
   As a 071-cli user
