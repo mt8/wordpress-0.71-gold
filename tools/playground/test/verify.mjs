@@ -1,4 +1,5 @@
-// EN: 071-now headless verification (Issue #116, #120, #122; full build).
+// EN: 071-now headless verification (Issue #116, #120, #122, #124; full
+//     build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, opens it in headless Chromium, and asserts that the
@@ -12,18 +13,26 @@
 //     then edited through the admin's own forms, a category is added,
 //     and each change is confirmed on the front page.
 //
-//     Finally it checks database persistence (Issue #122): a post is
+//     It then checks database persistence (Issue #122): a post is
 //     created through the admin, the page is reloaded, and the post is
 //     asserted still present -- proving the SQLite database survives a
 //     reload via OPFS / IndexedDB. The reset control is then exercised:
 //     after a reset the post is gone and the blog is back to its fresh
 //     seeded state.
 //
+//     Finally it checks image upload and its persistence (Issue #124):
+//     an image is uploaded through the classic admin's b2upload.php
+//     form, asserted stored and served from the php-wasm VFS, the page
+//     is reloaded and the image asserted still served -- proving the
+//     uploaded media survives a reload -- then a reset is asserted to
+//     clear it.
+//
 //     This extends the feasibility spike's check (Issue #108, which
 //     only confirmed the front-page text rendered) with the things the
 //     full build unlocks -- styling and navigation (the service worker,
-//     step 1), the working admin (step 3) and persistence (step 4).
-// JA: 071-now のヘッドレス検証(Issue #116・#120・#122、フル実装)。
+//     step 1), the working admin (step 3), persistence (step 4) and
+//     image upload (step 5).
+// JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124、フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、ヘッドレス
 //     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
@@ -35,16 +44,23 @@
 //     投稿を作成・編集し、カテゴリーを追加し、各変更をフロントページで
 //     確認する。
 //
-//     最後にデータベースの永続化を検証する(Issue #122)。管理画面から
+//     続いてデータベースの永続化を検証する(Issue #122)。管理画面から
 //     投稿を作成しページをリロードし、投稿が残っていることを確認する
 //     -- SQLite データベースが OPFS / IndexedDB によりリロードを越えて
 //     残ることの証明である。続いてリセット操作を動かす。リセット後は
 //     その投稿は消え、ブログは新しいシード済み状態へ戻る。
 //
+//     最後に画像アップロードとその永続化を検証する(Issue #124)。従来型
+//     管理画面の b2upload.php フォームから画像をアップロードし、php-wasm
+//     VFS に保存・配信されることを確認し、ページをリロードして画像が
+//     なお配信されること -- アップロードメディアがリロードを越えて残る
+//     こと -- を確認し、リセットでクリアされることを確認する。
+//
 //     これは実現可能性検証(Issue #108、フロントページのテキスト描画のみ
 //     確認)を、フル実装が解放するもの -- スタイリングと遷移(サービス
 //     ワーカー、ステップ 1)、動作する管理画面(ステップ 3)、永続化
-//     (ステップ 4)-- で拡張したものである。
+//     (ステップ 4)、画像アップロード(ステップ 5)-- で拡張したもの
+//     である。
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -434,6 +450,160 @@ async function verifyPersistence( page ) {
 	];
 }
 
+// EN: A minimal but valid 1x1 PNG, the image the upload check sends
+//     through WordPress 0.71's wp-admin/b2upload.php. It is uploaded as a
+//     real multipart/form-data POST so the check exercises the whole path
+//     -- the service worker forwarding the body, php-wasm parsing $_FILES,
+//     b2upload.php's move_uploaded_file() -- with genuine image bytes.
+const TEST_PNG_BASE64 =
+	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mP8' +
+	'z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+
+/**
+ * Fetch a blog path through the in-browser request handler and report
+ * whether it served an image.
+ *
+ * Used to check the uploaded image is served from the php-wasm VFS: a
+ * 200 status with an image/* content-type and a non-empty body means the
+ * static-file handler returned the stored upload.
+ *
+ * @param {import('playwright').Page} page    The host page.
+ * @param {string}                    relPath Blog-relative path, e.g.
+ *                                             '/wp-content/uploads/x.png'.
+ * @return {Promise<{status:number, contentType:string, length:number}>}
+ */
+async function fetchBlogImage( page, relPath ) {
+	return page.evaluate( async ( rel ) => {
+		const response = await window.__071now.get( rel );
+		const headers = response.headers || {};
+		const contentType = ( headers[ 'content-type' ] || [] )[ 0 ] || '';
+		return {
+			status: response.httpStatusCode,
+			contentType,
+			length: response.bytes ? response.bytes.length : 0,
+		};
+	}, relPath );
+}
+
+/**
+ * Verify WordPress 0.71's image upload in the playground, and that an
+ * uploaded image persists across a reload and is cleared by a reset
+ * (Issue #124).
+ *
+ * Opens the classic admin's upload page (wp-admin/b2upload.php), uploads
+ * a PNG through its own multipart form, and asserts the upload page
+ * confirms it and that the stored image is served from the php-wasm VFS.
+ * It then reloads the whole page (a fresh php-wasm instance) and asserts
+ * the image was restored from the persistent store and is still served.
+ * Finally it triggers the reset and asserts the uploaded image is gone.
+ *
+ * This runs last because, like the persistence check, it reloads and
+ * resets the page; the reset at its end leaves a clean seeded state.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifyImageUpload( page ) {
+	// EN: A unique file name so the check never collides with a file an
+	//     earlier run left in the persistent store.
+	const UPLOAD_NAME = `071-now-upload-${ Date.now() }.png`;
+	const UPLOAD_DESC = 'Uploaded through the WordPress 0.71 admin.';
+	const uploadPath = `/wp-content/uploads/${ UPLOAD_NAME }`;
+	const isUpload = ( url ) => url.includes( '/wp-admin/b2upload.php' );
+
+	// EN: Open the upload page. Auto-login means it opens straight onto
+	//     the upload form; b2upload.php dies with "Cheatin' uh ?" for a
+	//     logged-out visitor, so reaching the file input proves the page
+	//     served and the user is authenticated.
+	const uploadFrame = await gotoBlog( page, '/wp-admin/b2upload.php' );
+	await uploadFrame.waitForSelector( 'input[name="img1"]', {
+		timeout: 15000,
+	} );
+	const uploadFormReached =
+		( await uploadFrame.locator( 'input[name="img1"]' ).count() ) > 0;
+
+	// EN: Upload the PNG through b2upload.php's own multipart form. The
+	//     file is supplied from memory; Playwright sends a real
+	//     multipart/form-data POST, which the service worker forwards to
+	//     php-wasm with the body intact.
+	await uploadFrame.setInputFiles( 'input[name="img1"]', {
+		name: UPLOAD_NAME,
+		mimeType: 'image/png',
+		buffer: Buffer.from( TEST_PNG_BASE64, 'base64' ),
+	} );
+	await uploadFrame.fill( 'input[name="imgdesc"]', UPLOAD_DESC );
+	await uploadFrame.click( 'input[name="submit"]' );
+
+	// EN: b2upload.php replies with a "File uploaded !" confirmation page
+	//     naming the stored file.
+	const uploadConfirmed = await waitForBlogText(
+		page,
+		isUpload,
+		'File uploaded'
+	);
+
+	// EN: Force-flush so the media store is written before the reload.
+	await page.evaluate( () => window.__071now.persist() );
+
+	// EN: The stored image is served from the php-wasm VFS through the
+	//     request handler -- a 200 with an image/png content-type.
+	const served = await fetchBlogImage( page, uploadPath );
+	const imageServed =
+		served.status === 200 &&
+		served.contentType.includes( 'image/png' ) &&
+		served.length > 0;
+
+	// EN: The uploaded image shows on a page -- point the iframe straight
+	//     at the image URL and confirm the document loaded an image.
+	const imageFrame = await gotoBlog( page, uploadPath );
+	const imageVisible = await imageFrame
+		.evaluate( () => {
+			const img = document.querySelector( 'img' );
+			return !! img && img.naturalWidth > 0;
+		} )
+		.catch( () => false );
+
+	// EN: Reload the whole page -- a fresh php-wasm instance with an empty
+	//     virtual filesystem. Without media persistence the uploaded image
+	//     would be gone; with it the app restores the uploads tree from
+	//     OPFS / IndexedDB before the first request.
+	await page.reload( { waitUntil: 'load' } );
+	await waitForBoot( page );
+	const mediaRestoredCount = await page.evaluate(
+		() => window.__071now.mediaRestoredCount
+	);
+	const servedAfterReload = await fetchBlogImage( page, uploadPath );
+	const survivedReload =
+		mediaRestoredCount > 0 &&
+		servedAfterReload.status === 200 &&
+		servedAfterReload.contentType.includes( 'image/png' ) &&
+		servedAfterReload.length > 0;
+
+	// EN: Reset -- clear the persisted database and media, then reload.
+	//     The uploaded image must be gone (no media restored, and the
+	//     request handler no longer serves the file).
+	await page.evaluate( () => window.__071now.reset() );
+	await waitForBoot( page );
+	const mediaAfterReset = await page.evaluate(
+		() => window.__071now.mediaRestoredCount
+	);
+	const servedAfterReset = await fetchBlogImage( page, uploadPath );
+	const imageGoneAfterReset =
+		mediaAfterReset === 0 && servedAfterReset.status !== 200;
+
+	return [
+		[ 'upload form reached in the admin (auto-login)', uploadFormReached ],
+		[ 'image uploaded through the b2upload.php form', uploadConfirmed ],
+		[
+			`uploaded image served from the VFS (${ served.status } ${ served.contentType })`,
+			imageServed,
+		],
+		[ 'uploaded image renders from its blog URL', imageVisible ],
+		[ 'uploaded image survives a page reload', survivedReload ],
+		[ 'reset clears the persisted uploaded image', imageGoneAfterReset ],
+	];
+}
+
 /**
  * Verify the service-worker-served blog in headless Chromium.
  *
@@ -535,10 +705,16 @@ async function verify() {
 		const adminChecks = await verifyAdmin( page );
 
 		// EN: Check database persistence (Issue #122) -- create a post,
-		//     reload, assert it survived, then exercise the reset. This
-		//     runs last because it reloads the page (a fresh php-wasm
-		//     instance); the reset at its end leaves a clean seeded state.
+		//     reload, assert it survived, then exercise the reset. The
+		//     reset at its end leaves a clean seeded state.
 		const persistenceChecks = await verifyPersistence( page );
+
+		// EN: Check image upload and its persistence (Issue #124) -- upload
+		//     an image through the WordPress 0.71 admin, assert it is
+		//     stored and served, reload and assert it survived, then reset
+		//     and assert it is cleared. This runs last because, like the
+		//     persistence check, it reloads and resets the page.
+		const uploadChecks = await verifyImageUpload( page );
 
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
@@ -555,6 +731,7 @@ async function verify() {
 			],
 			...adminChecks,
 			...persistenceChecks,
+			...uploadChecks,
 			[ 'no console errors', consoleErrors.length === 0 ],
 		];
 
