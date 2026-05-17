@@ -113,3 +113,78 @@
 	padding: 2rem;
 	font-family: -apple-system, system-ui, sans-serif;
 }
+
+/*
+ * EN: Responsive header for narrow viewports (a phone, ~390px wide).
+ *
+ *     The desktop header is a single non-wrapping row, so on a phone its
+ *     controls overflow the viewport: the "Back to wp-admin" link breaks word
+ *     by word, the badge collides with the overview button and the save
+ *     button runs off the edge.
+ *
+ *     These rules, guarded by a max-width media query, only apply below 782px
+ *     (WordPress's own "small" breakpoint); the desktop header is untouched.
+ *     The toolbar is allowed to wrap onto multiple rows, the link text is kept
+ *     on one line, and the save button's label may wrap inside the button --
+ *     so every header control stays readable and within the viewport.
+ * JA: 狭幅ビューポート(スマホ、幅 ~390px)向けレスポンシブヘッダー。
+ *
+ *     デスクトップのヘッダーは折り返さない 1 行のため、スマホでは操作子が
+ *     ビューポートからはみ出す: 「Back to wp-admin」リンクが単語ごとに
+ *     改行され、バッジが概観ボタンに重なり、保存ボタンが端からはみ出す。
+ *
+ *     これらの規則は max-width メディアクエリで囲い、782px(WordPress 自身の
+ *     「小」ブレークポイント)未満でのみ適用する。デスクトップのヘッダーは
+ *     そのまま。ツールバーを複数行へ折り返せるようにし、リンクテキストを
+ *     1 行に保ち、保存ボタンのラベルはボタン内で折り返せるようにする --
+ *     これでヘッダーの各操作子が読め、ビューポート内に収まる。
+ */
+@media ( max-width: 782px ) {
+	.be-toolbar {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+	}
+
+	.be-toolbar-left,
+	.be-toolbar-right {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	/*
+	 * EN: The right-hand group (front-end link + save button) takes a full
+	 *     row of its own and aligns its controls to the start so the save
+	 *     button no longer overflows the viewport edge.
+	 * JA: 右側グループ(フロントエンドリンク + 保存ボタン)を独立した 1 行
+	 *     にし、操作子を先頭寄せにする。保存ボタンがビューポート端から
+	 *     はみ出さなくなる。
+	 */
+	.be-toolbar-right {
+		flex-basis: 100%;
+		justify-content: flex-start;
+	}
+
+	/*
+	 * EN: Keep the link text on one line -- without this the toolbar's
+	 *     narrow space breaks "Back to wp-admin" word by word.
+	 * JA: リンクテキストを 1 行に保つ -- これが無いと狭いツールバーで
+	 *     「Back to wp-admin」が単語ごとに改行される。
+	 */
+	.be-toolbar .be-link {
+		white-space: nowrap;
+	}
+
+	/*
+	 * EN: Let the save button's label wrap inside the button instead of
+	 *     pushing the button past the viewport edge.
+	 * JA: 保存ボタンのラベルをボタン内で折り返させ、ボタンが
+	 *     ビューポート端を越えて押し出されないようにする。
+	 */
+	.be-toolbar-right .components-button.is-primary {
+		height: auto;
+		min-height: 36px;
+		white-space: normal;
+		text-align: left;
+	}
+}
