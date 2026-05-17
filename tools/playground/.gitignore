@@ -4,9 +4,7 @@
 #     071-now SQLite シムを重ねたもの。ビルドごとに再生成される。
 wp/
 
-# EN: Vite build output and the verification artifacts.
-# JA: Vite のビルド成果物と検証成果物。
+# EN: Vite build output.
+# JA: Vite のビルド成果物。
 dist/
 node_modules/
-test/071-now-frontpage-*.png
-test/071-now-admin-*.png
