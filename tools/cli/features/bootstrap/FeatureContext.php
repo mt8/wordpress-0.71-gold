@@ -6,31 +6,33 @@
  *     on wp-cli's own Behat context: a `When I run` step executes the 071 CLI
  *     as a child process and captures STDOUT, STDERR and the exit code; `Then`
  *     steps assert on the captured output. The `071` placeholder in a command
- *     string is expanded to `php cli/php/071-cli.php` with the test-database
- *     connection flags appended, so every command runs against the dedicated,
- *     isolated test database -- never the developer's `b2` database.
+ *     string is expanded to `php tools/cli/php/071-cli.php` with the
+ *     test-database connection flags appended, so every command runs against
+ *     the dedicated, isolated test database -- never the developer's `b2`
+ *     database.
  *
  *     Database isolation: a @BeforeScenario hook reseeds the test database from
- *     cli/tests/fixtures.sql before every scenario, so each scenario starts
- *     from an identical, known state and write commands cannot leak between
- *     scenarios. The connection target defaults to 127.0.0.1:3307 / b2_test
- *     (the cli/tests/docker-compose.yml stack) and is overridable via the
- *     B2_TEST_DB* environment variables.
+ *     tools/cli/tests/fixtures.sql before every scenario, so each scenario
+ *     starts from an identical, known state and write commands cannot leak
+ *     between scenarios. The connection target defaults to 127.0.0.1:3307 /
+ *     b2_test (the tools/cli/tests/docker-compose.yml stack) and is overridable
+ *     via the B2_TEST_DB* environment variables.
  *
  * JA: 071-cli 機能テストスイートの Gherkin ステップ定義。wp-cli 自身の Behat
  *     コンテキストに倣う: `When I run` ステップは 071 CLI を子プロセスとして
  *     実行し STDOUT・STDERR・終了コードを捕捉する。`Then` ステップは捕捉した
  *     出力に対してアサートする。コマンド文字列中のプレースホルダ `071` は
- *     `php cli/php/071-cli.php` に展開され、テストデータベース接続フラグが
- *     付加される。そのためすべてのコマンドは専用の分離されたテストデータ
- *     ベースに対して実行され、開発者の `b2` データベースには決して触れない。
+ *     `php tools/cli/php/071-cli.php` に展開され、テストデータベース接続
+ *     フラグが付加される。そのためすべてのコマンドは専用の分離されたテスト
+ *     データベースに対して実行され、開発者の `b2` データベースには決して
+ *     触れない。
  *
  *     データベース分離: @BeforeScenario フックが各シナリオの前に
- *     cli/tests/fixtures.sql からテストデータベースを再投入する。そのため
- *     各シナリオは同一の既知の状態から開始し、書き込みコマンドがシナリオ間で
- *     漏れることはない。接続先は既定で 127.0.0.1:3307 / b2_test
- *     (cli/tests/docker-compose.yml のスタック) であり、B2_TEST_DB* 環境変数で
- *     上書きできる。
+ *     tools/cli/tests/fixtures.sql からテストデータベースを再投入する。その
+ *     ため各シナリオは同一の既知の状態から開始し、書き込みコマンドが
+ *     シナリオ間で漏れることはない。接続先は既定で 127.0.0.1:3307 / b2_test
+ *     (tools/cli/tests/docker-compose.yml のスタック) であり、B2_TEST_DB*
+ *     環境変数で上書きできる。
  *
  * @package 071-cli
  */
@@ -49,8 +51,8 @@ use PHPUnit\Framework\Assert;
 final class FeatureContext implements Context
 {
     /**
-     * EN: Absolute path to the repository root (parent of cli/).
-     * JA: リポジトリルート (cli/ の親) への絶対パス。
+     * EN: Absolute path to the repository root (parent of tools/).
+     * JA: リポジトリルート (tools/ の親) への絶対パス。
      */
     private string $repoRoot;
 
@@ -74,9 +76,9 @@ final class FeatureContext implements Context
 
     public function __construct()
     {
-        // EN: bootstrap/ -> features/ -> cli/ -> repository root.
-        // JA: bootstrap/ -> features/ -> cli/ -> リポジトリルート。
-        $this->repoRoot = dirname(__DIR__, 3);
+        // EN: bootstrap/ -> features/ -> cli/ -> tools/ -> repository root.
+        // JA: bootstrap/ -> features/ -> cli/ -> tools/ -> リポジトリルート。
+        $this->repoRoot = dirname(__DIR__, 4);
     }
 
     /**
@@ -101,7 +103,7 @@ final class FeatureContext implements Context
         if (!($mysqli instanceof mysqli)) {
             throw new RuntimeException(sprintf(
                 'Cannot reach the 071-cli test database at %s:%d. Start it with: '
-                . 'docker compose -p 071-cli-test -f cli/tests/docker-compose.yml up -d',
+                . 'docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml up -d',
                 $config['host'],
                 $config['port']
             ));
@@ -120,7 +122,7 @@ final class FeatureContext implements Context
         ));
         @mysqli_select_db($mysqli, $config['name']);
 
-        $sqlPath = $this->repoRoot . '/cli/tests/fixtures.sql';
+        $sqlPath = $this->repoRoot . '/tools/cli/tests/fixtures.sql';
         $sql     = file_get_contents($sqlPath);
         if (false === $sql) {
             throw new RuntimeException("Cannot read fixture file: $sqlPath");
@@ -335,7 +337,7 @@ final class FeatureContext implements Context
         $full = sprintf(
             '%s %s %s %s',
             escapeshellarg(PHP_BINARY),
-            escapeshellarg($this->repoRoot . '/cli/php/071-cli.php'),
+            escapeshellarg($this->repoRoot . '/tools/cli/php/071-cli.php'),
             $args,
             implode(' ', [
                 '--path=' . escapeshellarg($this->repoRoot . '/src'),

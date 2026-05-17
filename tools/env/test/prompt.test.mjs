@@ -1,8 +1,8 @@
 /*
- * EN: Unit tests for env/src/prompt.mjs -- the affirmative-answer logic of the
+ * EN: Unit tests for tools/env/src/prompt.mjs -- the affirmative-answer logic of the
  *     destroy confirmation prompt. `confirm()` itself reads a TTY, so only its
  *     pure `isAffirmative` helper is exercised here.
- * JA: env/src/prompt.mjs の単体テスト -- destroy 確認プロンプトの肯定回答
+ * JA: tools/env/src/prompt.mjs の単体テスト -- destroy 確認プロンプトの肯定回答
  *     ロジック。`confirm()` 自体は TTY を読むため、ここでは純粋な
  *     `isAffirmative` ヘルパーのみを検証する。
  */

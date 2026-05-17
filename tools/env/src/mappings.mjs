@@ -6,7 +6,7 @@
  *     of wp-env's `mappings`. Compose appends `volumes` lists cleanly across
  *     `-f` files, so the right mechanism is a generated override file that
  *     071-env passes in addition to `docker-compose.yml` and
- *     `env/docker-compose.071.yml`.
+ *     `tools/env/docker-compose.071.yml`.
  *
  *     `renderMappingsOverride` is pure: it turns the `mappings` object into
  *     Compose YAML text. `writeMappingsOverride` is the thin impure boundary
@@ -19,8 +19,8 @@
  *     対応付ける -- `web` コンテナ向けの追加の読み書きバインドマウントで
  *     あり、wp-env の `mappings` の相当物である。Compose は `-f` ファイル
  *     間で `volumes` のリストをきれいに追記するため、正しい仕組みは、
- *     071-env が `docker-compose.yml` と `env/docker-compose.071.yml` に
- *     加えて渡す、生成された上書きファイルである。
+ *     071-env が `docker-compose.yml` と `tools/env/docker-compose.071.yml`
+ *     に加えて渡す、生成された上書きファイルである。
  *
  *     `renderMappingsOverride` は純粋関数で、`mappings` オブジェクトを
  *     Compose の YAML テキストへ変換する。`writeMappingsOverride` はその

@@ -1,7 +1,7 @@
 /*
- * EN: Unit tests for env/src/cli.mjs -- argument and command parsing.
+ * EN: Unit tests for tools/env/src/cli.mjs -- argument and command parsing.
  *     Run with Node's built-in test runner: `node --test`.
- * JA: env/src/cli.mjs の単体テスト -- 引数とコマンドの解析。
+ * JA: tools/env/src/cli.mjs の単体テスト -- 引数とコマンドの解析。
  *     Node 組み込みのテストランナーで実行する: `node --test`。
  */
 

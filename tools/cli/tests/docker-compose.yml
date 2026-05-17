@@ -5,8 +5,8 @@
 #     own stack on 3306 and its `b2` database are never touched. The Behat
 #     suite seeds the WordPress 0.71 schema into the `b2_test` database here and
 #     resets it between scenarios.
-#     Start : docker compose -p 071-cli-test -f cli/tests/docker-compose.yml up -d
-#     Stop  : docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+#     Start : docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml up -d
+#     Stop  : docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml down -v
 # JA: 071-cli の Behat 機能テストスイート専用の MySQL 8 データベース。
 #     これはリポジトリ直下の docker-compose.yml とは別の Docker Compose
 #     プロジェクトである: 独自のプロジェクト名 (071-cli-test)、独自の名前付き
@@ -14,8 +14,8 @@
 #     開発者自身の 3306 上のスタックとその `b2` データベースには一切触れない。
 #     Behat スイートはここの `b2_test` データベースに WordPress 0.71 のスキーマを
 #     投入し、シナリオごとにリセットする。
-#     起動: docker compose -p 071-cli-test -f cli/tests/docker-compose.yml up -d
-#     停止: docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+#     起動: docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml up -d
+#     停止: docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml down -v
 services:
   # EN: MySQL 8 -- same engine version as the repository root stack so the
   #     071-cli tool runs against an identical database server.

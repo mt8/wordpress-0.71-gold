@@ -1,10 +1,10 @@
 /*
- * EN: Unit tests for env/src/mappings.mjs -- rendering the runtime Compose
+ * EN: Unit tests for tools/env/src/mappings.mjs -- rendering the runtime Compose
  *     override that adds the configured `mappings` as extra `web` volumes.
  *     The pure `renderMappingsOverride` is tested directly; the filesystem
  *     `writeMappingsOverride` is covered for its return contract by
  *     round-tripping through the real (git-ignored) target path.
- * JA: env/src/mappings.mjs の単体テスト -- 設定された `mappings` を `web` の
+ * JA: tools/env/src/mappings.mjs の単体テスト -- 設定された `mappings` を `web` の
  *     追加 `volumes` として加える実行時 Compose オーバーライドの描画。純粋な
  *     `renderMappingsOverride` を直接テストし、ファイルシステムの
  *     `writeMappingsOverride` は実際の (git 管理外の) ターゲットパスを往復

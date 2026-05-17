@@ -23,7 +23,7 @@ const playgroundDir = join( here, '..' );
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${ PREVIEW_PORT }/`;
 
-// EN: Text the seeded post (playground/db/seed.php) must contribute.
+// EN: Text the seeded post (tools/playground/db/seed.php) must contribute.
 const EXPECTED_TITLE = 'Hello world from 071-now';
 const EXPECTED_BODY = 'in-browser SQLite database';
 
@@ -133,7 +133,7 @@ async function verify() {
 			console.log( 'console errors:\n  ' + consoleErrors.join( '\n  ' ) );
 		}
 		// eslint-disable-next-line no-console
-		console.log( 'screenshot: playground/test/071-now-frontpage.png' );
+		console.log( 'screenshot: tools/playground/test/071-now-frontpage.png' );
 
 		if ( ! ok ) {
 			throw new Error( '071-now verification failed' );

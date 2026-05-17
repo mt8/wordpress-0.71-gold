@@ -1,9 +1,9 @@
 /*
- * EN: Unit tests for env/src/config.mjs -- config defaults, deep-merge,
+ * EN: Unit tests for tools/env/src/config.mjs -- config defaults, deep-merge,
  *     validation, and the two-file load (`.071-env.json` +
  *     `.071-env.override.json`). The filesystem-touching `loadConfig` is
  *     exercised against a temporary directory so the tests stay hermetic.
- * JA: env/src/config.mjs の単体テスト -- 設定の既定値・ディープマージ・
+ * JA: tools/env/src/config.mjs の単体テスト -- 設定の既定値・ディープマージ・
  *     検証・2 ファイルの読み込み (`.071-env.json` +
  *     `.071-env.override.json`)。ファイルシステムに触れる `loadConfig` は
  *     一時ディレクトリに対して検証し、テストを密閉的に保つ。

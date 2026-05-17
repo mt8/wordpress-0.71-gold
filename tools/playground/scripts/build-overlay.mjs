@@ -1,34 +1,38 @@
 // EN: 071-now overlay builder (Issue #108 feasibility spike).
 //
 //     The browser-based blog runs an in-php-wasm copy of WordPress 0.71.
-//     That copy is built here: src/ is snapshotted into playground/wp/,
+//     That copy is built here: src/ is snapshotted into tools/playground/wp/,
 //     then the 071-now SQLite database shim is overlaid on top.
 //
 //     src/ itself is NEVER modified -- per Issue #108, the real
 //     WordPress 0.71 source and its MySQL / Docker setup must keep
-//     working. The overlay only changes playground/wp/, a generated,
+//     working. The overlay only changes tools/playground/wp/, a generated,
 //     git-ignored directory that exists solely for the in-browser copy.
 //
 //     The overlay is a single file: b2-include/wp-db.php is replaced by
-//     playground/db/wp-db.php, the SQLite-backed reimplementation. The
-//     boot prepend (playground/db/seed.php) is also copied in so the
-//     php-wasm boot shim can run it.
+//     tools/playground/db/wp-db.php, the SQLite-backed reimplementation.
+//     The boot prepend (tools/playground/db/seed.php) is also copied in so
+//     the php-wasm boot shim can run it.
 // JA: 071-now のオーバーレイビルダー(Issue #108 実現可能性検証)。
 //
 //     ブラウザ内ブログは php-wasm 内の WordPress 0.71 のコピーを動かす。
-//     そのコピーをここで作る: src/ を playground/wp/ にスナップショット
+//     そのコピーをここで作る: src/ を tools/playground/wp/ にスナップショット
 //     し、071-now の SQLite データベースシムを上から重ねる。
 //
 //     src/ 自体は決して変更しない。Issue #108 に従い、本物の WordPress
 //     0.71 ソースとその MySQL / Docker 構成は動き続けねばならない。
-//     オーバーレイは生成物の(git 管理外の)playground/wp/ だけを変える。
+//     オーバーレイは生成物の(git 管理外の)tools/playground/wp/ だけを変える。
 import { cpSync, rmSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
+// EN: This file is tools/playground/scripts/build-overlay.mjs, so the
+//     playground package is one level up and the repo root is three.
+// JA: 本ファイルは tools/playground/scripts/build-overlay.mjs であり、
+//     playground パッケージは 1 つ上、リポジトリルートは 3 つ上である。
 const here = dirname( fileURLToPath( import.meta.url ) );
 const playgroundDir = join( here, '..' );
-const repoRoot = join( playgroundDir, '..' );
+const repoRoot = join( playgroundDir, '..', '..' );
 
 const srcDir = join( repoRoot, 'src' );
 const wpDir = join( playgroundDir, 'wp' );
@@ -61,7 +65,7 @@ for ( const [ from, to ] of overlayFiles ) {
 	copyFileSync( join( dbDir, from ), join( wpDir, 'b2-include', to ) );
 }
 
-console.log( '[071-now] overlay built at playground/wp/' );
+console.log( '[071-now] overlay built at tools/playground/wp/' );
 console.log( '[071-now]   b2-include/wp-db.php               <- SQLite-backed wpdb' );
 console.log( '[071-now]   b2-include/071-now-sql-translator.php  <- MySQL->SQLite translator' );
 console.log( '[071-now]   b2-include/071-now-seed.php            <- database seed' );

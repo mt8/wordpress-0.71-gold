@@ -1,8 +1,8 @@
 /*
- * EN: Unit tests for env/src/compose.mjs -- the `docker compose` argument
+ * EN: Unit tests for tools/env/src/compose.mjs -- the `docker compose` argument
  *     vector each 071-env subcommand constructs. These tests are Docker-free:
  *     they assert on the argv only, never spawning anything.
- * JA: env/src/compose.mjs の単体テスト -- 071-env の各サブコマンドが構築する
+ * JA: tools/env/src/compose.mjs の単体テスト -- 071-env の各サブコマンドが構築する
  *     `docker compose` 引数ベクタ。これらのテストは Docker 不要である:
  *     argv のみをアサートし、何も起動しない。
  */

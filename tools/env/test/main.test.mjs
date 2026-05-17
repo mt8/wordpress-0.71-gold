@@ -1,10 +1,10 @@
 /*
- * EN: Unit tests for env/src/main.mjs -- the dispatcher's non-Docker paths.
+ * EN: Unit tests for tools/env/src/main.mjs -- the dispatcher's non-Docker paths.
  *     `main()` only reaches `runDocker` for commands that actually operate the
  *     environment; the help and unknown-command paths return without spawning
  *     Docker and can be tested directly. stdout / stderr are captured so the
  *     tests stay quiet.
- * JA: env/src/main.mjs の単体テスト -- ディスパッチャの Docker 非経由パス。
+ * JA: tools/env/src/main.mjs の単体テスト -- ディスパッチャの Docker 非経由パス。
  *     `main()` が `runDocker` に到達するのは実際に環境を操作するコマンドの
  *     ときのみであり、ヘルプと未知コマンドのパスは Docker を起動せずに復帰
  *     するため直接テストできる。テストを静かに保つため stdout / stderr を

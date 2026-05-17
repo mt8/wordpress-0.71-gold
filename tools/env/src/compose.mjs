@@ -2,9 +2,10 @@
  * EN: Docker Compose argv construction for 071-env.
  *
  *     071-env wraps the repository's existing Docker Compose environment. It
- *     never replaces docker-compose.yml; it layers env/docker-compose.071.yml
- *     on top so the 071-cli package is reachable inside the `web` container
- *     (see docs/071-tooling.md section 4.3).
+ *     never replaces docker-compose.yml; it layers
+ *     tools/env/docker-compose.071.yml on top so the 071-cli package is
+ *     reachable inside the `web` container (see docs/071-tooling.md
+ *     section 4.3).
  *
  *     The functions here are pure: they take the parsed command and return the
  *     argument vector that would be passed to `docker`. They do not spawn
@@ -15,7 +16,7 @@
  *
  *     071-env はリポジトリの既存 Docker Compose 環境をラップする。
  *     docker-compose.yml を置き換えることはなく、その上に
- *     env/docker-compose.071.yml を重ねて、`web` コンテナ内で 071-cli
+ *     tools/env/docker-compose.071.yml を重ねて、`web` コンテナ内で 071-cli
  *     パッケージに到達できるようにする (docs/071-tooling.md セクション 4.3)。
  *
  *     ここの関数は純粋関数である: 解析済みコマンドを受け取り、`docker` に
@@ -27,11 +28,13 @@ import { baseComposeFile, overrideComposeFile } from './paths.mjs';
 
 /**
  * EN: The path to the 071-cli PHP entry point as seen *inside* the `web`
- *     container. env/docker-compose.071.yml bind-mounts the repo's `cli/`
- *     directory at /opt/071-cli, so the CLI script is at this fixed path.
+ *     container. tools/env/docker-compose.071.yml bind-mounts the repo's
+ *     `tools/cli/` directory at /opt/071-cli, so the CLI script is at this
+ *     fixed path.
  * JA: `web` コンテナ*内*から見た 071-cli の PHP エントリポイントのパス。
- *     env/docker-compose.071.yml がリポジトリの `cli/` を /opt/071-cli に
- *     バインドマウントするため、CLI スクリプトはこの固定パスにある。
+ *     tools/env/docker-compose.071.yml がリポジトリの `tools/cli/` を
+ *     /opt/071-cli にバインドマウントするため、CLI スクリプトはこの固定パスに
+ *     ある。
  */
 export const CLI_PHP_IN_CONTAINER = '/opt/071-cli/php/071-cli.php';
 
