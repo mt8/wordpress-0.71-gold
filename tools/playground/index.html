@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <!--
-  EN: 071-now host page (Issue #108 feasibility spike). Loads the
-      browser app that boots @php-wasm/web and renders WordPress 0.71.
-  JA: 071-now ホストページ(Issue #108 実現可能性検証)。@php-wasm/web を
-      起動し WordPress 0.71 を描画するブラウザアプリを読み込む。
+  EN: 071-now host page (Issue #116, full build 1/6). Loads the browser
+      app that boots @php-wasm/web and serves WordPress 0.71 through a
+      service worker so the in-browser blog has its CSS and navigation.
+  JA: 071-now ホストページ(Issue #116、フル実装 1/6)。@php-wasm/web を
+      起動し、サービスワーカー経由で WordPress 0.71 を配信するブラウザ
+      アプリを読み込む(ブラウザ内ブログに CSS と遷移が備わる)。
 -->
 <html lang="en">
 	<head>
@@ -23,6 +25,13 @@
 	</head>
 	<body>
 		<div id="status">071-now: booting php-wasm&hellip;</div>
+		<!--
+		  EN: The blog is served through the service worker at a scoped
+		      same-origin path; src is set by src/main.js once php-wasm
+		      is up so the worker can intercept the navigation.
+		  JA: ブログはサービスワーカー経由でスコープ付き同一オリジンパスで
+		      配信される。src は php-wasm 起動後に src/main.js が設定する。
+		-->
 		<iframe id="blog" title="WordPress 0.71 (071-now)"></iframe>
 		<script type="module" src="/src/main.js"></script>
 	</body>
