@@ -6,7 +6,8 @@
   "license": "GPL-2.0-or-later",
   "workspaces": [
     "cli",
-    "env"
+    "env",
+    "playground"
   ],
   "scripts": {
     "test:e2e": "playwright test",
