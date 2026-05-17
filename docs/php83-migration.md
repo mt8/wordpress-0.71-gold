@@ -1775,6 +1775,47 @@ panels; and a save round trip persisted content / status / category, with the
 0.71 front end rendering the post. `composer phpcs` / `phpstan` / `test` stay
 at 0 / 0 / 94.
 
+## Issue #154: Rework the editor header and layout
+
+Issue #79 gave the block editor its editing chrome; Issue #154 reworks the
+header and layout of `src/block-editor/app/` (`Editor.jsx`, `app.css`) to match
+the modern WordPress block editor.
+
+- **Providers wrap the whole `.be-app`.** `ShortcutProvider` /
+  `SlotFillProvider` / `BlockEditorProvider` now wrap the entire app — header
+  included — so header controls have the block editor store. The header's `+`
+  inserter needs that store, and so does the `BlockBreadcrumb`.
+- **WordPress logo button.** The `← Back to wp-admin` text link is replaced by
+  a WordPress logo button (the `wordpress` icon from `@wordpress/icons`) that
+  navigates to `config.adminUrl` — the black W tile at the top-left of the
+  modern editor.
+- **`+` block inserter.** A `+` button in the header opens `Inserter` from
+  `@wordpress/block-editor`. `Inserter`'s `renderToggle` prop makes the toggle
+  a clean `plus`-icon button; the inserter panel opens in a `Popover`, so
+  `Popover.Slot` stays rendered.
+- **Document Overview default OFF.** The hamburger / list-view button still
+  toggles the Document Overview panel, but `showOverview` now initialises to
+  `false` — the list view is hidden until the user opens it.
+- **Title above the content area.** The `.be-title` input moved from a
+  full-width bar above `.be-body` to inside `.be-canvas`, above the writing
+  flow, so it is the width of the content column.
+- **Breadcrumb pinned to the bottom.** `BlockBreadcrumb` moved out of
+  `.be-canvas` to a sibling rendered after `.be-body` (still inside
+  `BlockEditorProvider`) — a full-width bar pinned at the bottom of the editor.
+
+No undo / redo buttons were added. The `≤782px` mobile layout still collapses
+the body to a single column and wraps the header.
+
+### Verification
+
+Rebuilt the React app and verified headlessly at a desktop and a mobile
+(`≤782px`) viewport: the header shows the WordPress logo, the `+` inserter
+(clicking it opens the inserter panel) and the Document Overview toggle
+(starts hidden, toggles on); the post title sits above the content area inside
+the canvas; the block breadcrumb is a full-width bar at the bottom.
+`composer phpcs` / `phpstan` / `test` stay green and the playground e2e suite
+passes.
+
 ---
 
 # PHP 8.3 移行ログ
@@ -3491,3 +3532,42 @@ WordPress では `theme.json` から供給される)から読み取る。スタ�
 パネルを表示し、保存の往復は内容 / ステータス / カテゴリーを保存して 0.71
 フロントエンドが投稿を描画した。`composer phpcs` / `phpstan` / `test` は
 0 / 0 / 94 のまま。
+
+## Issue #154: エディタのヘッダーとレイアウトを再構成する
+
+Issue #79 でブロックエディタに編集 UI を与えた。Issue #154 は
+`src/block-editor/app/`(`Editor.jsx`・`app.css`)のヘッダーとレイアウトを、
+最新の WordPress ブロックエディタに合わせて再構成する。
+
+- **プロバイダが `.be-app` 全体を包む。** `ShortcutProvider` /
+  `SlotFillProvider` / `BlockEditorProvider` がアプリ全体 — ヘッダー含む —
+  を包むようになり、ヘッダーの操作子がブロックエディタストアを得られる。
+  ヘッダーの `+` インサーターも `BlockBreadcrumb` もそのストアを必要とする。
+- **WordPress ロゴボタン。** `← Back to wp-admin` テキストリンクを、
+  `config.adminUrl` へ遷移する WordPress ロゴボタン(`@wordpress/icons` の
+  `wordpress` アイコン)に置き換える — 最新エディタ左上の黒い W タイル。
+- **`+` ブロックインサーター。** ヘッダーの `+` ボタンが
+  `@wordpress/block-editor` の `Inserter` を開く。`Inserter` の
+  `renderToggle` prop でトグルを素の `plus` アイコンボタンにする。
+  インサーターパネルは `Popover` で開くため `Popover.Slot` は描画したまま。
+- **Document Overview の初期値オフ。** ハンバーガー / リストビューボタンは
+  引き続き Document Overview パネルを切り替えるが、`showOverview` の初期値が
+  `false` になった — ユーザーが開くまでリストビューは隠れている。
+- **タイトルはコンテンツエリアの上。** `.be-title` 入力を `.be-body` の上の
+  全幅バーから `.be-canvas` 内の writing flow の上へ移動し、コンテンツ
+  カラムの幅にする。
+- **パンくずは一番下に固定。** `BlockBreadcrumb` を `.be-canvas` の外へ出し、
+  `.be-body` の後の兄弟として描画する(`BlockEditorProvider` の内側のまま）
+  — エディタ下部に固定された全幅バー。
+
+undo / redo ボタンは追加しない。`≤782px` のモバイルレイアウトは引き続き
+本体を単一カラムに畳み、ヘッダーを折り返す。
+
+### 検証
+
+React アプリを再ビルドし、デスクトップとモバイル(`≤782px`)のビューポートで
+ヘッドレス検証した: ヘッダーは WordPress ロゴ・`+` インサーター(クリックで
+インサーターパネルが開く)・Document Overview トグル(初期は隠れ、オンに
+切り替わる)を表示し、投稿タイトルはキャンバス内のコンテンツエリアの上に
+あり、ブロックパンくずは下部の全幅バーである。`composer phpcs` /
+`phpstan` / `test` は green のまま、playground e2e スイートが合格する。
