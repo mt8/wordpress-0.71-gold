@@ -92,25 +92,31 @@ $use_balanceTags = 1;
 
 
 // set this to 0 to disable file upload, or 1 to enable it
-$use_fileupload = 0;
+// EN (Issue #93): enabled so the block editor's Image block can upload, the
+//     same default behaviour as modern WordPress.
+// JA (Issue #93): ブロックエディタの画像ブロックがアップロードできるよう有効化。
+//     現行 WordPress と同じ既定の挙動である。
+$use_fileupload = 1;
 
 // enter the real path of the directory where you'll upload the pictures
 //   if you're unsure about what your real path is, please ask your host's support staff
 //   note that the  directory must be writable by the webserver (ChMod 766)
 //   note for windows-servers users: use forwardslashes instead of backslashes
 //$fileupload_realpath = '/home/your/site/b2/images';
-// EN (Issue #93): the upload directory is src/images/, which Docker serves as
-//     the Apache document root (/var/www/html). Keeping uploads under src/ lets
-//     bin/static-export.php capture the referenced image assets at export time.
-// JA (Issue #93): アップロードディレクトリは src/images/。Docker が Apache の
-//     ドキュメントルート (/var/www/html) として配信する。uploads を src/ 配下に
-//     置くことで bin/static-export.php が書き出し時に参照画像アセットを取り込む。
-$fileupload_realpath = '/var/www/html/images';
+// EN (Issue #93): uploads go under wp-content/uploads/YYYY/MM/ to match modern
+//     WordPress; Docker serves src/ as the Apache document root (/var/www/html).
+//     Keeping uploads under src/ lets bin/static-export.php capture the
+//     referenced image assets at export time.
+// JA (Issue #93): アップロードは現行 WordPress に合わせ wp-content/uploads/YYYY/MM/
+//     配下に置く。Docker が src/ を Apache のドキュメントルート (/var/www/html)
+//     として配信する。uploads を src/ 配下に置くことで bin/static-export.php が
+//     書き出し時に参照画像アセットを取り込む。
+$fileupload_realpath = '/var/www/html/wp-content/uploads';
 
 // enter the URL of that directory (it's used to generate the links to the pictures)
 // EN (Issue #93): derived from $siteurl so it follows the configured blog URL.
 // JA (Issue #93): $siteurl から導出し、設定されたブログ URL に追従する。
-$fileupload_url = $siteurl . '/images';
+$fileupload_url = $siteurl . '/wp-content/uploads';
 
 // accepted file types, you can add to that list if you want
 //   note: add a space before and after each file type

@@ -24,11 +24,10 @@ playwright-report/
 /src/block-editor/app/node_modules/
 /src/block-editor/assets/
 
-# Uploaded media (src/images/), Issue #93 / アップロード済みメディア
+# Uploaded media (src/wp-content/uploads/), Issue #93 / アップロード済みメディア
 # EN: Files uploaded through the block editor are user content, not source.
-#     The directory itself is kept (.gitkeep) so Docker can serve it.
+#     The wp-content/uploads/YYYY/MM/ tree is created on demand by upload.php.
 # JA: ブロックエディタからアップロードされたファイルは利用者コンテンツであり
-#     ソースではない。ディレクトリ自体は Docker が配信できるよう (.gitkeep)
-#     残す。
-/src/images/*
-!/src/images/.gitkeep
+#     ソースではない。wp-content/uploads/YYYY/MM/ のツリーは upload.php が
+#     必要時に作成する。
+/src/wp-content/uploads/

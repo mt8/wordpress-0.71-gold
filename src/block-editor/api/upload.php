@@ -5,8 +5,8 @@
  * EN: Issue #93 experimental prototype. A JSON sibling of load.php / save.php
  *     that lets the block editor's Image block upload a file. It accepts a
  *     multipart/form-data POST with one image field ("file"), stores the file
- *     under WordPress 0.71's configured upload directory ($fileupload_realpath,
- *     set to src/images/ -- which Docker serves and bin/static-export.php
+ *     under a modern-WordPress-style wp-content/uploads/YYYY/MM/ tree (rooted
+ *     at $fileupload_realpath -- which Docker serves and bin/static-export.php
  *     captures), and responds { id, url, alt }.
  *
  *     WordPress 0.71 has no REST API and no media table, so Gutenberg's
@@ -24,9 +24,9 @@
  * JA: Issue #93 の実験的試作。load.php / save.php と並ぶ JSON エンドポイントで、
  *     ブロックエディタの画像ブロックがファイルをアップロードできるようにする。
  *     画像フィールド("file")を 1 つ持つ multipart/form-data の POST を受け取り、
- *     WordPress 0.71 の設定済みアップロードディレクトリ($fileupload_realpath、
- *     src/images/ に設定 -- Docker が配信し bin/static-export.php が取り込む)
- *     配下にファイルを保存し、{ id, url, alt } を返す。
+ *     現行 WordPress 風の wp-content/uploads/YYYY/MM/ ツリー($fileupload_realpath
+ *     を基底とする -- Docker が配信し bin/static-export.php が取り込む)配下に
+ *     ファイルを保存し、{ id, url, alt } を返す。
  *
  *     WordPress 0.71 には REST API もメディアテーブルも無いため、Gutenberg
  *     標準の wp/v2/media 経路は使えない。代わりに本エンドポイントは次を再利用
@@ -138,17 +138,31 @@ if ( '' === $ext || ! in_array( $ext, $allowed, true ) ) {
 	be_json( 400, array( 'error' => 'disallowed_type' ) );
 }
 
-$pathtofile = $fileupload_realpath . '/' . $img1_name;
+// EN: Modern-WordPress-style upload layout -- wp-content/uploads/YYYY/MM/.
+//     $year and $month come from date(), never from the request, so the
+//     subdirectory cannot be steered by an attacker; it is created on demand.
+// JA: 現行 WordPress 風のアップロード構成 -- wp-content/uploads/YYYY/MM/。
+//     $year と $month は date() 由来で要求からは来ないため、サブディレクトリを
+//     攻撃者が操作することはできない。ディレクトリは必要時に作成する。
+$year     = date( 'Y' );
+$month    = date( 'm' );
+$dest_rel = $year . '/' . $month;
+$dest_dir = $fileupload_realpath . '/' . $dest_rel;
 
-// EN: Defence in depth -- the file name is already sanitised above, but verify
-//     the resolved destination directory is exactly the configured upload
-//     directory before any file is written. If it is not, abort.
-// JA: 多層防御 -- ファイル名は上でサニタイズ済みだが、ファイル書き込み前に
-//     解決後の保存先ディレクトリが設定どおりのアップロードディレクトリと完全に
-//     一致することを確認する。一致しなければ中止する。
-$dest_dir = realpath( dirname( $pathtofile ) );
-$base_dir = realpath( $fileupload_realpath );
-if ( false === $dest_dir || false === $base_dir || $dest_dir !== $base_dir ) {
+if ( ! is_dir( $dest_dir ) ) {
+	@mkdir( $dest_dir, 0755, true );
+}
+
+// EN: Defence in depth -- the file name is sanitised above and the YYYY/MM
+//     segments are date()-derived, but still verify the resolved destination
+//     directory lies inside the configured upload base before any file write.
+// JA: 多層防御 -- ファイル名は上でサニタイズ済みで YYYY/MM は date() 由来だが、
+//     ファイル書き込み前に、解決後の保存先ディレクトリが設定されたアップロード
+//     基底の内側にあることを確認する。外側なら中止する。
+$base_dir  = realpath( $fileupload_realpath );
+$dest_real = realpath( $dest_dir );
+if ( false === $base_dir || false === $dest_real
+	|| 0 !== strpos( $dest_real, $base_dir . DIRECTORY_SEPARATOR ) ) {
 	be_json( 500, array( 'error' => 'invalid_destination' ) );
 }
 
@@ -157,12 +171,12 @@ if ( false === $dest_dir || false === $base_dir || $dest_dir !== $base_dir ) {
 // JA: 既存ファイルの上書きを避ける -- b2upload.php と同じく、重複は数字
 //     サフィックスでリネームする。
 $final_name = $img1_name;
-$pathtofile = $fileupload_realpath . '/' . $final_name;
+$pathtofile = $dest_dir . '/' . $final_name;
 $stem       = ( '' !== $ext ) ? substr( $img1_name, 0, strlen( $img1_name ) - strlen( $ext ) - 1 ) : $img1_name;
 $counter    = 1;
 while ( file_exists( $pathtofile ) ) {
 	$final_name = $stem . '_' . zeroise( $counter, 2 ) . '.' . $ext;
-	$pathtofile = $fileupload_realpath . '/' . $final_name;
+	$pathtofile = $dest_dir . '/' . $final_name;
 	++$counter;
 }
 
@@ -192,7 +206,7 @@ be_json(
 	200,
 	array(
 		'id'  => $synthetic_id,
-		'url' => $fileupload_url . '/' . $final_name,
+		'url' => $fileupload_url . '/' . $dest_rel . '/' . $final_name,
 		'alt' => '',
 	)
 );
