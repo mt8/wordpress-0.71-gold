@@ -528,7 +528,13 @@ async function boot() {
 	//     skips re-seeding, so content created through the admin on an
 	//     earlier visit is what the blog renders. A first run finds none
 	//     and the boot shim seeds a fresh database as before.
+	//
+	//     selectBackend() is awaited before the first load / save: it
+	//     confirms OPFS with a real round-trip and downgrades to IndexedDB
+	//     when OPFS is exposed but not usable -- WebKit / Safari, where the
+	//     OPFS API is present but unusable on this path (Issue #130).
 	const persistence = new DatabasePersistence();
+	await persistence.selectBackend();
 	const restored = await restorePersistedDatabase( php, persistence );
 
 	// EN: Persist the uploaded-media tree in the browser (Issue #124).
@@ -538,8 +544,10 @@ async function boot() {
 	//     earlier visit into that directory before the first request, so
 	//     an uploaded image is on disk when the blog renders it, and saves
 	//     it back after every request that adds or changes a file. A first
-	//     run, or a boot after a reset, finds nothing persisted.
+	//     run, or a boot after a reset, finds nothing persisted. Its
+	//     backend is confirmed the same way as the database layer's.
 	const mediaPersistence = new MediaPersistence();
+	await mediaPersistence.selectBackend();
 	const mediaRestored = await restorePersistedMedia( php, mediaPersistence );
 
 	// EN: The last database snapshot written to the persistent store.

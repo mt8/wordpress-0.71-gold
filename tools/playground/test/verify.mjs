@@ -1,9 +1,16 @@
 // EN: 071-now headless verification (Issue #116, #120, #122, #124,
-//     #126; full build).
+//     #126, #130; full build).
 //
 //     Builds the playground, serves the production build with `vite
-//     preview`, opens it in headless Chromium, and asserts that the
-//     WordPress 0.71 blog is served through the service worker: a
+//     preview`, and runs the verification in two headless engines --
+//     Chromium and WebKit (Safari's engine, Issue #130) -- so a
+//     browser-compatibility regression is caught here rather than only
+//     in production. WebKit was added after the deployed playground
+//     failed to boot in Safari: its OPFS lacks
+//     FileSystemFileHandle.prototype.createWritable, so the persistence
+//     layer must fall back to IndexedDB there; running WebKit proves
+//     that fallback path. Each engine asserts that the WordPress 0.71
+//     blog is served through the service worker: a
 //     loading splash covers the php-wasm boot and is replaced by the
 //     blog, the host page frames the playground and links to the
 //     repository (Issue #126), the front page renders with its CSS and
@@ -35,17 +42,23 @@
 //     full build unlocks -- styling and navigation (the service worker,
 //     step 1), the working admin (step 3), persistence (step 4) and
 //     image upload (step 5).
-// JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124・#126、
-//     フル実装)。
+// JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124・#126・
+//     #130、フル実装)。
 //
-//     playground をビルドし、`vite preview` で配信し、ヘッドレス
-//     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
-//     配信されることを検証する。ローディングスプラッシュが php-wasm の
-//     起動を覆いブログに置き換わること、ホストページが playground を
-//     枠付けしリポジトリへリンクすること(Issue #126)、フロントページが
-//     CSS とシード済みデモブログ(複数カテゴリーにまたがる数件の投稿)
-//     付きで描画されること、訪問者が投稿ページとカテゴリーページへ
-//     辿れることを確認する。
+//     playground をビルドし、`vite preview` で配信し、2 つのヘッドレス
+//     エンジン -- Chromium と WebKit(Safari のエンジン、Issue #130)--
+//     で検証を実行する。これによりブラウザ互換性の退行を本番ではなく
+//     ここで捕捉する。WebKit は、公開された playground が Safari で起動に
+//     失敗したのを受けて追加した。Safari の OPFS は
+//     FileSystemFileHandle.prototype.createWritable を持たないため、永続化
+//     層はそこで IndexedDB へフォールバックする必要があり、WebKit を実行
+//     することでそのフォールバック経路を検証する。各エンジンで WordPress
+//     0.71 ブログがサービスワーカー経由で配信されることを検証する。
+//     ローディングスプラッシュが php-wasm の起動を覆いブログに置き換わる
+//     こと、ホストページが playground を枠付けしリポジトリへリンクする
+//     こと(Issue #126)、フロントページが CSS とシード済みデモブログ
+//     (複数カテゴリーにまたがる数件の投稿)付きで描画されること、訪問者が
+//     投稿ページとカテゴリーページへ辿れることを確認する。
 //
 //     続いて WordPress 0.71 の管理画面を動かす(Issue #120)。管理画面は
 //     ログイン済みで開き(自動ログイン)、管理画面自身のフォームから
@@ -72,7 +85,7 @@
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, webkit } from 'playwright';
 
 const here = dirname( fileURLToPath( import.meta.url ) );
 const playgroundDir = join( here, '..' );
@@ -150,6 +163,12 @@ async function startPreview() {
  * Wait until the blog iframe has navigated to a scoped path whose URL
  * matches the given predicate, then return that frame.
  *
+ * The matched frame can be detached between being found and having its
+ * body awaited -- the blog iframe re-navigates, and WebKit in particular
+ * swaps the frame out mid-wait. A `waitForSelector` on a detached frame
+ * throws "Frame was detached"; that is treated as "not ready yet" and the
+ * loop retries until a stable frame is found or the deadline passes.
+ *
  * @param {import('playwright').Page}            page  The host page.
  * @param {(url: string) => boolean}             match URL predicate.
  * @return {Promise<import('playwright').Frame>} The blog frame.
@@ -161,9 +180,17 @@ async function waitForBlogFrame( page, match ) {
 			.frames()
 			.find( ( f ) => f.url().includes( '/scope:' ) && match( f.url() ) );
 		if ( frame ) {
-			// EN: Make sure the document has actually rendered its body.
-			await frame.waitForSelector( 'body', { timeout: 10000 } );
-			return frame;
+			try {
+				// EN: Make sure the document has actually rendered its body.
+				await frame.waitForSelector( 'body', { timeout: 10000 } );
+				return frame;
+			} catch ( error ) {
+				// EN: A detached frame means the iframe re-navigated mid
+				//     wait -- retry the loop to pick up the new frame.
+				if ( ! /detached/i.test( error.message ) ) {
+					throw error;
+				}
+			}
 		}
 		await new Promise( ( r ) => setTimeout( r, 250 ) );
 	}
@@ -201,6 +228,12 @@ async function gotoBlog( page, relPath ) {
  * document. Asserting on the rendered text instead waits for the new
  * page to actually be in place.
  *
+ * Both `innerText` and `textContent` are searched: `innerText` is the
+ * rendered text, but WebKit omits `<option>` content from it while
+ * Chromium includes it -- so a category name, which 0.71's category
+ * admin shows inside a `<select>`, would be missed on WebKit. Checking
+ * `textContent` too makes the assertion engine-independent (Issue #130).
+ *
  * @param {import('playwright').Page}  page         The host page.
  * @param {(url: string) => boolean}   matchUrl     URL predicate.
  * @param {string}                     expectedText Text the body must
@@ -219,7 +252,9 @@ async function waitForBlogText( page, matchUrl, expectedText ) {
 		if ( frame ) {
 			const body = await frame
 				.evaluate( () =>
-					document.body ? document.body.innerText : ''
+					document.body
+						? `${ document.body.innerText }\n${ document.body.textContent }`
+						: ''
 				)
 				.catch( () => '' );
 			if ( body.includes( expectedText ) ) {
@@ -240,10 +275,12 @@ async function waitForBlogText( page, matchUrl, expectedText ) {
  * served through the service worker, the same path a real visitor's
  * browser takes.
  *
- * @param {import('playwright').Page} page The host page.
+ * @param {import('playwright').Page} page   The host page.
+ * @param {string}                    engine The browser engine name, used
+ *                                            to name the screenshot.
  * @return {Promise<Array<[string, boolean]>>} Labelled check results.
  */
-async function verifyAdmin( page ) {
+async function verifyAdmin( page, engine ) {
 	const CREATED_TITLE = '071-now admin smoke post';
 	const CREATED_BODY = 'Created through the WordPress 0.71 admin.';
 	const EDITED_TITLE = '071-now admin smoke post edited';
@@ -326,7 +363,7 @@ async function verifyAdmin( page ) {
 	);
 
 	await page.screenshot( {
-		path: join( here, '071-now-admin.png' ),
+		path: join( here, `071-now-admin-${ engine }.png` ),
 		fullPage: true,
 	} );
 
@@ -394,6 +431,43 @@ async function waitForBoot( page ) {
 		() => window.__071now && typeof window.__071now.status === 'number',
 		{ timeout: 60000 }
 	);
+}
+
+/**
+ * Trigger the app's reset control and wait for the reloaded page to boot.
+ *
+ * `window.__071now.reset()` clears the persisted stores and then calls
+ * `location.reload()`. The reload starts asynchronously, so a bare
+ * `waitForBoot` afterwards can race it -- matching the pre-reload
+ * `window.__071now` (so a stale `databaseRestored` is read) or hitting
+ * "Execution context was destroyed" when the navigation lands mid call.
+ * WebKit reaches this window far more often than Chromium. This drives
+ * the reset robustly: it fires `reset()`, ignores a context-destroyed
+ * error from the in-flight navigation, waits for the new document's load
+ * event, then waits for the fresh boot hook -- so the post-reset reads
+ * always see the reloaded page.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<void>}
+ */
+async function resetAndWaitForBoot( page ) {
+	const navigated = page
+		.waitForEvent( 'load', { timeout: 60000 } )
+		.catch( () => {} );
+	await page
+		.evaluate( () => window.__071now.reset() )
+		.catch( ( error ) => {
+			// EN: location.reload() can destroy the context before the
+			//     evaluate resolves -- expected, the navigation is what
+			//     this awaits next.
+			if ( ! /Execution context was destroyed|navigation/i.test(
+				error.message
+			) ) {
+				throw error;
+			}
+		} );
+	await navigated;
+	await waitForBoot( page );
 }
 
 /**
@@ -484,8 +558,7 @@ async function verifyPersistence( page ) {
 
 	// EN: Reset -- clear the persisted store and reload. The created post
 	//     must be gone and the original seeded post back.
-	await page.evaluate( () => window.__071now.reset() );
-	await waitForBoot( page );
+	await resetAndWaitForBoot( page );
 	const afterResetRestored = await page.evaluate(
 		() => window.__071now.databaseRestored
 	);
@@ -532,12 +605,44 @@ const TEST_PNG_BASE64 =
  * 200 status with an image/* content-type and a non-empty body means the
  * static-file handler returned the stored upload.
  *
+ * The probe runs straight after a reset / reload, so the host page may
+ * still be navigating and `page.evaluate` can hit "Execution context was
+ * destroyed". That is retried (after re-awaiting the boot hook) rather
+ * than failing -- WebKit reaches this window more often than Chromium.
+ *
  * @param {import('playwright').Page} page    The host page.
  * @param {string}                    relPath Blog-relative path, e.g.
  *                                             '/wp-content/uploads/x.png'.
  * @return {Promise<{status:number, contentType:string, length:number}>}
  */
 async function fetchBlogImage( page, relPath ) {
+	for ( let attempt = 0; ; attempt++ ) {
+		try {
+			return await fetchBlogImageOnce( page, relPath );
+		} catch ( error ) {
+			const transient =
+				/Execution context was destroyed|navigation/i.test(
+					error.message
+				);
+			if ( ! transient || attempt >= 5 ) {
+				throw error;
+			}
+			// EN: The host page was navigating -- wait for the fresh boot
+			//     hook, then retry the probe against the new context.
+			await waitForBoot( page );
+		}
+	}
+}
+
+/**
+ * Run one fetch-blog-image probe against the host page (see
+ * fetchBlogImage, which wraps this with a navigation-retry).
+ *
+ * @param {import('playwright').Page} page    The host page.
+ * @param {string}                    relPath Blog-relative path.
+ * @return {Promise<{status:number, contentType:string, length:number}>}
+ */
+async function fetchBlogImageOnce( page, relPath ) {
 	return page.evaluate( async ( rel ) => {
 		const response = await window.__071now.get( rel );
 		const headers = response.headers || {};
@@ -647,8 +752,7 @@ async function verifyImageUpload( page ) {
 	// EN: Reset -- clear the persisted database and media, then reload.
 	//     The uploaded image must be gone (no media restored, and the
 	//     request handler no longer serves the file).
-	await page.evaluate( () => window.__071now.reset() );
-	await waitForBoot( page );
+	await resetAndWaitForBoot( page );
 	const mediaAfterReset = await page.evaluate(
 		() => window.__071now.mediaRestoredCount
 	);
@@ -670,12 +774,26 @@ async function verifyImageUpload( page ) {
 }
 
 /**
- * Verify the service-worker-served blog in headless Chromium.
+ * Verify the service-worker-served blog in one headless browser engine.
  *
+ * Run against both Chromium and WebKit (Safari's engine, Issue #130) so a
+ * browser-compatibility regression -- such as Safari lacking
+ * `FileSystemFileHandle.prototype.createWritable`, which once broke the
+ * OPFS persistence path -- is caught here rather than only in production.
+ * The two engines exercise the same checks; WebKit additionally proves
+ * the persistence layer falls back to IndexedDB when OPFS is not usable.
+ *
+ * @param {import('playwright').BrowserType} browserType The Playwright
+ *                                                       engine to launch.
+ * @param {string}                           engine      The engine name,
+ *                                                        for logs and the
+ *                                                        screenshot names.
  * @return {Promise<void>}
  */
-async function verify() {
-	const browser = await chromium.launch();
+async function verify( browserType, engine ) {
+	// eslint-disable-next-line no-console
+	console.log( `\n=== 071-now verification: ${ engine } ===` );
+	const browser = await browserType.launch();
 	const page = await browser.newPage();
 	const consoleErrors = [];
 	page.on( 'console', ( message ) => {
@@ -789,7 +907,7 @@ async function verify() {
 			.catch( () => {} );
 
 		await page.screenshot( {
-			path: join( here, '071-now-frontpage.png' ),
+			path: join( here, `071-now-frontpage-${ engine }.png` ),
 			fullPage: true,
 		} );
 
@@ -829,7 +947,7 @@ async function verify() {
 		//     after the front-page navigation checks and before the
 		//     console-error assertion so an admin-side console error is
 		//     also caught.
-		const adminChecks = await verifyAdmin( page );
+		const adminChecks = await verifyAdmin( page, engine );
 
 		// EN: Check database persistence (Issue #122) -- create a post,
 		//     reload, assert it survived, then exercise the reset. The
@@ -882,18 +1000,28 @@ async function verify() {
 		}
 		// eslint-disable-next-line no-console
 		console.log(
-			'screenshots: tools/playground/test/071-now-frontpage.png, 071-now-admin.png'
+			`screenshots: tools/playground/test/071-now-frontpage-${ engine }.png, ` +
+				`071-now-admin-${ engine }.png`
 		);
 
 		if ( ! ok ) {
-			throw new Error( '071-now verification failed' );
+			throw new Error( `071-now verification failed (${ engine })` );
 		}
 		// eslint-disable-next-line no-console
-		console.log( '\n071-now verification PASSED' );
+		console.log( `\n071-now verification PASSED (${ engine })` );
 	} finally {
 		await browser.close();
 	}
 }
+
+// EN: The engines the verification runs against. Chromium catches the
+//     common case; WebKit is Safari's engine, added for Issue #130 so a
+//     browser-compatibility bug -- such as the OPFS createWritable gap
+//     that broke the Safari boot -- is caught here from now on.
+const ENGINES = [
+	[ chromium, 'chromium' ],
+	[ webkit, 'webkit' ],
+];
 
 const args = process.argv.slice( 2 );
 
@@ -903,7 +1031,18 @@ if ( ! args.includes( '--no-build' ) ) {
 
 const preview = await startPreview();
 try {
-	await verify();
+	// EN: Run the full verification once per engine against the same
+	//     preview server. Both must pass; a failure in either engine
+	//     fails the whole run.
+	for ( const [ browserType, engine ] of ENGINES ) {
+		await verify( browserType, engine );
+	}
+	// eslint-disable-next-line no-console
+	console.log(
+		`\n071-now verification PASSED on all engines: ${ ENGINES.map(
+			( [ , engine ] ) => engine
+		).join( ', ' ) }`
+	);
 } finally {
 	preview.kill();
 }

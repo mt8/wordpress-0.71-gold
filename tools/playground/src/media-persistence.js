@@ -54,20 +54,79 @@ const IDB_NAME = '071-now-media';
 const IDB_STORE = 'uploads';
 const IDB_KEY = 'tree';
 
+// EN: A throwaway file name the OPFS runtime probe writes and deletes.
+//     Distinct from OPFS_DIR_NAME so the probe never disturbs the real
+//     persisted uploads tree.
+const OPFS_PROBE_FILE_NAME = '071-now-opfs-probe';
+
 /**
- * Whether the Origin Private File System is usable in this browser.
+ * Whether the Origin Private File System API looks present in this
+ * browser.
  *
- * `navigator.storage.getDirectory` is the OPFS entry point; a browser
- * without it falls back to IndexedDB.
+ * `navigator.storage.getDirectory` is the OPFS entry point, but its mere
+ * presence is not enough: Safari exposes `getDirectory` yet does not
+ * implement `FileSystemFileHandle.prototype.createWritable()` on the main
+ * thread (its OPFS write path is the worker-only synchronous access
+ * handle). `opfsSave()` writes through `createWritable()`, so OPFS is
+ * only usable here when that method exists too.
  *
- * @return {boolean} True when OPFS is available.
+ * This is a fast synchronous gate only -- API presence does not prove
+ * OPFS actually works (some engines expose the API but fail at the first
+ * `getDirectory()` call). `opfsUsable()` confirms it with a real probe;
+ * `selectBackend()` runs that before the layer commits to OPFS.
+ *
+ * Kept identical to the copy in src/persistence.js so the database and
+ * media layers always pick the same backend.
+ *
+ * @return {boolean} True when the OPFS API surface is present.
  */
 function hasOpfs() {
 	return (
 		typeof navigator !== 'undefined' &&
 		!! navigator.storage &&
-		typeof navigator.storage.getDirectory === 'function'
+		typeof navigator.storage.getDirectory === 'function' &&
+		typeof FileSystemFileHandle !== 'undefined' &&
+		typeof FileSystemFileHandle.prototype.createWritable === 'function'
 	);
+}
+
+/**
+ * Whether OPFS actually works here, confirmed by a real round-trip.
+ *
+ * Feature detection (`hasOpfs()`) is necessary but not sufficient: an
+ * engine can expose the whole OPFS API and still fail at the first
+ * `getDirectory()` call -- WebKit does exactly this in some contexts,
+ * throwing `UnknownError`. So this opens the OPFS root, creates a
+ * throwaway file, writes to it through `createWritable()` and removes it.
+ * Any failure means OPFS is not usable and the layer must fall back to
+ * IndexedDB.
+ *
+ * Kept identical to the copy in src/persistence.js so the database and
+ * media layers always pick the same backend.
+ *
+ * @return {Promise<boolean>} True when an OPFS write round-trip succeeds.
+ */
+async function opfsUsable() {
+	if ( ! hasOpfs() ) {
+		return false;
+	}
+	try {
+		const root = await navigator.storage.getDirectory();
+		const handle = await root.getFileHandle( OPFS_PROBE_FILE_NAME, {
+			create: true,
+		} );
+		const writable = await handle.createWritable();
+		try {
+			await writable.write( new Uint8Array( [ 0 ] ) );
+		} finally {
+			await writable.close();
+		}
+		await root.removeEntry( OPFS_PROBE_FILE_NAME );
+		return true;
+	} catch {
+		// EN: OPFS API present but not usable -- fall back to IndexedDB.
+		return false;
+	}
 }
 
 /**
@@ -223,9 +282,9 @@ async function idbLoad() {
 	if ( ! stored || typeof stored !== 'object' ) {
 		return null;
 	}
-	// EN: The map is stored with Blob values (copied out of the php-wasm
-	//     heap before the transaction); turn each one back into a
-	//     Uint8Array.
+	// EN: idbSave stores Uint8Array values (see toStorableBytes). A Blob
+	//     value is still handled so a media tree persisted by an earlier
+	//     build -- which stored Blobs -- is read back without loss.
 	const tree = {};
 	for ( const [ path, value ] of Object.entries( stored ) ) {
 		const buffer =
@@ -236,18 +295,48 @@ async function idbLoad() {
 }
 
 /**
+ * Copy bytes into a standalone Uint8Array safe to store in IndexedDB.
+ *
+ * Two browser constraints shape this:
+ *
+ *   - The php-wasm heap is a SharedArrayBuffer when PHP runs threaded, so
+ *     `php.readFileAsBuffer()` can hand back a SharedArrayBuffer-backed
+ *     view. The structured clone IndexedDB performs cannot clone a
+ *     SharedArrayBuffer (`DataCloneError`), so the bytes must be copied
+ *     into a non-shared ArrayBuffer first. `new Uint8Array( bytes )`
+ *     copies element-wise into a fresh, non-shared buffer.
+ *   - WebKit's IndexedDB cannot store a Blob in a cross-origin-isolated
+ *     page -- `store.put()` of any Blob throws `UnknownError: Error
+ *     preparing Blob/File data to be stored in object store`, even when
+ *     the Blob is backed by a non-shared buffer. Chromium tolerates a
+ *     Blob, which is why the playground stored one until Safari / WebKit
+ *     exposed the gap (Issue #130). A plain Uint8Array stores fine in
+ *     both engines, so the value put into the store is the typed array
+ *     itself, not a Blob.
+ *
+ * Kept identical to the copy in src/persistence.js.
+ *
+ * @param {Uint8Array} bytes The (possibly SharedArrayBuffer-backed) data.
+ * @return {Uint8Array} A standalone, non-shared copy of the bytes.
+ */
+function toStorableBytes( bytes ) {
+	return new Uint8Array( bytes );
+}
+
+/**
  * Write the uploaded-media tree to IndexedDB, replacing any earlier copy.
  *
  * @param {Object<string,Uint8Array>} tree The path -> bytes map.
  * @return {Promise<void>}
  */
 async function idbSave( tree ) {
-	// EN: Store each file as a Blob so the bytes are copied out of the
-	//     (possibly SharedArrayBuffer-backed) php-wasm heap before the
-	//     transaction.
+	// EN: Store each file as a standalone Uint8Array -- see
+	//     toStorableBytes: WebKit's IndexedDB cannot store a Blob in a
+	//     cross-origin-isolated page, and the php-wasm heap the bytes
+	//     come from may be a SharedArrayBuffer.
 	const stored = {};
 	for ( const [ path, bytes ] of Object.entries( tree ) ) {
-		stored[ path ] = new Blob( [ bytes ] );
+		stored[ path ] = toStorableBytes( bytes );
 	}
 	await idbRun( 'readwrite', ( store ) => store.put( stored, IDB_KEY ) );
 }
@@ -273,16 +362,37 @@ async function idbClear() {
 export class MediaPersistence {
 
 	/**
-	 * Pick the storage backend. OPFS is preferred; IndexedDB is the
-	 * fallback for browsers without it.
+	 * Start with a provisional backend. `selectBackend()` confirms it
+	 * with a real OPFS probe before the layer is used.
 	 */
 	constructor() {
 		/**
-		 * The chosen backend, 'opfs' or 'indexeddb'.
+		 * The backend in use, 'opfs' or 'indexeddb'. Provisional until
+		 * `selectBackend()` resolves -- it may downgrade 'opfs' to
+		 * 'indexeddb' when the OPFS probe fails.
 		 *
 		 * @type {'opfs'|'indexeddb'}
 		 */
 		this.backend = hasOpfs() ? 'opfs' : 'indexeddb';
+	}
+
+	/**
+	 * Confirm the storage backend with a real OPFS round-trip.
+	 *
+	 * The constructor picks 'opfs' on API presence alone, which is not
+	 * enough: an engine can expose OPFS yet fail at the first call (see
+	 * `opfsUsable()`). This runs that probe once and downgrades to
+	 * IndexedDB when OPFS does not actually work. The app awaits it once,
+	 * before the first load / save, so `save()` -- unlike `load()` it has
+	 * no failure fallback -- never reaches an unusable OPFS backend.
+	 *
+	 * @return {Promise<'opfs'|'indexeddb'>} The confirmed backend.
+	 */
+	async selectBackend() {
+		if ( this.backend === 'opfs' && ! ( await opfsUsable() ) ) {
+			this.backend = 'indexeddb';
+		}
+		return this.backend;
 	}
 
 	/**

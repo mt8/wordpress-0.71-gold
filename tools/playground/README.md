@@ -155,10 +155,16 @@ reload. Step 4 (Issue #122) persists that file in the browser.
 `src/persistence.js` is the persistence layer. It stores the raw bytes
 of the SQLite file in the browser:
 
-- **OPFS** (the Origin Private File System) when the browser exposes
-  `navigator.storage.getDirectory` — the modern per-origin file store.
-- **IndexedDB** as the fallback for browsers without OPFS; the same
-  bytes are stored as a single `Blob` under a fixed key.
+- **OPFS** (the Origin Private File System) — the modern per-origin file
+  store — when it is actually usable. The layer does not trust feature
+  detection alone: an engine can expose the OPFS API yet fail at the
+  first call (Safari lacks `createWritable` on the main thread; WebKit
+  can throw at `getDirectory()`). At boot the layer runs a real OPFS
+  write round-trip and only commits to OPFS when it succeeds (Issue
+  #130).
+- **IndexedDB** as the fallback when OPFS is unusable; the bytes are
+  stored as a `Uint8Array` under a fixed key. Safari / WebKit reach this
+  path and it works there.
 
 `src/main.js` wires it in:
 
@@ -273,7 +279,7 @@ tools/playground/
     build-overlay.mjs     snapshots src/, applies the db overlay, and
                           rewrites the direct mysqli_* call sites
   test/
-    verify.mjs            headless-Chromium verification
+    verify.mjs            headless verification (Chromium + WebKit)
   wp/                     generated overlay (git-ignored)
 ```
 
@@ -283,11 +289,16 @@ tools/playground/
 npm run build      build the overlay and the Vite bundle
 npm run dev        Vite dev server
 npm run preview    serve the production build
-npm run verify     build, serve, and verify in headless Chromium
+npm run verify     build, serve, and verify in headless Chromium + WebKit
 ```
 
-`npm run verify` confirms, in a real browser, that the WordPress 0.71
-blog is served through the service worker: a loading splash covers the
+`npm run verify` runs the full check suite against two headless engines
+— Chromium and WebKit (Safari's engine) — so a browser-compatibility
+regression is caught here rather than in production (Issue #130). Both
+must pass. In WebKit the playground boots with persistence on the
+IndexedDB fallback; in Chromium it uses OPFS. Each engine confirms, in a
+real browser, that the WordPress 0.71 blog is served through the service
+worker: a loading splash covers the
 php-wasm boot and is replaced by the blog, the host page frames the
 playground and links to the repository, the front page renders with its
 CSS and the seeded demo blog (several posts across a couple of
@@ -300,8 +311,9 @@ post is still present, then exercising the reset. Finally it checks
 image upload — uploading an image through `b2upload.php`, asserting it
 is stored and served from the VFS, reloading and asserting it survived,
 then asserting the reset clears it — with no console errors. It also
-asserts the page is cross-origin-isolated. It writes
-`test/071-now-frontpage.png` and `test/071-now-admin.png`.
+asserts the page is cross-origin-isolated. It writes a screenshot per
+engine: `test/071-now-frontpage-<engine>.png` and
+`test/071-now-admin-<engine>.png`.
 
 ## Deployment
 
