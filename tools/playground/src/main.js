@@ -37,9 +37,16 @@
 import { loadWebRuntime } from '@php-wasm/web';
 import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal';
 import { wpFiles } from './wp-files.js';
+import { DatabasePersistence } from './persistence.js';
 
 // EN: Document root inside the php-wasm virtual filesystem.
 const DOCROOT = '/wordpress';
+
+// EN: The SQLite database file inside the php-wasm virtual filesystem.
+//     Must match WP071_DB_PATH in tools/playground/db/boot.php -- that
+//     boot shim seeds and reads the database at this path, and this app
+//     loads the persisted bytes into it and saves them back from it.
+const DB_PATH = '/tmp/071-now.sqlite';
 
 // EN: The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
 //     absolute asset URLs and internal links against it.
@@ -53,6 +60,7 @@ const SCOPE_PREFIX = `/scope:${ Math.random().toString( 36 ).slice( 2, 10 ) }`;
 
 const statusEl = document.getElementById( 'status' );
 const blogEl = document.getElementById( 'blog' );
+const resetButtonEl = document.getElementById( 'reset' );
 
 /**
  * Update the status line.
@@ -62,7 +70,9 @@ const blogEl = document.getElementById( 'blog' );
  */
 function setStatus( message, kind = '' ) {
 	statusEl.textContent = `071-now: ${ message }`;
-	statusEl.className = kind;
+	// EN: The ok / err colours live on the toolbar so the reset button
+	//     shares the status background.
+	statusEl.parentElement.className = kind;
 }
 
 /**
@@ -103,7 +113,8 @@ async function registerServiceWorker() {
 /**
  * Boot php-wasm and mount the overlaid WordPress 0.71 tree.
  *
- * @return {Promise<PHPRequestHandler>} The request handler serving 0.71.
+ * @return {Promise<{php: PHP, requestHandler: PHPRequestHandler}>} The
+ *         php-wasm instance and the request handler serving 0.71.
  */
 async function bootPhpWasm() {
 	setStatus( 'loading the WebAssembly PHP runtime…' );
@@ -172,7 +183,76 @@ async function bootPhpWasm() {
 	} );
 	php.requestHandler = requestHandler;
 
-	return requestHandler;
+	return { php, requestHandler };
+}
+
+/**
+ * Load a persisted SQLite database into the php-wasm virtual filesystem.
+ *
+ * Called once, before the first request is served. When a database has
+ * been persisted (a returning visitor) its bytes are written to DB_PATH,
+ * so the boot shim's `file_exists( WP071_DB_PATH )` check sees an
+ * existing database and skips re-seeding -- the persisted content (posts
+ * and categories created through the admin) is what the blog renders.
+ * When nothing is persisted (a first run, or after a reset) DB_PATH is
+ * left absent and the boot shim seeds a fresh database as before.
+ *
+ * @param {PHP}                 php         The php-wasm instance.
+ * @param {DatabasePersistence} persistence The persistence handle.
+ * @return {Promise<boolean>} True when a persisted database was restored.
+ */
+async function restorePersistedDatabase( php, persistence ) {
+	const bytes = await persistence.load();
+	if ( ! bytes ) {
+		return false;
+	}
+	// EN: DB_PATH lives under /tmp; make sure the directory exists before
+	//     writing the restored database file into it.
+	php.mkdirTree( DB_PATH.slice( 0, DB_PATH.lastIndexOf( '/' ) ) );
+	php.writeFile( DB_PATH, bytes );
+	return true;
+}
+
+/**
+ * Read the current SQLite database bytes from the php-wasm filesystem.
+ *
+ * The bytes are copied out of the php-wasm heap: readFileAsBuffer may
+ * return a view backed by the (possibly shared) WASM memory, which a
+ * later PHP write would mutate under us. A standalone copy is what the
+ * persistent store and the change comparison need.
+ *
+ * @param {PHP} php The php-wasm instance.
+ * @return {Uint8Array|null} The database bytes, or null when the file is
+ *                           not present.
+ */
+function readDatabaseBytes( php ) {
+	if ( ! php.fileExists( DB_PATH ) ) {
+		return null;
+	}
+	return new Uint8Array( php.readFileAsBuffer( DB_PATH ) );
+}
+
+/**
+ * Whether two byte arrays hold identical content.
+ *
+ * Used to skip persisting the database when a request did not change it
+ * -- a front-page view or an asset request leaves the database untouched,
+ * and only writes (a new post, an edit, a new category) need saving.
+ *
+ * @param {Uint8Array|null} a First byte array.
+ * @param {Uint8Array|null} b Second byte array.
+ * @return {boolean} True when both are present and byte-for-byte equal.
+ */
+function bytesEqual( a, b ) {
+	if ( ! a || ! b || a.length !== b.length ) {
+		return false;
+	}
+	for ( let i = 0; i < a.length; i++ ) {
+		if ( a[ i ] !== b[ i ] ) {
+			return false;
+		}
+	}
+	return true;
 }
 
 /**
@@ -219,11 +299,43 @@ async function boot() {
 	setStatus( 'registering the request-routing service worker…' );
 	await registerServiceWorker();
 
-	const requestHandler = await bootPhpWasm();
+	const { php, requestHandler } = await bootPhpWasm();
+
+	// EN: Persist the SQLite database in the browser (Issue #122). OPFS is
+	//     used when available, IndexedDB otherwise. Restore any persisted
+	//     database into the php-wasm filesystem before the first request:
+	//     when one is found the boot shim sees an existing database and
+	//     skips re-seeding, so content created through the admin on an
+	//     earlier visit is what the blog renders. A first run finds none
+	//     and the boot shim seeds a fresh database as before.
+	const persistence = new DatabasePersistence();
+	const restored = await restorePersistedDatabase( php, persistence );
+
+	// EN: The last database snapshot written to the persistent store.
+	//     A request is persisted only when it changed the database, so a
+	//     front-page view or an asset request triggers no storage write.
+	let lastSavedDb = restored ? readDatabaseBytes( php ) : null;
+
+	/**
+	 * Persist the SQLite database if the latest request changed it.
+	 *
+	 * @return {Promise<void>}
+	 */
+	async function persistIfChanged() {
+		const current = readDatabaseBytes( php );
+		if ( ! current || bytesEqual( current, lastSavedDb ) ) {
+			return;
+		}
+		await persistence.save( current );
+		lastSavedDb = current;
+	}
 
 	// EN: The service worker forwards every scoped blog request here.
-	//     Answer each one through the php-wasm request handler and reply
-	//     on the MessagePort that came with the message.
+	//     Answer each one through the php-wasm request handler, reply on
+	//     the MessagePort that came with the message, then persist the
+	//     database if that request changed it -- so a post or category
+	//     created through the admin is saved the moment the form submit
+	//     finishes.
 	let firstResponseStatus = null;
 	navigator.serviceWorker.addEventListener( 'message', async ( event ) => {
 		if ( ! event.data || event.data.type !== '071-now-request' ) {
@@ -238,6 +350,7 @@ async function boot() {
 		if ( firstResponseStatus === null && response ) {
 			firstResponseStatus = response.httpStatusCode;
 		}
+		await persistIfChanged();
 	} );
 
 	setStatus( 'serving the WordPress 0.71 front page…' );
@@ -255,6 +368,11 @@ async function boot() {
 		);
 	}
 
+	// EN: On a first run this front-page request is what triggered the
+	//     boot shim's seed; persist that freshly seeded database now so
+	//     the seeded post survives the very first reload.
+	await persistIfChanged();
+
 	// EN: Point the iframe at the real scoped path. The navigation and
 	//     every asset request and link click inside it are intercepted
 	//     by the service worker and served through php-wasm -- so the
@@ -262,14 +380,46 @@ async function boot() {
 	const frontPageUrl = SCOPE_PREFIX + '/index.php';
 	blogEl.src = frontPageUrl;
 
+	/**
+	 * Reset the playground to a fresh seeded database (Issue #122).
+	 *
+	 * Clears the persistent store and the in-VFS database file, then
+	 * reloads the page. The next boot finds nothing persisted, so the
+	 * boot shim seeds a fresh database -- the playground is back to its
+	 * clean state and every post or category added through the admin is
+	 * gone.
+	 *
+	 * @return {Promise<void>}
+	 */
+	async function resetDatabase() {
+		await persistence.clear();
+		if ( php.fileExists( DB_PATH ) ) {
+			php.unlink( DB_PATH );
+		}
+		lastSavedDb = null;
+		location.reload();
+	}
+
+	resetButtonEl.addEventListener( 'click', () => {
+		resetButtonEl.disabled = true;
+		setStatus( 'resetting to a fresh seeded database…' );
+		resetDatabase().catch( ( error ) => {
+			resetButtonEl.disabled = false;
+			setStatus( `reset failed: ${ error && error.message }`, 'err' );
+		} );
+	} );
+
 	// EN: Expose a hook the headless verifier reads to confirm the boot,
-	//     plus a fetch-style bridge for direct request-handler probes.
+	//     plus a fetch-style bridge for direct request-handler probes and
+	//     the persistence controls (the backend in use and the reset).
 	window.__071now = {
 		requestHandler,
 		scopePrefix: SCOPE_PREFIX,
 		frontPageUrl,
 		status: frontPage.httpStatusCode,
 		html: frontPage.text,
+		persistenceBackend: persistence.backend,
+		databaseRestored: restored,
 		/**
 		 * Fetch a path from the in-browser WordPress 0.71 install.
 		 *
@@ -277,11 +427,27 @@ async function boot() {
 		 * @return {Promise<import('@php-wasm/universal').PHPResponse>}
 		 */
 		get: ( url ) => requestHandler.request( { url } ),
+		/**
+		 * Persist the database now if it has changed.
+		 *
+		 * Each request already persists the database when it changed it;
+		 * this lets a caller force-flush before a reload, used by the
+		 * headless verifier so its assertions never race the save.
+		 *
+		 * @return {Promise<void>}
+		 */
+		persist: persistIfChanged,
+		/**
+		 * Reset the playground to a fresh seeded database.
+		 *
+		 * @return {Promise<void>}
+		 */
+		reset: resetDatabase,
 	};
 
 	if ( frontPage.httpStatusCode === 200 ) {
 		setStatus(
-			'WordPress 0.71 served in-browser through the service worker.',
+			`WordPress 0.71 served in-browser; database persisted via ${ persistence.backend }.`,
 			'ok'
 		);
 	}

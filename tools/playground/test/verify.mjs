@@ -1,4 +1,4 @@
-// EN: 071-now headless verification (Issue #116, #120; full build).
+// EN: 071-now headless verification (Issue #116, #120, #122; full build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, opens it in headless Chromium, and asserts that the
@@ -12,11 +12,18 @@
 //     then edited through the admin's own forms, a category is added,
 //     and each change is confirmed on the front page.
 //
+//     Finally it checks database persistence (Issue #122): a post is
+//     created through the admin, the page is reloaded, and the post is
+//     asserted still present -- proving the SQLite database survives a
+//     reload via OPFS / IndexedDB. The reset control is then exercised:
+//     after a reset the post is gone and the blog is back to its fresh
+//     seeded state.
+//
 //     This extends the feasibility spike's check (Issue #108, which
 //     only confirmed the front-page text rendered) with the things the
 //     full build unlocks -- styling and navigation (the service worker,
-//     step 1) and the working admin (step 3).
-// JA: 071-now のヘッドレス検証(Issue #116・#120、フル実装)。
+//     step 1), the working admin (step 3) and persistence (step 4).
+// JA: 071-now のヘッドレス検証(Issue #116・#120・#122、フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、ヘッドレス
 //     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
@@ -28,10 +35,16 @@
 //     投稿を作成・編集し、カテゴリーを追加し、各変更をフロントページで
 //     確認する。
 //
+//     最後にデータベースの永続化を検証する(Issue #122)。管理画面から
+//     投稿を作成しページをリロードし、投稿が残っていることを確認する
+//     -- SQLite データベースが OPFS / IndexedDB によりリロードを越えて
+//     残ることの証明である。続いてリセット操作を動かす。リセット後は
+//     その投稿は消え、ブログは新しいシード済み状態へ戻る。
+//
 //     これは実現可能性検証(Issue #108、フロントページのテキスト描画のみ
 //     確認)を、フル実装が解放するもの -- スタイリングと遷移(サービス
-//     ワーカー、ステップ 1)、および動作する管理画面(ステップ 3)--
-//     で拡張したものである。
+//     ワーカー、ステップ 1)、動作する管理画面(ステップ 3)、永続化
+//     (ステップ 4)-- で拡張したものである。
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -285,6 +298,143 @@ async function verifyAdmin( page ) {
 }
 
 /**
+ * Wait for the 071-now app to finish booting.
+ *
+ * The app sets window.__071now (with a numeric status) once php-wasm is
+ * up and the front page has been served through the request handler.
+ * This is awaited both on the initial load and after each reload the
+ * persistence checks perform.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<void>}
+ */
+async function waitForBoot( page ) {
+	await page.waitForFunction(
+		() => window.__071now && typeof window.__071now.status === 'number',
+		{ timeout: 60000 }
+	);
+}
+
+/**
+ * Create a post through the WordPress 0.71 admin's own post form.
+ *
+ * @param {import('playwright').Page} page  The host page.
+ * @param {string}                    title The post title to fill in.
+ * @param {string}                    body  The post body to fill in.
+ * @return {Promise<boolean>} True once the admin lists the new post.
+ */
+async function createPostThroughAdmin( page, title, body ) {
+	const isAdmin = ( url ) => url.includes( '/wp-admin/b2edit.php' );
+	const editFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+	await editFrame.waitForSelector( 'form[name="post"] #content', {
+		timeout: 15000,
+	} );
+	await editFrame.fill( 'form[name="post"] #title', title );
+	await editFrame.fill( 'form[name="post"] #content', body );
+	await editFrame.selectOption( 'form[name="post"] select#category', {
+		index: 0,
+	} );
+	await editFrame.click( 'form[name="post"] input[type="submit"]' );
+	return waitForBlogText( page, isAdmin, title );
+}
+
+/**
+ * Verify that the SQLite database persists across a reload, and that the
+ * reset control returns the playground to its fresh seeded state
+ * (Issue #122).
+ *
+ * Creates a uniquely named post through the admin, reloads the whole
+ * page (a fresh php-wasm instance) and asserts the post is still on the
+ * front page -- the database was restored from OPFS / IndexedDB rather
+ * than re-seeded. It then triggers the reset, which clears the persisted
+ * store and reloads, and asserts the created post is gone while the
+ * original seeded post is back.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifyPersistence( page ) {
+	// EN: A unique marker so the check is unaffected by any post an
+	//     earlier step left behind.
+	const PERSISTED_TITLE = `071-now persisted post ${ Date.now() }`;
+	const PERSISTED_BODY = 'This post must survive a page reload.';
+	const isFront = ( url ) => url.endsWith( '/index.php' );
+
+	// EN: A persistence backend must have been selected -- OPFS when the
+	//     browser has it, IndexedDB otherwise.
+	const backend = await page.evaluate(
+		() => window.__071now.persistenceBackend
+	);
+	const backendChosen = backend === 'opfs' || backend === 'indexeddb';
+
+	// EN: Create a post through the admin, then confirm it on the front
+	//     page before the reload so the baseline is known-good.
+	const postCreated = await createPostThroughAdmin(
+		page,
+		PERSISTED_TITLE,
+		PERSISTED_BODY
+	);
+	await gotoBlog( page, '/index.php' );
+	const onFrontBeforeReload = await waitForBlogText(
+		page,
+		isFront,
+		PERSISTED_TITLE
+	);
+
+	// EN: Force-flush the database to the persistent store so the reload
+	//     below never races the post-request save.
+	await page.evaluate( () => window.__071now.persist() );
+
+	// EN: Reload the whole page -- a fresh php-wasm instance with a fresh
+	//     virtual filesystem. Without persistence the boot shim would
+	//     re-seed and the created post would be gone; with persistence the
+	//     app restores the database from OPFS / IndexedDB.
+	await page.reload( { waitUntil: 'load' } );
+	await waitForBoot( page );
+	const restored = await page.evaluate(
+		() => window.__071now.databaseRestored
+	);
+	await gotoBlog( page, '/index.php' );
+	const survivedReload = await waitForBlogText(
+		page,
+		isFront,
+		PERSISTED_TITLE
+	);
+
+	// EN: Reset -- clear the persisted store and reload. The created post
+	//     must be gone and the original seeded post back.
+	await page.evaluate( () => window.__071now.reset() );
+	await waitForBoot( page );
+	const afterResetRestored = await page.evaluate(
+		() => window.__071now.databaseRestored
+	);
+	const frontAfterReset = await gotoBlog( page, '/index.php' );
+	const seededPostBack = await waitForBlogText(
+		page,
+		isFront,
+		EXPECTED_TITLE
+	);
+	// EN: The created post must NOT reappear after a reset. The seeded
+	//     post being back already proves the front page has rendered, so
+	//     a single body read is enough to confirm the marker is absent.
+	const frontText = await frontAfterReset
+		.evaluate( () => ( document.body ? document.body.innerText : '' ) )
+		.catch( () => '' );
+	const persistedGone = ! frontText.includes( PERSISTED_TITLE );
+
+	return [
+		[ `persistence backend selected (${ backend })`, backendChosen ],
+		[ 'post created through the admin form', postCreated ],
+		[ 'created post shows before reload', onFrontBeforeReload ],
+		[ 'database restored from the persistent store', restored === true ],
+		[ 'created post survives a page reload', survivedReload ],
+		[ 'reset clears the persistent store', afterResetRestored === false ],
+		[ 'seeded post is back after reset', seededPostBack ],
+		[ 'created post is gone after reset', persistedGone ],
+	];
+}
+
+/**
  * Verify the service-worker-served blog in headless Chromium.
  *
  * @return {Promise<void>}
@@ -307,10 +457,7 @@ async function verify() {
 
 		// EN: Wait for the boot hook the app sets once php-wasm is up and
 		//     the front page has been served through the request handler.
-		await page.waitForFunction(
-			() => window.__071now && typeof window.__071now.status === 'number',
-			{ timeout: 60000 }
-		);
+		await waitForBoot( page );
 
 		const result = await page.evaluate( () => ( {
 			status: window.__071now.status,
@@ -387,6 +534,12 @@ async function verify() {
 		//     also caught.
 		const adminChecks = await verifyAdmin( page );
 
+		// EN: Check database persistence (Issue #122) -- create a post,
+		//     reload, assert it survived, then exercise the reset. This
+		//     runs last because it reloads the page (a fresh php-wasm
+		//     instance); the reset at its end leaves a clean seeded state.
+		const persistenceChecks = await verifyPersistence( page );
+
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
 			[ 'service worker controls the page', swController ],
@@ -401,6 +554,7 @@ async function verify() {
 				categoryPostVisible > 0,
 			],
 			...adminChecks,
+			...persistenceChecks,
 			[ 'no console errors', consoleErrors.length === 0 ],
 		];
 

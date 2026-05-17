@@ -15,6 +15,8 @@ Step 2 (Issue #118) trims the php-wasm bundle to PHP 8.3 only. Step 3
 (Issue #120) makes the **WordPress 0.71 admin** work — the admin opens
 already logged in, and a post can be created, edited and a category
 managed through it, with the change reflected on the front page.
+Step 4 (Issue #122) **persists the SQLite database** in the browser, so
+content created through the admin survives a page reload / tab close.
 
 The spike's findings, including the chosen database approach and the
 remaining work for a full `071-now` build, are in
@@ -103,6 +105,44 @@ the spike (`docs/071-now-spike.md`), made it possible:
 rewrite and the auto-login all live under `tools/playground/` and apply
 only to the generated `tools/playground/wp/` tree.
 
+## Persisting the SQLite database
+
+The blog's content lives in a single in-browser SQLite file inside the
+php-wasm virtual filesystem. That filesystem is discarded when the tab
+closes, so on its own the playground re-seeds a fresh database for every
+php-wasm instance and a post created through the admin is lost on
+reload. Step 4 (Issue #122) persists that file in the browser.
+
+`src/persistence.js` is the persistence layer. It stores the raw bytes
+of the SQLite file in the browser:
+
+- **OPFS** (the Origin Private File System) when the browser exposes
+  `navigator.storage.getDirectory` — the modern per-origin file store.
+- **IndexedDB** as the fallback for browsers without OPFS; the same
+  bytes are stored as a single `Blob` under a fixed key.
+
+`src/main.js` wires it in:
+
+- **Restore before the first request.** At boot, before php-wasm serves
+  anything, the persisted bytes are loaded and written to the SQLite
+  path in the virtual filesystem. The boot shim's seed is gated on that
+  file's existence (`db/boot.php`), so a returning visitor's database is
+  found and the seed is skipped — the persisted content is what renders.
+  A first visit finds nothing persisted and the boot shim seeds afresh.
+- **Save after every change.** After each request the database file is
+  read back and compared with the last saved snapshot; when it changed
+  (a new post, an edit, a new category) the new bytes are persisted. A
+  front-page view or an asset request leaves the database untouched and
+  triggers no storage write.
+- **Reset.** The toolbar's *Reset database* button (and
+  `window.__071now.reset()`) clears the persistent store and the in-VFS
+  file, then reloads. The next boot finds nothing persisted, so the boot
+  shim seeds a fresh database — the playground is back to its clean
+  seeded state.
+
+`src/` is untouched: the persistence layer, the boot-time restore and
+the reset all live under `tools/playground/`.
+
 ## Layout
 
 ```
@@ -114,6 +154,7 @@ tools/playground/
     sw.js                 request-routing service worker
   src/
     main.js               boots @php-wasm/web, wires the SW bridge
+    persistence.js        persists the SQLite database (OPFS / IndexedDB)
     wp-files.js           build-time bundle of the overlaid WP 0.71 tree
   db/                     the 071-now database layer (overlaid into WP)
     wp-db.php             SQLite-backed reimplementation of 0.71's wpdb
@@ -143,5 +184,7 @@ blog is served through the service worker: the front page renders with
 its CSS, and a visitor can click through to a post page and a category
 page. It then exercises the admin — opening it logged in, creating and
 editing a post and adding a category through the admin's own forms, and
-confirming each change on the front page — with no console errors. It
-writes `test/071-now-frontpage.png` and `test/071-now-admin.png`.
+confirming each change on the front page. Finally it checks persistence
+— creating a post, reloading the page and asserting the post is still
+present, then exercising the reset — with no console errors. It writes
+`test/071-now-frontpage.png` and `test/071-now-admin.png`.
