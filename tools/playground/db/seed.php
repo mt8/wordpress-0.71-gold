@@ -266,6 +266,21 @@ foreach ( $posts as $index => $post ) {
 }
 $postStmt = null;
 
+// EN: A demo link for the front page's Links sidebar. WordPress 0.71's
+//     index.php renders a "Links:" sidebar with get_links(), and that
+//     query selects DATE_FORMAT(link_updated, '%d/%m/%Y %h:%i') -- so a
+//     seeded link both gives the sidebar visible content and exercises
+//     the translator's DATE_FORMAT -> strftime() rewrite at render time.
+//     link_updated is dated a few days back so the formatted timestamp is
+//     a real date, not the 0000-00-00 default.
+$pdo->exec(
+	"INSERT INTO $tablelinks
+	  (link_id, link_url, link_name, link_image, link_target, link_category, link_description, link_visible, link_owner, link_rating, link_updated, link_rel)
+	  VALUES (1, 'https://wordpress.org/', 'WordPress', '', '', 0, 'The project WordPress 0.71 grew into.', 'Y', 1, 0, '"
+	. gmdate( 'Y-m-d H:i:s', $baseTime - ( 3 * 86400 ) )
+	. "', '')"
+);
+
 // EN: Close the seed's SQLite connection. The blog's own wpdb opens its
 //     own connection moments later (b2config.php). A lingering write
 //     connection here would hold a lock and make the admin's first

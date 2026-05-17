@@ -144,9 +144,22 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			//     the function rewrite and keeps the column's MySQL name.
 			$sql = self::alias_date_part_columns( $sql );
 
-			// EN: Rewrite date functions only outside string literals -- the
-			//     alias added above is a quoted literal that itself spells
-			//     "YEAR(post_date)", and the rewrite must not touch it.
+			// EN: DATE_FORMAT(col, 'fmt') is rewritten before the
+			//     outside-string-literals pass below. Its format argument
+			//     is itself a string literal -- the links query emits
+			//     DATE_FORMAT(link_updated, '%d/%m/%Y %h:%i') -- so
+			//     apply_outside_strings() would split the call across a
+			//     non-literal and a literal segment and the per-segment
+			//     rewrite could never match the whole call. The call,
+			//     literal argument included, is therefore matched here as
+			//     one unit; the resulting strftime('fmt', col) literal is
+			//     left for the outside-string pass to skip over.
+			$sql = self::translate_date_format( $sql );
+
+			// EN: Rewrite the remaining date functions only outside string
+			//     literals -- the alias added above is a quoted literal that
+			//     itself spells "YEAR(post_date)", and the rewrite must not
+			//     touch it.
 			$sql = self::apply_outside_strings( $sql, array( __CLASS__, 'translate_date_functions' ) );
 
 			// EN: rand() -> SQLite random() for the random-order links.
@@ -248,6 +261,9 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 *
 		 * Used by the archive queries (b2edit.showposts.php,
 		 * b2template.functions.php get_archives) and the post feed.
+		 * DATE_FORMAT() is handled separately by translate_date_format(),
+		 * which runs before the outside-string-literals split because its
+		 * format argument is itself a string literal.
 		 *
 		 * @param string $sql MySQL-dialect SQL.
 		 * @return string SQL with date functions in SQLite form.
@@ -262,17 +278,83 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			// EN: MySQL WEEK(date,mode) / WEEK(date) -> strftime('%W').
 			$sql = preg_replace( "/\bWEEK\s*\(\s*([^(),]+?)\s*(?:,\s*\d+\s*)?\)/i", "CAST(strftime('%W', $1) AS INTEGER)", $sql );
 
-			// EN: DATE_FORMAT(col, '%Y-%m-%d') -> strftime with the same
-			//     codes; 0.71 only uses %Y %m %d %h %i in DATE_FORMAT.
-			$sql = preg_replace_callback(
-				"/\bDATE_FORMAT\s*\(\s*([^(),]+?)\s*,\s*'([^']*)'\s*\)/i",
+			return $sql;
+		}
+
+		/**
+		 * Rewrite MySQL DATE_FORMAT(col, 'fmt') to SQLite strftime().
+		 *
+		 * The whole call -- the column expression and the string-literal
+		 * format argument -- is matched as one unit. This must run before
+		 * apply_outside_strings() splits the SQL on string literals: the
+		 * format argument is a literal, so a per-segment rewrite would see
+		 * the call broken across a non-literal and a literal segment and
+		 * never match it (this is why the links query's
+		 * DATE_FORMAT(link_updated, '%d/%m/%Y %h:%i') was left untranslated
+		 * and SQLite raised "no such function: DATE_FORMAT"). The archive
+		 * queries' YEAR()/MONTH() take no string argument, so they are
+		 * unaffected and stay with translate_date_functions().
+		 *
+		 * SQLite's strftime() and MySQL's DATE_FORMAT() share many specifier
+		 * letters but not all, so the format string is mapped, not copied
+		 * verbatim -- otherwise the date would render wrong (e.g. minutes
+		 * shown as the month). The 0.71 source emits only the specifiers
+		 * mapped below: wp-links/links.php uses '%d/%m/%Y %h:%i' and
+		 * b2template.functions.php get_archives uses '%Y-%m-%d'.
+		 *
+		 * @param string $sql MySQL-dialect SQL.
+		 * @return string SQL with DATE_FORMAT() rewritten to strftime().
+		 */
+		private static function translate_date_format( $sql ) {
+			return preg_replace_callback(
+				"/\bDATE_FORMAT\s*\(\s*([^(),']+?)\s*,\s*'([^']*)'\s*\)/i",
 				function ( $m ) {
-					return "strftime('" . $m[2] . "', " . $m[1] . ')';
+					return "strftime('" . self::map_date_format( $m[2] ) . "', " . trim( $m[1] ) . ')';
 				},
 				$sql
 			);
+		}
 
-			return $sql;
+		/**
+		 * Map a MySQL DATE_FORMAT() format string to SQLite strftime().
+		 *
+		 * MySQL and SQLite spell several specifiers differently:
+		 *
+		 *   - MySQL %i (minutes) is %M in SQLite; MySQL %M is the month
+		 *     name, so a verbatim copy would render minutes as a month.
+		 *   - MySQL %h (12-hour hour) has no SQLite equivalent -- SQLite's
+		 *     %H is the 24-hour hour, the closest match, and is used here.
+		 *   - MySQL %s (seconds) is %S in SQLite.
+		 *   - MySQL %Y %m %d (year / month / day) match SQLite letter for
+		 *     letter and are passed through.
+		 *
+		 * A literal "%%" is preserved. Any specifier the 0.71 source does
+		 * not emit is left untouched -- the table covers exactly what 0.71
+		 * passes to DATE_FORMAT() ('%d/%m/%Y %h:%i' and '%Y-%m-%d').
+		 *
+		 * @param string $format A MySQL DATE_FORMAT() format string.
+		 * @return string The equivalent SQLite strftime() format string.
+		 */
+		private static function map_date_format( $format ) {
+			$map = array(
+				'%%' => '%%',
+				'%Y' => '%Y',
+				'%m' => '%m',
+				'%d' => '%d',
+				'%H' => '%H',
+				'%h' => '%H',
+				'%i' => '%M',
+				'%s' => '%S',
+				'%j' => '%j',
+				'%w' => '%w',
+			);
+			return preg_replace_callback(
+				'/%./',
+				function ( $m ) use ( $map ) {
+					return isset( $map[ $m[0] ] ) ? $map[ $m[0] ] : $m[0];
+				},
+				$format
+			);
 		}
 	}
 }

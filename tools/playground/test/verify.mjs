@@ -377,6 +377,33 @@ async function verifyAdmin( page, engine ) {
 }
 
 /**
+ * Read a blog frame's rendered text and assert it carries no SQL error.
+ *
+ * WordPress 0.71's wpdb prints a database error inline into the page --
+ * "SQL/DB Error --" followed by the failing statement -- rather than
+ * raising a console error or a non-200 status. A query the MySQL ->
+ * SQLite translator does not cover (Issue #131: DATE_FORMAT() in the
+ * front-page Links sidebar) therefore renders a visible error into the
+ * HTML that the earlier checks, which only look for expected text, would
+ * miss. This reads the whole body -- innerText and textContent, so a
+ * sidebar / <option> error is caught on both engines (see
+ * waitForBlogText) -- and reports whether the SQL-error marker is absent.
+ *
+ * @param {import('playwright').Frame} frame A loaded blog frame.
+ * @return {Promise<boolean>} True when the page shows no SQL error.
+ */
+async function frameHasNoSqlError( frame ) {
+	const body = await frame
+		.evaluate( () =>
+			document.body
+				? `${ document.body.innerText }\n${ document.body.textContent }`
+				: ''
+		)
+		.catch( () => '' );
+	return ! body.includes( 'SQL/DB Error' );
+}
+
+/**
  * Verify the seeded demo blog rendered on the front page (Issue #126).
  *
  * A fresh playground is seeded with a small demo blog -- several
@@ -881,6 +908,12 @@ async function verify( browserType, engine ) {
 		//     the front frame before the navigation checks click away.
 		const seedChecks = await verifySeedContent( frontFrame );
 
+		// EN: No-SQL-error check (Issue #131) -- the front page's Links
+		//     sidebar issues a DATE_FORMAT() query; an untranslated query
+		//     prints "SQL/DB Error --" inline rather than failing loudly,
+		//     so it is asserted absent from the rendered front page.
+		const frontNoSqlError = await frameHasNoSqlError( frontFrame );
+
 		// EN: Chrome check (Issue #126) -- the host page frames the
 		//     playground and links back to the repository.
 		const repoLinkHref = await page
@@ -931,6 +964,10 @@ async function verify( browserType, engine ) {
 					'rgba(0, 0, 0, 0)'
 			);
 
+		// EN: The post page carries the same Links sidebar -- assert it,
+		//     too, renders no SQL error (Issue #131).
+		const postNoSqlError = await frameHasNoSqlError( postFrame );
+
 		// EN: Navigation check 2 -- click the post's category link and
 		//     confirm the category archive shows the seeded post.
 		const categoryLink = postFrame.locator( '.meta a' ).first();
@@ -942,6 +979,11 @@ async function verify( browserType, engine ) {
 		const categoryPostVisible = await categoryFrame
 			.locator( `text=${ EXPECTED_TITLE }` )
 			.count();
+
+		// EN: The category page also carries the Links sidebar, and on a
+		//     category archive 0.71 issues the get_archives() DATE_FORMAT
+		//     query as well -- assert no SQL error here too (Issue #131).
+		const categoryNoSqlError = await frameHasNoSqlError( categoryFrame );
 
 		// EN: Exercise the WordPress 0.71 admin (Issue #120) -- this runs
 		//     after the front-page navigation checks and before the
@@ -974,12 +1016,15 @@ async function verify( browserType, engine ) {
 			[ 'front page served through the service worker', titleVisible > 0 ],
 			[ `front page CSS applied (#header bg ${ headerBackground })`, cssApplied ],
 			...seedChecks,
+			[ 'front page renders no SQL/DB error', frontNoSqlError ],
 			[ `post page reached by clicking "${ postHref }"`, postTitleVisible > 0 ],
 			[ 'post page keeps its CSS', postCssApplied ],
+			[ 'post page renders no SQL/DB error', postNoSqlError ],
 			[
 				`category page reached by clicking "${ categoryHref }"`,
 				categoryPostVisible > 0,
 			],
+			[ 'category page renders no SQL/DB error', categoryNoSqlError ],
 			...adminChecks,
 			...persistenceChecks,
 			...uploadChecks,
