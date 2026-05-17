@@ -135,18 +135,16 @@ real 0.71 schema, translated by the same code the live blog uses.
 
 ## What does not work yet / out of scope for the spike
 
-- **Page styling.** WordPress 0.71's `b2config.php` hard-codes
-  `$siteurl = 'http://localhost:8080'` and the front page emits
-  absolute asset URLs (`layout2b.css`, `print.css`, the block-library
-  CSS) against it. The app rewrites `$siteurl` to its own origin, but
-  the rendered HTML is shown in the iframe via a `blob:` URL, so those
-  now-relative asset requests do not reach the php-wasm request handler.
-  The page therefore renders **unstyled** — the text content is all
-  correct, which is what the spike checks, but the CSS does not load.
-  Fixing this needs the iframe to be served *through* the php-wasm
-  request handler (a service worker, as WordPress Playground does, or a
-  same-origin handler route) instead of a blob URL. This is the main
-  piece of remaining work for a usable full build.
+- **Page styling — resolved in the full build, step 1 (Issue #116).**
+  The spike rendered the front-page HTML into a `blob:` URL iframe, so
+  the page's asset requests (`layout2b.css`, `print.css`, the
+  block-library CSS) and link clicks never reached the php-wasm request
+  handler and the page was unstyled and not navigable. Step 1 of the
+  full build adds a service worker (`tools/playground/public/sw.js`)
+  that intercepts the blog's scoped same-origin requests and routes
+  them through the `@php-wasm/web` request handler, as WordPress
+  Playground does. The front page now renders with its CSS and internal
+  navigation (front page → post page → category page) works.
 - **Admin and write paths.** Only the front page was exercised. The
   admin (`wp-admin/`), login, posting and comments are untested. The
   `wpdb` write path (`INSERT`/`UPDATE`/`DELETE`) is implemented and the
@@ -344,18 +342,16 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
 
 ## まだできないこと / 検証の対象外
 
-- **ページのスタイリング。** WordPress 0.71 の `b2config.php` は
-  `$siteurl = 'http://localhost:8080'` をハードコードし、フロント
-  ページはそれに対する絶対 URL（`layout2b.css`・`print.css`・ブロック
-  ライブラリ CSS）を出力する。アプリは `$siteurl` を自身のオリジンへ
-  書き換えるが、描画済み HTML は `blob:` URL で iframe に表示するため、
-  相対化されたそれらのアセット要求が php-wasm リクエストハンドラへ届か
-  ない。よってページは**無装飾**で描画される — テキスト内容はすべて
-  正しく、それが検証の確認項目だが、CSS は読み込まれない。修正には、
-  iframe を `blob:` URL ではなく php-wasm リクエストハンドラ**経由**で
-  配信する必要がある（WordPress Playground と同様のサービスワーカー、
-  または同一オリジンのハンドラルート）。これが使える本格実装に向けた
-  主たる残作業である。
+- **ページのスタイリング — 本格実装のステップ 1（Issue #116）で解決。**
+  スパイクはフロントページ HTML を `blob:` URL の iframe に描画したため、
+  ページのアセット要求（`layout2b.css`・`print.css`・ブロックライブラリ
+  CSS）やリンククリックが php-wasm リクエストハンドラへ届かず、ページは
+  無装飾で描画され遷移もできなかった。本格実装のステップ 1 はサービス
+  ワーカー（`tools/playground/public/sw.js`）を追加し、ブログのスコープ
+  付き同一オリジン要求を横取りして `@php-wasm/web` のリクエストハンドラ
+  へ通す（WordPress Playground と同様）。これによりフロントページは CSS
+  付きで描画され、内部遷移（フロントページ → 投稿ページ → カテゴリー
+  ページ）が機能する。
 - **管理画面と書き込み経路。** フロントページのみを動かした。管理画面
   （`wp-admin/`）・ログイン・投稿・コメントは未検証。`wpdb` の書き込み
   経路（`INSERT`/`UPDATE`/`DELETE`）は実装済みでシードが `INSERT` を
