@@ -114,7 +114,7 @@ of MySQL:
 | `"publish"` (double-quoted literal)     | `'publish'` (SQLite reads `"…"` as an identifier) |
 | `YEAR/MONTH/DAYOFMONTH/HOUR/…(col)`     | `CAST(strftime('%Y', col) AS INTEGER)` etc. |
 | `WEEK(col[, mode])`                     | `CAST(strftime('%W', col) AS INTEGER)` |
-| `DATE_FORMAT(col, '…')`                 | `strftime('…', col)` |
+| `DATE_FORMAT(col, '…')`                 | `strftime('…', col)`, format specifiers mapped (MySQL `%i`→`%M`, `%h`→`%H`, …) |
 | `rand()`                                | `random()` |
 
 The schema DDL is taken verbatim from `src/wp-admin/wp-install.php` and
@@ -355,7 +355,7 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
 | `"publish"`（二重引用符の文字列）        | `'publish'`（SQLite は `"…"` を識別子と解釈） |
 | `YEAR/MONTH/DAYOFMONTH/HOUR/…(col)`      | `CAST(strftime('%Y', col) AS INTEGER)` 等 |
 | `WEEK(col[, mode])`                      | `CAST(strftime('%W', col) AS INTEGER)` |
-| `DATE_FORMAT(col, '…')`                  | `strftime('…', col)` |
+| `DATE_FORMAT(col, '…')`                  | `strftime('…', col)`、書式指定子をマッピング(MySQL `%i`→`%M`、`%h`→`%H` 等) |
 | `rand()`                                 | `random()` |
 
 スキーマ DDL は `src/wp-admin/wp-install.php` から原文どおり取り、シード
