@@ -474,7 +474,7 @@ export function Editor( { config } ) {
 								     JA: BlockTools が選択ブロックの上にフローティング
 								       の各ブロックツールバー(太字・配置など)を
 								       描画する。Popover.Slot が必要。 */ }
-								<BlockTools>
+								<BlockTools className="be-block-tools">
 									<WritingFlow>
 										<ObserveTyping>
 											<BlockList />
