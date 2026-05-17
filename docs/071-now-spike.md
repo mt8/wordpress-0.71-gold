@@ -159,9 +159,20 @@ real 0.71 schema, translated by the same code the live blog uses.
   handle, so those paths would fatal. The full build must either route
   them through the `wpdb` methods or have the overlay also cover them.
 - **Image upload** — explicitly out of scope per Issue #108.
-- **Persistence.** The SQLite database lives in the php-wasm virtual
-  filesystem and is discarded when the tab closes. A full build would
-  persist it (IndexedDB / OPFS), as WordPress Playground does.
+- **Persistence — resolved in the full build, step 4 (Issue #122).**
+  The spike's SQLite database lived only in the php-wasm virtual
+  filesystem and was discarded when the tab closed, so the boot shim
+  re-seeded a fresh database for every php-wasm instance. Step 4 of the
+  full build persists that database in the browser
+  (`tools/playground/src/persistence.js`): OPFS (the Origin Private File
+  System) when the browser exposes it, IndexedDB as a fallback. The app
+  restores the persisted database into the virtual filesystem before the
+  first request — the boot shim's seed is gated on the database file's
+  existence, so a returning visitor's content is loaded instead of
+  re-seeded — and saves it back after every request that changes it. A
+  reset control clears the persistent store and returns the playground
+  to its fresh seeded state. Content created through the admin now
+  survives a page reload / tab close, as WordPress Playground does.
 - **Bundle size — resolved in the full build, step 2 (Issue #118).**
   `@php-wasm/web` depends on one package per PHP version it supports
   (5.2–8.5) and statically `import`s every one, so a plain build shipped
@@ -371,9 +382,20 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
   本格実装はそれらを `wpdb` メソッド経由にするか、オーバーレイで併せて
   対応する必要がある。
 - **画像アップロード** — Issue #108 で明示的に対象外。
-- **永続化。** SQLite データベースは php-wasm 仮想ファイルシステム上に
-  あり、タブを閉じると失われる。本格実装は WordPress Playground と同様、
-  これを永続化する（IndexedDB / OPFS）。
+- **永続化 — 本格実装のステップ 4（Issue #122）で解決。**
+  スパイクの SQLite データベースは php-wasm 仮想ファイルシステム上に
+  しか存在せず、タブを閉じると失われたため、起動シムは php-wasm
+  インスタンスごとに新しいデータベースを再シードしていた。本格実装の
+  ステップ 4 はそのデータベースをブラウザ内に永続化する
+  （`tools/playground/src/persistence.js`）。ブラウザが対応していれば
+  OPFS（Origin Private File System）を、対応していなければ IndexedDB を
+  フォールバックに使う。アプリは最初のリクエスト前に永続データベースを
+  仮想ファイルシステムへ復元し（起動シムのシードはデータベースファイルの
+  存在で分岐するため、再訪問者の内容は再シードされず読み込まれる）、
+  データベースを変更したリクエストの後に書き戻す。リセット操作は永続
+  ストアをクリアし、playground を新しいシード済み状態へ戻す。管理画面
+  から作成した内容は、WordPress Playground と同様、ページのリロード /
+  タブを閉じても残るようになった。
 - **バンドルサイズ — 本格実装のステップ 2（Issue #118）で解決。**
   `@php-wasm/web` は対応する各 PHP バージョン（5.2〜8.5）ごとに 1 つの
   パッケージへ依存し、そのすべてを静的に `import` するため、素のビルドは
