@@ -1,0 +1,22 @@
+{
+  "name": "071-env",
+  "version": "0.1.0",
+  "private": true,
+  "description": "wp-env-style environment manager for WordPress 0.71 (b2/cafelog) / WordPress 0.71 (b2/cafelog) 向けの wp-env 風環境マネージャ",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "bin": {
+    "071-env": "bin/071-env.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docker-compose.071.yml"
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\""
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

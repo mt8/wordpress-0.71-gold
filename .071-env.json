@@ -1,0 +1,7 @@
+{
+  "port": 8080,
+  "dbPort": 3306,
+  "phpVersion": "8.3",
+  "mappings": {},
+  "lifecycleScripts": {}
+}

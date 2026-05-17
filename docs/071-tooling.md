@@ -194,6 +194,73 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php <args>
 So `071-env run cli post list` runs `071 post list` in the container, as
 required by Issue #104.
 
+### 4.4 Configuration — `.071-env.json`
+
+`071-env` reads an optional `.071-env.json` at the repository root — the
+analogue of wp-env's `.wp-env.json`. An optional `.071-env.override.json`
+(git-ignored, per-developer) is **deep-merged on top** of it, the
+local-override pattern wp-env uses. When neither file exists `071-env` falls
+back to built-in defaults, so the environment works with no configuration at
+all.
+
+**Schema** — every field is optional:
+
+| Field              | Type                  | Default | Effect |
+|--------------------|-----------------------|---------|--------|
+| `port`             | integer (1–65535)     | `8080`  | `web` host port |
+| `dbPort`           | integer (1–65535)     | `3306`  | `db` host port |
+| `phpVersion`       | string                | `"8.3"` | base PHP image tag (`php:<v>-apache`) |
+| `mappings`         | object (string→string)| `{}`    | extra read-write bind mounts for `web` (container path → host path) |
+| `lifecycleScripts` | object (string→string)| `{}`    | hook name → shell command (`afterStart`, `beforeDestroy`) |
+
+The config is validated: an unknown key, a wrong type, or an unknown
+lifecycle hook is rejected with a clear error naming the offending file.
+
+Example `.071-env.json`:
+
+```json
+{
+  "port": 9000,
+  "dbPort": 3399,
+  "phpVersion": "8.3",
+  "mappings": {
+    "/var/www/html/wp-content/themes/custom": "./themes/custom"
+  },
+  "lifecycleScripts": {
+    "afterStart": "echo environment is up",
+    "beforeDestroy": "echo backing up before teardown"
+  }
+}
+```
+
+**How each field is applied:**
+
+- **`port` / `dbPort`** — `docker-compose.yml` uses Compose variable
+  substitution with defaults — `"${WP_PORT:-8080}:80"` and
+  `"${DB_PORT:-3306}:3306"` — and `071-env` passes `WP_PORT` / `DB_PORT` in
+  the environment of the spawned `docker compose`. Compose **appends** port
+  lists across `-f` files, so a layered override file cannot change a port;
+  env-var substitution is the correct mechanism. A plain `docker compose up`
+  with no variables set still uses 8080 / 3306.
+- **`phpVersion`** — the `Dockerfile` declares `ARG PHP_VERSION=8.3` and
+  `FROM php:${PHP_VERSION}-apache`; `docker-compose.yml`'s `web` service has a
+  `build.args` entry `PHP_VERSION: "${PHP_VERSION:-8.3}"`; and `071-env`
+  passes `PHP_VERSION`. A plain `docker build` still defaults to 8.3.
+- **`mappings`** — `071-env` generates a Compose override at runtime
+  (`docker-compose.071-mappings.yml` at the repository root, git-ignored)
+  adding the extra `volumes` to the `web` service, and passes it as a third
+  `-f` after `docker-compose.yml` and `env/docker-compose.071.yml`. Compose
+  appends `volumes` cleanly across `-f` files. When `mappings` is empty the
+  generated file is removed and no extra `-f` is passed.
+- **`lifecycleScripts`** — `071-env` runs the hook's shell command through the
+  system shell, in the repository root, at the right time: `afterStart` after
+  a successful `start`, and `beforeDestroy` after the destroy confirmation but
+  before Compose tears the environment down (so the hook can still reach a
+  live stack). A failing `beforeDestroy` hook aborts the destroy.
+
+All defaults are preserved, so a plain `docker compose up` without `071-env`
+still works exactly as before — the change is non-breaking.
+
 ## 5. `071-now` (`/playground`)
 
 Browser-based WordPress 0.71 — wp-now / WordPress Playground in spirit.
@@ -448,6 +515,72 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php <args>
 
 これにより、Issue #104 の要求どおり `071-env run cli post list` が
 コンテナ内で `071 post list` を実行する。
+
+### 4.4 設定 — `.071-env.json`
+
+`071-env` はリポジトリルートの任意の `.071-env.json` を読む — wp-env の
+`.wp-env.json` の相当物である。任意の `.071-env.override.json`（git 管理外、
+開発者ごと）がその上に**ディープマージ**される。wp-env が用いるローカル
+上書きパターンである。どちらのファイルも無い場合、`071-env` は組み込みの
+既定値にフォールバックするため、環境は設定無しでも動作する。
+
+**スキーマ** — 各フィールドは任意:
+
+| フィールド          | 型                     | 既定値  | 効果 |
+|---------------------|------------------------|---------|------|
+| `port`              | 整数（1–65535）        | `8080`  | `web` のホストポート |
+| `dbPort`            | 整数（1–65535）        | `3306`  | `db` のホストポート |
+| `phpVersion`        | 文字列                 | `"8.3"` | ベース PHP イメージのタグ（`php:<v>-apache`） |
+| `mappings`          | オブジェクト（文字列→文字列） | `{}` | `web` 向けの追加の読み書きバインドマウント（コンテナパス → ホストパス） |
+| `lifecycleScripts`  | オブジェクト（文字列→文字列） | `{}` | フック名 → シェルコマンド（`afterStart`・`beforeDestroy`） |
+
+設定は検証される: 未知のキー・誤った型・未知のライフサイクルフックは、
+問題のファイル名を含む明確なエラーとともに拒否される。
+
+`.071-env.json` の例:
+
+```json
+{
+  "port": 9000,
+  "dbPort": 3399,
+  "phpVersion": "8.3",
+  "mappings": {
+    "/var/www/html/wp-content/themes/custom": "./themes/custom"
+  },
+  "lifecycleScripts": {
+    "afterStart": "echo environment is up",
+    "beforeDestroy": "echo backing up before teardown"
+  }
+}
+```
+
+**各フィールドの適用方法:**
+
+- **`port` / `dbPort`** — `docker-compose.yml` は既定値付きの Compose 変数
+  置換 — `"${WP_PORT:-8080}:80"` と `"${DB_PORT:-3306}:3306"` — を使い、
+  `071-env` は起動する `docker compose` の環境に `WP_PORT` / `DB_PORT` を
+  渡す。Compose は `-f` ファイル間でポートのリストを**追記**するため、重ねた
+  上書きファイルではポートを変更できない。環境変数置換が正しい仕組みである。
+  変数を設定しない素の `docker compose up` は引き続き 8080 / 3306 を使う。
+- **`phpVersion`** — `Dockerfile` は `ARG PHP_VERSION=8.3` と
+  `FROM php:${PHP_VERSION}-apache` を宣言し、`docker-compose.yml` の `web`
+  サービスは `build.args` エントリ `PHP_VERSION: "${PHP_VERSION:-8.3}"` を
+  持ち、`071-env` は `PHP_VERSION` を渡す。素の `docker build` は引き続き
+  8.3 を既定とする。
+- **`mappings`** — `071-env` は実行時に Compose オーバーライド
+  （リポジトリルートの `docker-compose.071-mappings.yml`、git 管理外）を
+  生成し、`web` サービスに追加の `volumes` を加え、`docker-compose.yml` と
+  `env/docker-compose.071.yml` の後ろに 3 つ目の `-f` として渡す。Compose は
+  `-f` ファイル間で `volumes` をきれいに追記する。`mappings` が空のときは
+  生成ファイルを削除し、追加の `-f` も渡さない。
+- **`lifecycleScripts`** — `071-env` はフックのシェルコマンドを、システム
+  シェル経由でリポジトリルートにて、適切なタイミングで実行する: `afterStart`
+  は `start` 成功後、`beforeDestroy` は destroy 確認後・Compose が環境を破棄
+  する前（フックがまだ稼働中のスタックに到達できる）。`beforeDestroy` フック
+  が失敗したら destroy を中止する。
+
+すべての既定値が保持されるため、`071-env` を介さない素の `docker compose up`
+も以前とまったく同じく動作する — 変更は非破壊的である。
 
 ## 5. `071-now`（`/playground`）
 
