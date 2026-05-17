@@ -9,7 +9,7 @@ See the design in [`docs/071-tooling.md`](../../docs/071-tooling.md) section 4.
 ## Usage
 
 ```
-071-env <command> [arguments]
+071-env [--debug] <command> [arguments]
 ```
 
 | Command                | Action |
@@ -17,7 +17,7 @@ See the design in [`docs/071-tooling.md`](../../docs/071-tooling.md) section 4.
 | `071-env start`        | Build and start the environment (`docker compose up -d --build`) |
 | `071-env stop`         | Stop the environment without removing it (`docker compose stop`) |
 | `071-env destroy`      | Stop and remove the environment **and its database volume** (`docker compose down -v`) -- asks for confirmation first |
-| `071-env status`       | Show the status of the environment (`docker compose ps`) |
+| `071-env status`       | Show the status of the environment (`docker compose ps -a`) |
 | `071-env logs [svc]`   | Follow the environment logs (`docker compose logs -f [service]`) |
 | `071-env run cli <…>`  | Run `071-cli` inside the `web` container |
 | `071-env run <cmd…>`   | Run an arbitrary command in the `web` container |
@@ -29,12 +29,53 @@ regardless of the caller's current working directory.
 
 ```
 071-env start
+071-env --debug start      # show the full docker compose build output
 071-env run cli post list
 071-env run cli post list --format=json
 071-env run php -v
 071-env logs web
 071-env destroy            # prompts before deleting the database volume
 ```
+
+## Output -- wp-env-style summaries
+
+`071-env` does not pass the raw `docker compose` output straight through. In
+the spirit of [wp-env](https://github.com/WordPress/gutenberg/blob/trunk/packages/env/README.md),
+it prints its own concise, curated output:
+
+- **`start`** -- shows a one-line progress message, hides the `docker compose
+  up --build` log, and on success prints a short summary with the WordPress
+  0.71 URL, the admin URL, and the MySQL host port:
+
+  ```
+  071-env: starting the WordPress 0.71 environment (this may take a while on the first run)...
+
+  WordPress 0.71 environment started.
+
+    WordPress: http://localhost:8080
+    Admin:     http://localhost:8080/wp-admin/
+    MySQL:     localhost:3306
+  ```
+
+- **`stop` / `destroy`** -- print a clear one-line result. `destroy` keeps its
+  confirmation prompt.
+- **`status`** -- prints a readable summary: the `docker compose ps -a` table
+  framed with a header, plus the URLs when the environment is running, or a
+  hint when it is stopped or does not exist.
+- **`logs`** -- following logs is inherently a raw stream, so it is left as a
+  passthrough.
+
+### `--debug` / `--verbose`
+
+`--debug` (or its alias `--verbose`) shows the full underlying `docker
+compose` output for any command, for diagnosing problems. It can be placed
+before or after the command (`071-env --debug start`, `071-env start
+--debug`). For `start` / `stop` / `destroy` the friendly summary is still
+appended after the raw output, so `--debug` is a strict superset of the
+default mode.
+
+**On failure**, `071-env` always surfaces the underlying `docker compose`
+output -- it never swallows an error -- even without `--debug`.
 
 ## How `run cli` reaches the container
 
@@ -138,17 +179,19 @@ tools/env/
     compose.mjs           builds the `docker compose` argv for each command (pure)
     config.mjs            loads / deep-merges / validates .071-env.json (pure + load)
     env-vars.mjs          derives WP_PORT / DB_PORT / PHP_VERSION (pure)
+    output.mjs            builds the wp-env-style curated terminal output (pure)
     mappings.mjs          generates the runtime `mappings` Compose override
     lifecycle.mjs         looks up and runs lifecycle-hook shell commands
     paths.mjs             resolves the repository root from this file's location
     prompt.mjs            interactive yes/no confirmation for `destroy`
-    docker.mjs            spawns the `docker` binary (impure boundary)
+    docker.mjs            spawns the `docker` binary, streaming or capturing (impure)
     main.mjs              command dispatcher
   test/
     cli.test.mjs          tests argument / command parsing
     compose.test.mjs      tests the `docker compose` argv each command builds
     config.test.mjs       tests config loading / deep-merge / validation
     env-vars.test.mjs     tests env-var derivation
+    output.test.mjs       tests the curated terminal output
     mappings.test.mjs     tests the generated mappings override
     lifecycle.test.mjs    tests lifecycle-hook lookup and dispatch
     prompt.test.mjs       tests the confirmation logic
@@ -162,10 +205,11 @@ explicit default config). `.071-env.override.json` and the generated
 ## Tests
 
 Unit tests use Node's built-in test runner (`node:test`) -- no extra
-dependency. They cover the pure logic: argument / command parsing, the
-`docker compose` argv each subcommand constructs, config loading / deep-merge
-/ validation, env-var derivation, the generated mappings override, and
-lifecycle-hook dispatch.
+dependency. They cover the pure logic: argument / command parsing (including
+the `--debug` flag), the `docker compose` argv each subcommand constructs,
+config loading / deep-merge / validation, env-var derivation, the curated
+wp-env-style output, the generated mappings override, and lifecycle-hook
+dispatch.
 
 ```
 npm run test:env        # from the repository root
@@ -185,7 +229,7 @@ Docker Compose 環境をラップする -- 置き換えはしない。設計は
 ## 使い方
 
 ```
-071-env <command> [arguments]
+071-env [--debug] <command> [arguments]
 ```
 
 | コマンド               | 動作 |
@@ -193,7 +237,7 @@ Docker Compose 環境をラップする -- 置き換えはしない。設計は
 | `071-env start`        | 環境をビルドして起動する（`docker compose up -d --build`） |
 | `071-env stop`         | 環境を削除せず停止する（`docker compose stop`） |
 | `071-env destroy`      | 環境**とそのデータベースボリューム**を停止・削除する（`docker compose down -v`） -- 先に確認する |
-| `071-env status`       | 環境の状態を表示する（`docker compose ps`） |
+| `071-env status`       | 環境の状態を表示する（`docker compose ps -a`） |
 | `071-env logs [svc]`   | 環境のログを追従する（`docker compose logs -f [service]`） |
 | `071-env run cli <…>`  | `web` コンテナ内で `071-cli` を実行する |
 | `071-env run <cmd…>`   | `web` コンテナ内で任意のコマンドを実行する |
@@ -205,12 +249,51 @@ Docker Compose 環境をラップする -- 置き換えはしない。設計は
 
 ```
 071-env start
+071-env --debug start      # docker compose のビルド出力を全て表示する
 071-env run cli post list
 071-env run cli post list --format=json
 071-env run php -v
 071-env logs web
 071-env destroy            # データベースボリュームの削除前に確認する
 ```
+
+## 出力 -- wp-env 風のサマリ
+
+`071-env` は生の `docker compose` 出力をそのまま流さない。
+[wp-env](https://github.com/WordPress/gutenberg/blob/trunk/packages/env/README.md)
+の精神で、簡潔に整形した独自の出力を出す:
+
+- **`start`** -- 1 行の進捗メッセージを出し、`docker compose up --build` の
+  ログを隠し、成功時に WordPress 0.71 の URL・管理画面 URL・MySQL ホスト
+  ポートを含む短いサマリを出す:
+
+  ```
+  071-env: starting the WordPress 0.71 environment (this may take a while on the first run)...
+
+  WordPress 0.71 environment started.
+
+    WordPress: http://localhost:8080
+    Admin:     http://localhost:8080/wp-admin/
+    MySQL:     localhost:3306
+  ```
+
+- **`stop` / `destroy`** -- 明快な 1 行の結果を出す。`destroy` は確認
+  プロンプトを維持する。
+- **`status`** -- 読みやすいサマリを出す: ヘッダで囲んだ `docker compose
+  ps -a` のテーブルに加え、環境が起動中なら URL を、停止中または未作成なら
+  ヒントを示す。
+- **`logs`** -- ログ追従は本質的に生ストリームのため、パススルーのまま残す。
+
+### `--debug` / `--verbose`
+
+`--debug`（別名 `--verbose`）は、問題切り分け用に、どのコマンドでも下層の
+`docker compose` 出力を全て表示する。コマンドの前後どちらにも置ける
+（`071-env --debug start`・`071-env start --debug`）。`start` / `stop` /
+`destroy` では生出力の後に分かりやすいサマリも続けて出すため、`--debug` は
+既定モードの厳密な上位互換である。
+
+**失敗時**、`071-env` は `--debug` 無しでも常に下層の `docker compose`
+出力を見せる -- エラーを握りつぶさない。
 
 ## `run cli` がコンテナへ到達する仕組み
 
@@ -314,17 +397,19 @@ tools/env/
     compose.mjs           各コマンドの `docker compose` 引数ベクタを構築（純粋）
     config.mjs            .071-env.json の読み込み / ディープマージ / 検証（純粋 + 読込）
     env-vars.mjs          WP_PORT / DB_PORT / PHP_VERSION を導出（純粋）
+    output.mjs            wp-env 風に整形した端末出力を構築（純粋）
     mappings.mjs          実行時の `mappings` Compose オーバーライドを生成
     lifecycle.mjs         ライフサイクルフックのシェルコマンドを検索・実行
     paths.mjs             本ファイルの位置からリポジトリルートを解決
     prompt.mjs            `destroy` のための対話的な yes/no 確認
-    docker.mjs            `docker` バイナリを起動する（非純粋な境界）
+    docker.mjs            `docker` バイナリを起動する（ストリーム / キャプチャ、非純粋）
     main.mjs              コマンドディスパッチャ
   test/
     cli.test.mjs          引数 / コマンドの解析をテスト
     compose.test.mjs      各コマンドが構築する `docker compose` 引数ベクタをテスト
     config.test.mjs       設定の読み込み / ディープマージ / 検証をテスト
     env-vars.test.mjs     環境変数の導出をテスト
+    output.test.mjs       整形した端末出力をテスト
     mappings.test.mjs     生成される mappings オーバーライドをテスト
     lifecycle.test.mjs    ライフサイクルフックの検索とディスパッチをテスト
     prompt.test.mjs       確認ロジックをテスト
@@ -338,10 +423,10 @@ tools/env/
 ## テスト
 
 単体テストは Node 組み込みのテストランナー（`node:test`）を使用する --
-追加の依存は無い。純粋ロジックを対象とする: 引数 / コマンドの解析、各
-サブコマンドが構築する `docker compose` 引数ベクタ、設定の読み込み /
-ディープマージ / 検証、環境変数の導出、生成される mappings オーバーライド、
-ライフサイクルフックのディスパッチ。
+追加の依存は無い。純粋ロジックを対象とする: 引数 / コマンドの解析（`--debug`
+フラグを含む）、各サブコマンドが構築する `docker compose` 引数ベクタ、設定の
+読み込み / ディープマージ / 検証、環境変数の導出、wp-env 風に整形した出力、
+生成される mappings オーバーライド、ライフサイクルフックのディスパッチ。
 
 ```
 npm run test:env        # リポジトリルートから
