@@ -91,10 +91,10 @@ editor.
   (`@import`) and **`print.css`**. `layout2b.css` is a 2003 blog-layout
   stylesheet; it has **no block CSS** (`.wp-block-columns`, `.wp-block-group`,
   `.wp-block-cover`, ...).
-- The block editor (`src/block-editor/app/`) bundles the
+- The block editor (`tools/block-editor/`) bundles the
   `@wordpress/block-library` **and** `@wordpress/block-editor` stylesheets into
-  its build (see `app/src/main.jsx`), so layout blocks look correct **in the
-  editor**.
+  its build (see `tools/block-editor/src/main.jsx`), so layout blocks look
+  correct **in the editor**.
 - Block content is stored as block-markup HTML in `b2posts.post_content` and
   rendered by `the_content()` inside `<div class="storycontent">`.
 - Result: a Columns / Group / Cover block is saved as e.g.
@@ -241,10 +241,10 @@ mediaUpload( { filesList, allowedTypes, additionalData, onFileChange, onError } 
   **`print.css`** のみ読み込む。`layout2b.css` は 2003 年のブログレイアウト
   スタイルシートで、**ブロック CSS は無い**(`.wp-block-columns`・
   `.wp-block-group`・`.wp-block-cover` 等)。
-- ブロックエディタ(`src/block-editor/app/`)は `@wordpress/block-library`
+- ブロックエディタ(`tools/block-editor/`)は `@wordpress/block-library`
   **と** `@wordpress/block-editor` のスタイルシートをビルドにバンドルする
-  (`app/src/main.jsx` 参照)。よってレイアウト系ブロックは**エディタ内では**
-  正しく見える。
+  (`tools/block-editor/src/main.jsx` 参照)。よってレイアウト系ブロックは
+  **エディタ内では**正しく見える。
 - ブロック内容はブロックマークアップ HTML として `b2posts.post_content` に
   保存され、`the_content()` が `<div class="storycontent">` 内で描画する。
 - 結果: カラム / グループ / カバーブロックは例えば

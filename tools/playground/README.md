@@ -37,7 +37,7 @@ remaining work for the full `071-now` build, are in
 ## How it works
 
 1. `scripts/build-overlay.mjs` builds the block-editor app
-   (`src/block-editor/app/`), then snapshots `src/` (WordPress 0.71,
+   (`tools/block-editor/`), then snapshots `src/` (WordPress 0.71,
    including the freshly built `src/block-editor/assets/`) into
    `tools/playground/wp/` and overlays the 071-now SQLite database layer
    onto that copy. **`src/` itself is never modified** — the overlay only
@@ -242,7 +242,7 @@ WordPress 0.71 JSON backend (`api/load.php`, `api/save.php`,
 in the playground too.
 
 - **The playground build builds it.** The block editor's React app
-  (`src/block-editor/app/`) is its own package — its own `package.json`
+  (`tools/block-editor/`) is its own package — its own `package.json`
   and `package-lock.json`, deliberately not a repo-root workspace — and
   `npm run build` there writes the bundle and the Vite manifest to
   `src/block-editor/assets/`, a git-ignored build artifact.
@@ -252,11 +252,11 @@ in the playground too.
   then finds the bundle and serves the editor instead of its "bundle not
   built" fallback. The earlier empty `block-library.css` placeholder is
   gone — the real built stylesheet is now in place.
-- **The build inputs stay out of the overlay.** The snapshot skips
-  `src/block-editor/app/` — the React source, its ~450 MB `node_modules`
-  and the Vite config are build inputs the in-browser blog never serves;
-  only the build *output*, `src/block-editor/assets/`, belongs in the
-  overlay.
+- **The build inputs stay out of the overlay.** The block editor's
+  build inputs — the React source, its ~450 MB `node_modules` and the
+  Vite config — live in `tools/block-editor/`, outside `src/`, so the
+  snapshot of `src/` naturally excludes them; only the build *output*,
+  `src/block-editor/assets/`, belongs in the overlay.
 - **The Vite manifest is moved off the dot-directory.** Vite writes its
   manifest to `block-editor/assets/.vite/manifest.json`, but
   `src/wp-files.js` bundles the `wp/` tree with an `import.meta.glob`,

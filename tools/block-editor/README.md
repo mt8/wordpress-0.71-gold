@@ -33,7 +33,7 @@ not touch the repository root's npm setup). It uses:
 
 Vite bundles React **and** every `@wordpress/*` package **into** a single
 standalone module, so the boot page needs no separate WordPress JavaScript
-runtime. The build output is written to `../assets/` so the
+runtime. The build output is written to `src/block-editor/assets/` so the
 Docker blog can serve it.
 
 ### 2. The WordPress 0.71 backend (`src/block-editor/api/`)
@@ -120,14 +120,15 @@ control (and other typography controls) are gated behind editor *settings*.
 Requires Node.js (developed and tested with v24) and npm.
 
 ```sh
-cd src/block-editor/app
+cd tools/block-editor
 npm install
 npm run build
 ```
 
-`npm run build` bundles the app into `../assets/`
+`npm run build` bundles the app into `src/block-editor/assets/`
 (git-ignored — it is a build artifact). `editor.php` reads
-`../assets/.vite/manifest.json` to find the hashed bundle filename.
+`src/block-editor/assets/.vite/manifest.json` to find the hashed bundle
+filename.
 
 ## Open the editor
 
@@ -238,7 +239,7 @@ WordPress 0.71 の JSON バックエンドの背後に組み込むことで、**
 Vite は React **と** 全 `@wordpress/*` パッケージを 1 つのスタンドアロン
 モジュールへバンドルするため、起動ページは別の WordPress JavaScript
 ランタイムを必要としない。ビルド成果物は Docker のブログが配信できるよう
-`../assets/` へ書き出す。
+`src/block-editor/assets/` へ書き出す。
 
 ### 2. WordPress 0.71 バックエンド (`src/block-editor/api/`)
 
@@ -320,14 +321,14 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 Node.js(v24 で開発・検証)と npm が必要。
 
 ```sh
-cd src/block-editor/app
+cd tools/block-editor
 npm install
 npm run build
 ```
 
-`npm run build` はアプリを `../assets/` へバンドルする
+`npm run build` はアプリを `src/block-editor/assets/` へバンドルする
 (git 管理外 — ビルド成果物のため)。`editor.php` は
-`../assets/.vite/manifest.json` を読んでハッシュ付きの
+`src/block-editor/assets/.vite/manifest.json` を読んでハッシュ付きの
 バンドルファイル名を特定する。
 
 ## エディタを開く
