@@ -1,22 +1,16 @@
 /*
- * EN: Docker process execution for 071-env.
+ * Docker process execution for 071-env.
  *
  *     This module is the impure boundary: it spawns the `docker` binary with
  *     an argument vector built by compose.mjs. The argv construction is kept
  *     in compose.mjs so it stays unit-testable; this module only runs it.
- *
- * JA: 071-env のための Docker プロセス実行。
- *
- *     本モジュールは非純粋な境界である: compose.mjs が構築した引数ベクタで
- *     `docker` バイナリを起動する。引数ベクタの構築は単体テスト可能な
- *     compose.mjs に置き、本モジュールはそれを実行するだけである。
  */
 
 import { spawnSync } from 'node:child_process';
 import { repoRoot } from './paths.mjs';
 
 /**
- * EN: Run `docker` with the given argument vector, inheriting stdio so the
+ * Run `docker` with the given argument vector, inheriting stdio so the
  *     user sees Compose's output directly. The child runs with the repository
  *     root as its working directory; combined with the `--project-directory`
  *     argument compose.mjs adds, the relative paths inside the Compose files
@@ -28,18 +22,6 @@ import { repoRoot } from './paths.mjs';
  *     which `docker-compose.yml` reads through variable substitution. Because
  *     each of those also has a `:-default` in the Compose file, omitting them
  *     (a plain `docker compose up`) still works.
- *
- * JA: 与えられた引数ベクタで `docker` を実行する。stdio を継承し、ユーザーが
- *     Compose の出力を直接見られるようにする。子プロセスはリポジトリルートを
- *     作業ディレクトリとして実行され、compose.mjs が付加する
- *     `--project-directory` 引数と相まって、Compose ファイル内の相対パス
- *     (`./src`・`./tools/cli`) は呼び出し元の cwd によらず正しく解決される。
- *
- *     `extraEnv` は子プロセス起動前に継承された環境にマージされる。071-env は
- *     これを使って `WP_PORT` / `DB_PORT` / `PHP_VERSION` を渡し、
- *     `docker-compose.yml` が変数置換で読み取る。これらは Compose ファイル内に
- *     `:-default` も持つため、省略しても (素の `docker compose up` でも) 動作
- *     する。
  *
  * @param {string[]} args The argument vector for the `docker` binary.
  * @param {Record<string,string>} extraEnv Variables merged onto the env.

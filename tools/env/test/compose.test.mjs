@@ -1,10 +1,7 @@
 /*
- * EN: Unit tests for tools/env/src/compose.mjs -- the `docker compose` argument
+ * Unit tests for tools/env/src/compose.mjs -- the `docker compose` argument
  *     vector each 071-env subcommand constructs. These tests are Docker-free:
  *     they assert on the argv only, never spawning anything.
- * JA: tools/env/src/compose.mjs の単体テスト -- 071-env の各サブコマンドが構築する
- *     `docker compose` 引数ベクタ。これらのテストは Docker 不要である:
- *     argv のみをアサートし、何も起動しない。
  */
 
 import test from 'node:test';
@@ -42,30 +39,22 @@ test( 'composePrefix: the override file is env/docker-compose.071.yml', () => {
 } );
 
 test( 'composePrefix: pins --project-directory to the repository root', () => {
-	// EN: The Compose files live in tools/env/ but their relative paths are
+	// The Compose files live in tools/env/ but their relative paths are
 	//     repo-root-relative, so the project directory must be the repo root.
-	// JA: Compose ファイルは tools/env/ にあるが相対パスはリポジトリルート
-	//     基準であるため、プロジェクトディレクトリはリポジトリルートでなければ
-	//     ならない。
 	assert.deepEqual( projectDirArgs, [ '--project-directory', repoRoot ] );
 	const prefix = composePrefix();
 	const idx = prefix.indexOf( '--project-directory' );
 	assert.notEqual( idx, -1 );
 	assert.equal( prefix[ idx + 1 ], repoRoot );
-	// EN: It comes before the -f files, as `docker compose` expects.
-	// JA: `docker compose` が期待するとおり、-f ファイルより前に置く。
+	// It comes before the -f files, as `docker compose` expects.
 	assert.ok( idx < prefix.indexOf( '-f' ) );
 } );
 
 test( 'every Compose invocation passes both -f files', () => {
-	// EN: This is what makes the cli/ bind mount take effect on every call.
+	// This is what makes the cli/ bind mount take effect on every call.
 	//     Each call must start with the shared prefix and reference both
 	//     Compose files. (`logs` carries a second, unrelated `-f` -- the
 	//     follow flag -- so the prefix is checked positionally, not by count.)
-	// JA: これがすべての呼び出しで cli/ バインドマウントを有効にする。
-	//     各呼び出しは共通プレフィックスで始まり、両 Compose ファイルを参照
-	//     しなければならない。(`logs` は無関係な 2 つ目の `-f` -- 追従フラグ
-	//     -- を持つため、プレフィックスは個数ではなく位置で検査する。)
 	const prefix = composePrefix();
 	for ( const command of [ 'start', 'stop', 'destroy', 'status', 'logs' ] ) {
 		const args = buildComposeArgs( command );
@@ -121,9 +110,7 @@ test( 'buildComposeArgs: an unknown command throws', () => {
 
 test( 'run cli: execs the 071-cli PHP CLI in the web container', () => {
 	const args = buildComposeArgs( 'run', [ 'cli', 'post', 'list' ] );
-	// EN: docker compose -f .. -f .. exec web php /opt/071-cli/php/071-cli.php
-	//     post list --path=/var/www/html
-	// JA: docker compose -f .. -f .. exec web php /opt/071-cli/php/071-cli.php
+	// docker compose -f .. -f .. exec web php /opt/071-cli/php/071-cli.php
 	//     post list --path=/var/www/html
 	const execIndex = args.indexOf( 'exec' );
 	assert.notEqual( execIndex, -1, 'should contain exec' );
@@ -144,8 +131,7 @@ test( 'run cli: appends --path so 071-cli finds the in-container WordPress', () 
 } );
 
 test( 'run cli: the in-container CLI path matches the bind-mount target', () => {
-	// EN: docker-compose.071.yml mounts cli/ at /opt/071-cli.
-	// JA: docker-compose.071.yml は cli/ を /opt/071-cli にマウントする。
+	// docker-compose.071.yml mounts cli/ at /opt/071-cli.
 	assert.equal( CLI_PHP_IN_CONTAINER, '/opt/071-cli/php/071-cli.php' );
 } );
 
@@ -198,8 +184,7 @@ test( 'run: still passes both Compose files', () => {
 } );
 
 test( 'composePrefix: extra override files are appended after the cli/ override', () => {
-	// EN: The generated mappings override is layered after docker-compose.071.yml.
-	// JA: 生成された mappings オーバーライドは docker-compose.071.yml の後に重ねる。
+	// The generated mappings override is layered after docker-compose.071.yml.
 	const prefix = composePrefix( [ '/repo/docker-compose.071-mappings.yml' ] );
 	assert.deepEqual( prefix, [
 		'compose',
@@ -222,8 +207,7 @@ test( 'buildComposeArgs: extra files are passed for an environment command', () 
 	assert.ok( args.includes( '/repo/docker-compose.071-mappings.yml' ) );
 	assert.ok( args.includes( baseComposeFile ) );
 	assert.ok( args.includes( overrideComposeFile ) );
-	// EN: the command tail is unchanged.
-	// JA: コマンド末尾は変わらない。
+	// the command tail is unchanged.
 	assert.deepEqual( args.slice( -3 ), [ 'up', '-d', '--build' ] );
 } );
 

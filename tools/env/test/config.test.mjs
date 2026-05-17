@@ -1,12 +1,8 @@
 /*
- * EN: Unit tests for tools/env/src/config.mjs -- config defaults, deep-merge,
+ * Unit tests for tools/env/src/config.mjs -- config defaults, deep-merge,
  *     validation, and the two-file load (`.071-env.json` +
  *     `.071-env.override.json`). The filesystem-touching `loadConfig` is
  *     exercised against a temporary directory so the tests stay hermetic.
- * JA: tools/env/src/config.mjs の単体テスト -- 設定の既定値・ディープマージ・
- *     検証・2 ファイルの読み込み (`.071-env.json` +
- *     `.071-env.override.json`)。ファイルシステムに触れる `loadConfig` は
- *     一時ディレクトリに対して検証し、テストを密閉的に保つ。
  */
 
 import test from 'node:test';
@@ -184,11 +180,8 @@ test( 'mergeConfigs: an invalid layer throws', () => {
 } );
 
 /**
- * EN: Run `fn` with a throwaway temp directory; the directory is removed
+ * Run `fn` with a throwaway temp directory; the directory is removed
  *     afterwards. Used to exercise `loadConfig` hermetically.
- * JA: 使い捨ての一時ディレクトリで `fn` を実行する。ディレクトリは後で削除
- *     する。`loadConfig` を密閉的に検証するために使う。
- *
  * @param {(dir: string) => void} fn The body, given the temp directory.
  */
 function withTempDir( fn ) {

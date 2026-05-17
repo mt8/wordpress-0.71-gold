@@ -1,8 +1,6 @@
 /*
- * EN: Unit tests for tools/env/src/env-vars.mjs -- deriving the Compose environment
+ * Unit tests for tools/env/src/env-vars.mjs -- deriving the Compose environment
  *     variables (WP_PORT / DB_PORT / PHP_VERSION) from a config.
- * JA: tools/env/src/env-vars.mjs の単体テスト -- 設定から Compose 環境変数
- *     (WP_PORT / DB_PORT / PHP_VERSION) を導出する処理。
  */
 
 import test from 'node:test';

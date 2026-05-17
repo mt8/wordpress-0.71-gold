@@ -1,8 +1,6 @@
 /*
- * EN: Unit tests for tools/env/src/cli.mjs -- argument and command parsing.
+ * Unit tests for tools/env/src/cli.mjs -- argument and command parsing.
  *     Run with Node's built-in test runner: `node --test`.
- * JA: tools/env/src/cli.mjs の単体テスト -- 引数とコマンドの解析。
- *     Node 組み込みのテストランナーで実行する: `node --test`。
  */
 
 import test from 'node:test';
@@ -40,8 +38,7 @@ test( 'parseArgs: a command keeps its trailing arguments in order', () => {
 } );
 
 test( 'parseArgs: --help after a command is passed through, not consumed', () => {
-	// EN: `071-env run cli --help` should forward `--help` to 071-cli.
-	// JA: `071-env run cli --help` は `--help` を 071-cli へ転送するべき。
+	// `071-env run cli --help` should forward `--help` to 071-cli.
 	const result = parseArgs( [ 'run', 'cli', '--help' ] );
 	assert.equal( result.command, 'run' );
 	assert.deepEqual( result.args, [ 'cli', '--help' ] );
