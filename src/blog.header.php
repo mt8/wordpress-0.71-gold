@@ -11,6 +11,43 @@ require_once $curpath . $b2inc . '/b2template.functions.php';
 require_once $curpath . $b2inc . '/b2vars.php';
 require_once $curpath . $b2inc . '/b2functions.php';
 
+// Issue #166: when the database is reachable but WordPress 0.71 is not yet
+// installed (the b2* tables are missing -- e.g. a fresh / empty database),
+// the front-end entry points used to emit a raw SQL error
+// ("Table 'b2.b2settings' doesn't exist"). Detect that state here, right
+// after b2config.php has connected $wpdb, and redirect the visitor to the
+// installer instead.
+//
+// Only the "connected but not installed" case is handled. A genuine
+// connection failure is a different problem and keeps its existing
+// behaviour: wpdb's constructor already reports it, and $wpdb->dbh is not a
+// mysqli object, so the probe below is skipped.
+if ( isset( $wpdb ) && ( $wpdb->dbh instanceof mysqli ) ) {
+	// Probe for the settings table with error output suppressed, so the
+	// probe itself never prints the SQL error we are trying to avoid.
+	$wpdb->hide_errors();
+	$wp071_installed = (bool) @mysqli_query( $wpdb->dbh, "SELECT 1 FROM $tablesettings LIMIT 1" );
+	$wpdb->show_errors();
+
+	// The installer (wp-admin/wp-install.php) requires b2config.php directly,
+	// not blog.header.php, so it never reaches this code and a redirect loop
+	// cannot form. This guard makes that intent explicit and stays correct
+	// even if an entry point is ever wired differently.
+	$wp071_script       = isset( $_SERVER['SCRIPT_NAME'] ) ? $_SERVER['SCRIPT_NAME'] : '';
+	$wp071_on_installer = ( 'wp-install.php' === basename( $wp071_script ) );
+
+	if ( ! $wp071_installed && ! $wp071_on_installer ) {
+		// Build the installer path from the current request rather than
+		// from stored settings: $siteurl and friends live in b2settings,
+		// which is exactly the table that is missing here.
+		$wp071_basedir = rtrim( str_replace( '\\', '/', dirname( $wp071_script ) ), '/' );
+		$wp071_install = $wp071_basedir . '/wp-admin/wp-install.php';
+
+		header( 'Location: ' . $wp071_install );
+		exit;
+	}
+}
+
 $b2varstoreset = array( 'm', 'p', 'posts', 'w', 'c', 'cat', 'withcomments', 's', 'search', 'exact', 'sentence', 'poststart', 'postend', 'preview', 'debug', 'calendar', 'page', 'paged', 'more', 'tb', 'pb', 'author', 'order', 'orderby' );
 
 	// Issue #37 hardening. The original loop used the variable-variable
