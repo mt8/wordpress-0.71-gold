@@ -306,6 +306,39 @@ browser-based WordPress 0.71.
 These changes live entirely in `index.html`, `src/main.js` and
 `db/seed.php` under `tools/playground/`; `src/` is untouched.
 
+## In-app browsers
+
+The playground boots php-wasm, which needs cross-origin isolation /
+`SharedArrayBuffer` and a reliably controlling service worker. Mobile
+**in-app browsers** — the WebViews embedded in native apps such as
+X/Twitter, Facebook, Instagram and LINE — often lack or only unreliably
+support those, so the playground would fail to boot or misbehave there.
+Rather than show a broken playground, it detects the in-app browser up
+front and directs the visitor to a standard browser, as the official
+WordPress Playground does (Issue #140).
+
+- **Detection.** `src/inapp-browser.js` is a small, side-effect-free
+  module: `detectInAppBrowser(navigator)` reads only the user-agent
+  string, so it is unit-testable with a stub. It first matches the
+  user-agent against a list of known app markers (Facebook's `FBAN` /
+  `FBAV`, `Instagram`, `Line/`, `Twitter`, WeChat's `MicroMessenger`,
+  and others), then falls back to generic mobile-WebView heuristics — an
+  iOS `Mobile` user-agent with no `Safari/` token (a WKWebView), or an
+  Android user-agent carrying the `; wv` WebView marker. It only fires
+  on mobile, so a desktop embedded browser is left alone.
+- **The notice.** When an in-app browser is detected, `src/main.js`
+  shows `index.html`'s `#inapp-notice` screen instead of booting
+  php-wasm: it explains a standard browser is needed, shows the page URL
+  with a "Copy address" button, and gives the "open in browser" steps
+  for Safari / Chrome. A "Continue anyway" escape hatch reloads with a
+  query flag that skips the notice, in case of a false positive.
+- **Standard browsers** are unaffected — `detectInAppBrowser` returns
+  "not detected" and the playground boots exactly as before.
+
+These changes live entirely in `index.html`, `src/main.js` and the new
+`src/inapp-browser.js` under `tools/playground/`; `src/` (the WordPress
+0.71 source tree) is untouched.
+
 ## Layout
 
 ```
@@ -317,6 +350,7 @@ tools/playground/
     sw.js                 request-routing service worker
   src/
     main.js               boots @php-wasm/web, wires the SW bridge
+    inapp-browser.js      detects mobile in-app browsers (WebViews)
     persistence.js        persists the SQLite database (OPFS / IndexedDB)
     media-persistence.js  persists the uploaded-media tree (OPFS / IndexedDB)
     wp-files.js           build-time bundle of the overlaid WP 0.71 tree

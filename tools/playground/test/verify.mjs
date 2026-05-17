@@ -1,5 +1,5 @@
 // EN: 071-now headless verification (Issue #116, #120, #122, #124,
-//     #126, #130, #132; full build).
+//     #126, #130, #132, #140; full build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, and runs the verification in two headless engines --
@@ -44,13 +44,19 @@
 //     reloads with the new title and the WordPress 0.71 front page
 //     renders it.
 //
+//     It also checks the in-app browser notice (Issue #140): the
+//     playground is loaded in a context whose user-agent is a mobile
+//     in-app browser, and the "open in your standard browser" screen is
+//     asserted to be shown instead of php-wasm booting, with the
+//     "continue anyway" escape hatch confirmed to boot the playground.
+//
 //     This extends the feasibility spike's check (Issue #108, which
 //     only confirmed the front-page text rendered) with the things the
 //     full build unlocks -- styling and navigation (the service worker,
 //     step 1), the working admin (step 3), persistence (step 4), image
 //     upload (step 5) and the block editor (Issue #132).
 // JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124・#126・
-//     #130・#132、フル実装)。
+//     #130・#132・#140、フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、2 つのヘッドレス
 //     エンジン -- Chromium と WebKit(Safari のエンジン、Issue #130)--
@@ -83,6 +89,12 @@
 //     VFS に保存・配信されることを確認し、ページをリロードして画像が
 //     なお配信されること -- アップロードメディアがリロードを越えて残る
 //     こと -- を確認し、リセットでクリアされることを確認する。
+//
+//     さらにアプリ内ブラウザ通知を検証する(Issue #140)。モバイルの
+//     アプリ内ブラウザのユーザーエージェントを持つコンテキストで
+//     playground を読み込み、php-wasm が起動する代わりに「標準ブラウザで
+//     開く」画面が表示されること、そして「continue anyway」の回避手段が
+//     playground を起動することを確認する。
 //
 //     これは実現可能性検証(Issue #108、フロントページのテキスト描画のみ
 //     確認)を、フル実装が解放するもの -- スタイリングと遷移(サービス
@@ -121,6 +133,17 @@ const OTHER_SEEDED_TITLES = [
 // EN: Seeded category names -- the front page's category list must show
 //     the demo blog's categories.
 const SEEDED_CATEGORIES = [ 'Announcements', 'Notes from 2003' ];
+
+// EN: An in-app browser user-agent (Issue #140). This is a real mobile
+//     in-app browser string -- the X/Twitter iOS in-app browser: an iOS
+//     WKWebView ("AppleWebKit ... Mobile" with no "Safari/" token) that
+//     also carries the "Twitter" app marker. The in-app-browser check
+//     (verifyInAppBrowser) loads the playground with this user-agent and
+//     asserts the "open in your standard browser" screen is shown
+//     instead of php-wasm booting.
+const INAPP_USER_AGENT =
+	'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) ' +
+	'AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Twitter for iPhone';
 
 /**
  * Run an npm script in the playground package and wait for it to exit.
@@ -952,6 +975,99 @@ async function verifyBlockEditor( page ) {
 }
 
 /**
+ * Verify the in-app browser notice in one headless browser engine
+ * (Issue #140).
+ *
+ * Opens the playground in a browser context whose user-agent is a real
+ * mobile in-app browser string (the X/Twitter iOS WebView), and asserts
+ * the "open in your standard browser" screen is shown instead of
+ * php-wasm booting: the #inapp-notice element is visible, it shows the
+ * page URL and the open-in-browser guidance, and the loading splash is
+ * removed. It then exercises the "continue anyway" escape hatch and
+ * confirms the playground boots after it.
+ *
+ * A separate context is used so the in-app user-agent does not leak into
+ * the normal-browser verification.
+ *
+ * @param {import('playwright').Browser} browser The launched browser.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifyInAppBrowser( browser ) {
+	const context = await browser.newContext( {
+		userAgent: INAPP_USER_AGENT,
+	} );
+	try {
+		const page = await context.newPage();
+		await page.goto( PREVIEW_URL, { waitUntil: 'load' } );
+
+		// EN: The notice replaces the php-wasm boot -- wait for the app to
+		//     reveal #inapp-notice (it adds the 'shown' class).
+		const noticeShown = await page
+			.waitForSelector( '#inapp-notice.shown', { timeout: 15000 } )
+			.then( () => true )
+			.catch( () => false );
+
+		// EN: The app sets a distinct boot hook on the in-app path --
+		//     window.__071now.inAppBrowser is true and there is no numeric
+		//     status, so php-wasm was not booted.
+		const hook = await page.evaluate( () => window.__071now || {} );
+		const flaggedInApp = hook.inAppBrowser === true;
+		const notBooted = typeof hook.status !== 'number';
+
+		// EN: The notice carries the open-in-browser guidance and the page
+		//     URL so a visitor can reopen it in a standard browser.
+		const noticeText = await page
+			.locator( '#inapp-notice' )
+			.innerText()
+			.catch( () => '' );
+		const guidanceShown =
+			noticeText.includes( 'standard browser' ) &&
+			/Safari|Chrome/.test( noticeText );
+		const urlShown = await page
+			.locator( '#inapp-url' )
+			.innerText()
+			.then( ( text ) => text.includes( PREVIEW_URL ) )
+			.catch( () => false );
+
+		// EN: The loading splash must be gone -- the notice, not a spinner
+		//     over a blank iframe, is what the visitor sees.
+		const splashHidden = await page
+			.locator( '#splash' )
+			.evaluate( ( el ) => el.classList.contains( 'hidden' ) )
+			.catch( () => false );
+
+		// EN: The "continue anyway" escape hatch -- after tapping it the
+		//     playground must boot (a numeric status appears), so a false
+		//     positive is recoverable.
+		await page.locator( '#inapp-continue' ).click();
+		const bootedAfterContinue = await page
+			.waitForFunction(
+				() =>
+					window.__071now &&
+					typeof window.__071now.status === 'number',
+				{ timeout: 60000 }
+			)
+			.then( () => true )
+			.catch( () => false );
+
+		return [
+			[ 'in-app browser: standard-browser notice shown', noticeShown ],
+			[ 'in-app browser: app flagged the in-app path', flaggedInApp ],
+			[ 'in-app browser: php-wasm not booted', notBooted ],
+			[ 'in-app browser: open-in-browser guidance shown', guidanceShown ],
+			[ 'in-app browser: page URL shown for copying', urlShown ],
+			[ 'in-app browser: loading splash removed', splashHidden ],
+			[
+				'in-app browser: "continue anyway" boots the playground',
+				bootedAfterContinue,
+			],
+		];
+	} finally {
+		await context.close();
+	}
+}
+
+/**
  * Verify the service-worker-served blog in one headless browser engine.
  *
  * Run against both Chromium and WebKit (Safari's engine, Issue #130) so a
@@ -972,6 +1088,14 @@ async function verify( browserType, engine ) {
 	// eslint-disable-next-line no-console
 	console.log( `\n=== 071-now verification: ${ engine } ===` );
 	const browser = await browserType.launch();
+
+	// EN: In-app browser check (Issue #140) -- run first, in its own
+	//     context with a mobile in-app browser user-agent, so it asserts
+	//     the "open in your standard browser" screen is shown instead of
+	//     php-wasm booting. The default-user-agent run below then proves
+	//     a standard browser still boots the playground as before.
+	const inAppChecks = await verifyInAppBrowser( browser );
+
 	const page = await browser.newPage();
 	const consoleErrors = [];
 	page.on( 'console', ( message ) => {
@@ -1161,6 +1285,7 @@ async function verify( browserType, engine ) {
 		const uploadChecks = await verifyImageUpload( page );
 
 		const checks = [
+			...inAppChecks,
 			[ 'HTTP 200 from index.php', result.status === 200 ],
 			[ 'service worker controls the page', swController ],
 			[ 'page is cross-origin-isolated', crossOriginIsolated ],

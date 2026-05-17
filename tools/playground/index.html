@@ -100,6 +100,61 @@
 			@media (prefers-reduced-motion: reduce) {
 				#splash .spinner { animation-duration: 3s; }
 			}
+
+			/*
+			 * EN: The in-app browser notice (Issue #140). Shown over the
+			 *     whole stage when the playground is opened inside a
+			 *     mobile in-app browser -- a WebView embedded in an app
+			 *     such as X/Twitter, Facebook, Instagram or LINE -- which
+			 *     often lacks the cross-origin isolation / SharedArrayBuffer
+			 *     and reliable service worker php-wasm needs. It directs
+			 *     the visitor to reopen the page in a standard browser
+			 *     rather than booting into a broken playground. Hidden by
+			 *     default; src/main.js reveals it when an in-app browser is
+			 *     detected, before php-wasm is booted.
+			 */
+			#inapp-notice {
+				position: absolute; inset: 0;
+				display: none; flex-direction: column;
+				align-items: center; justify-content: center;
+				gap: 16px; padding: 28px; box-sizing: border-box;
+				text-align: center; background: #f0f0f1;
+				overflow-y: auto;
+			}
+			#inapp-notice.shown { display: flex; }
+			#inapp-notice .mark {
+				font-size: 22px; font-weight: 600; color: #1d2327;
+			}
+			#inapp-notice .body {
+				font-size: 14px; line-height: 1.6; color: #50575e;
+				max-width: 32em;
+			}
+			#inapp-notice .steps {
+				font-size: 14px; line-height: 1.6; color: #50575e;
+				max-width: 32em; text-align: left;
+				margin: 0; padding-left: 1.4em;
+			}
+			#inapp-notice .url-box {
+				width: 100%; max-width: 32em; box-sizing: border-box;
+				padding: 10px 12px;
+				font: 13px/1.5 monospace; color: #1d2327;
+				background: #fff; border: 1px solid #c3c4c7;
+				border-radius: 3px;
+				word-break: break-all; user-select: all;
+			}
+			#inapp-copy {
+				padding: 7px 16px; cursor: pointer;
+				font: 13px/1.5 system-ui, sans-serif;
+				background: #2271b1; color: #fff;
+				border: 0; border-radius: 3px;
+			}
+			#inapp-copy:hover { background: #135e96; }
+			#inapp-continue {
+				font-size: 12px; color: #787c82;
+				background: none; border: 0; cursor: pointer;
+				text-decoration: underline; padding: 4px;
+			}
+			#inapp-continue:hover { color: #50575e; }
 		</style>
 	</head>
 	<body>
@@ -169,6 +224,62 @@
 					the first visit.
 				</div>
 				<div class="phase" id="splash-phase">booting php-wasm&hellip;</div>
+			</div>
+			<!--
+			  EN: The in-app browser notice (Issue #140). Hidden by
+			      default. When the playground is opened in a mobile
+			      in-app browser -- a WebView inside an app such as
+			      X/Twitter, Facebook, Instagram or LINE -- src/main.js
+			      reveals this instead of booting php-wasm, because such
+			      WebViews often lack the cross-origin isolation and
+			      reliable service worker the playground needs. It tells
+			      the visitor to reopen the page in a standard browser
+			      (Safari / Chrome), shows the page URL so they can copy
+			      it, and -- in case of a false positive -- offers a
+			      "continue anyway" escape hatch that boots the playground.
+			  JA: アプリ内ブラウザ通知(Issue #140)。既定では非表示。
+			      playground がモバイルアプリ内ブラウザ -- X/Twitter・
+			      Facebook・Instagram・LINE 等のアプリ内 WebView -- で
+			      開かれたとき、src/main.js は php-wasm を起動せずこれを
+			      表示する。そうした WebView は playground が必要とする
+			      cross-origin isolation や信頼できるサービスワーカーを
+			      欠くことが多いため。訪問者に標準ブラウザ(Safari /
+			      Chrome)でページを開き直すよう伝え、コピーできるよう
+			      ページ URL を示し、誤検出に備えて playground を起動
+			      する「continue anyway」の回避手段も提供する。
+			-->
+			<div id="inapp-notice" role="dialog" aria-labelledby="inapp-mark">
+				<div class="mark" id="inapp-mark">
+					Please open this in your browser
+				</div>
+				<p class="body">
+					You appear to be viewing 071-now inside an app's
+					built-in browser. The playground runs PHP 8.3 as
+					WebAssembly, which needs features that in-app browsers
+					often lack &mdash; so it would not start reliably here.
+					Open this page in your device's standard browser
+					(Safari or Chrome) instead.
+				</p>
+				<ol class="steps">
+					<li>
+						Tap the menu (&hellip; or &#9776;) in this in-app
+						browser.
+					</li>
+					<li>
+						Choose <strong>Open in browser</strong> (or
+						<strong>Open in Safari</strong> /
+						<strong>Open in Chrome</strong>).
+					</li>
+				</ol>
+				<p class="body">
+					If your in-app browser has no such option, copy this
+					address and paste it into Safari or Chrome:
+				</p>
+				<div class="url-box" id="inapp-url"></div>
+				<button id="inapp-copy" type="button">Copy address</button>
+				<button id="inapp-continue" type="button">
+					Continue anyway
+				</button>
 			</div>
 		</div>
 		<script type="module" src="/src/main.js"></script>

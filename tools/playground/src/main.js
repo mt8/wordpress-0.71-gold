@@ -39,6 +39,7 @@ import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal'
 import { wpFiles } from './wp-files.js';
 import { DatabasePersistence } from './persistence.js';
 import { MediaPersistence } from './media-persistence.js';
+import { detectInAppBrowser } from './inapp-browser.js';
 
 // EN: Document root inside the php-wasm virtual filesystem.
 const DOCROOT = '/wordpress';
@@ -88,6 +89,14 @@ const blogEl = document.getElementById( 'blog' );
 const resetButtonEl = document.getElementById( 'reset' );
 const splashEl = document.getElementById( 'splash' );
 const splashPhaseEl = document.getElementById( 'splash-phase' );
+const inAppNoticeEl = document.getElementById( 'inapp-notice' );
+
+// EN: The query flag the "continue anyway" escape hatch sets (Issue
+//     #140). When the in-app browser notice is shown and a visitor taps
+//     "Continue anyway" -- in case the detection was a false positive --
+//     the page reloads with this flag, and showInAppNoticeIfNeeded()
+//     skips the notice on that reload so the playground boots.
+const CONTINUE_ANYWAY_FLAG = '071-now-continue';
 
 /**
  * Update the status line and, while the loading splash is still up, its
@@ -503,11 +512,114 @@ async function handleForwardedRequest( requestHandler, request, port ) {
 }
 
 /**
+ * Show the in-app browser notice when the playground is opened inside a
+ * mobile in-app browser, and report whether it was shown (Issue #140).
+ *
+ * The playground boots php-wasm, which needs cross-origin isolation /
+ * SharedArrayBuffer and a reliably controlling service worker. Mobile
+ * in-app browsers -- the WebViews embedded in apps such as X/Twitter,
+ * Facebook, Instagram and LINE -- often lack or only unreliably support
+ * those, so the playground would fail to boot or misbehave there. When
+ * detectInAppBrowser() flags the user agent, this reveals the
+ * "open in your standard browser" screen (index.html's #inapp-notice),
+ * fills in the page URL, wires its copy and "continue anyway" controls,
+ * and removes the loading splash so the screen is not covered. The
+ * caller (boot) then stops before booting php-wasm.
+ *
+ * The "continue anyway" control is an escape hatch for a false positive:
+ * it reloads the page with the CONTINUE_ANYWAY_FLAG query flag, and this
+ * function honours that flag by skipping the notice on the reload -- so
+ * the playground boots as normal.
+ *
+ * @return {boolean} True when the notice was shown and php-wasm must not
+ *                    be booted; false when the playground should boot.
+ */
+function showInAppNoticeIfNeeded() {
+	// EN: Honour the "continue anyway" escape hatch -- a reload carrying
+	//     the flag boots the playground even though the user agent still
+	//     looks like an in-app browser.
+	const params = new URLSearchParams( location.search );
+	if ( params.has( CONTINUE_ANYWAY_FLAG ) ) {
+		return false;
+	}
+
+	const detection = detectInAppBrowser( navigator );
+	if ( ! detection.isInApp || ! inAppNoticeEl ) {
+		return false;
+	}
+
+	// EN: Show the page URL so a visitor can copy it into a standard
+	//     browser; the address bar of an in-app browser is often hidden.
+	const urlEl = document.getElementById( 'inapp-url' );
+	if ( urlEl ) {
+		urlEl.textContent = location.href;
+	}
+
+	// EN: "Copy address" puts the URL on the clipboard. The Clipboard API
+	//     is not guaranteed in every in-app browser, so a failure falls
+	//     back to selecting the URL text for a manual copy.
+	const copyButtonEl = document.getElementById( 'inapp-copy' );
+	if ( copyButtonEl ) {
+		copyButtonEl.addEventListener( 'click', async () => {
+			try {
+				await navigator.clipboard.writeText( location.href );
+				copyButtonEl.textContent = 'Address copied';
+			} catch {
+				if ( urlEl ) {
+					const range = document.createRange();
+					range.selectNodeContents( urlEl );
+					const selection = window.getSelection();
+					selection.removeAllRanges();
+					selection.addRange( range );
+				}
+				copyButtonEl.textContent = 'Press and hold to copy';
+			}
+		} );
+	}
+
+	// EN: "Continue anyway" is the false-positive escape hatch: reload
+	//     with the flag so this function lets the playground boot.
+	const continueButtonEl = document.getElementById( 'inapp-continue' );
+	if ( continueButtonEl ) {
+		continueButtonEl.addEventListener( 'click', () => {
+			params.set( CONTINUE_ANYWAY_FLAG, '1' );
+			location.search = params.toString();
+		} );
+	}
+
+	// EN: Reveal the notice and remove the loading splash so it does not
+	//     sit on top of the screen.
+	inAppNoticeEl.classList.add( 'shown' );
+	hideSplash();
+	setStatus( 'opened in an in-app browser — open in a standard browser' );
+
+	// EN: Expose a hook the headless verifier reads to confirm the notice
+	//     was shown in place of the php-wasm boot (Issue #140).
+	window.__071now = {
+		inAppBrowser: true,
+		appName: detection.appName,
+		reason: detection.reason,
+	};
+
+	return true;
+}
+
+/**
  * Boot php-wasm, wire up the service worker bridge and load the blog.
  *
  * @return {Promise<void>}
  */
 async function boot() {
+	// EN: In-app browser check (Issue #140). When the playground is
+	//     opened inside a mobile in-app browser -- a WebView that often
+	//     lacks the cross-origin isolation and reliable service worker
+	//     php-wasm needs -- show the "open in your standard browser"
+	//     screen and stop here rather than booting into a broken
+	//     playground. A standard browser boots on as before.
+	if ( showInAppNoticeIfNeeded() ) {
+		return;
+	}
+
 	setStatus( 'registering the request-routing service worker…' );
 
 	// EN: Register the service worker. On the deployed site this may
