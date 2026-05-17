@@ -166,9 +166,16 @@ export default defineConfig( {
 		global: 'globalThis',
 	},
 	build: {
-		// EN: Emit into src/ so the Docker-served blog can load the bundle.
-		// JA: Docker が配信するブログがバンドルを読めるよう src/ へ出力する。
-		outDir: fileURLToPath( new URL( '../assets', import.meta.url ) ),
+		// EN: Emit into src/block-editor/assets/ so the Docker-served blog
+		//     can load the bundle. This config lives in tools/block-editor/,
+		//     so the assets dir is two levels up under src/.
+		// JA: Docker が配信するブログがバンドルを読めるよう
+		//     src/block-editor/assets/ へ出力する。本設定は
+		//     tools/block-editor/ にあるため、assets ディレクトリは 2 つ上の
+		//     src/ 配下になる。
+		outDir: fileURLToPath(
+			new URL( '../../src/block-editor/assets', import.meta.url )
+		),
 		emptyOutDir: true,
 		// EN: editor.php reads this manifest to find the hashed bundle name.
 		// JA: editor.php はこのマニフェストからハッシュ付きバンドル名を得る。
