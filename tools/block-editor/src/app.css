@@ -1,12 +1,8 @@
 /*
- * EN: Layout styles for the WordPress 0.71 custom block editor. The block UI
+ * Layout styles for the WordPress 0.71 custom block editor. The block UI
  *     itself is styled by the bundled @wordpress/* stylesheets; this file only
  *     arranges the surrounding chrome -- the top bar, the fixed block toolbar,
  *     the Document Overview panel, the canvas and the settings sidebar.
- * JA: WordPress 0.71 カスタムブロックエディタのレイアウトスタイル。ブロック
- *     UI 自体はバンドルした @wordpress/* スタイルシートが担当する。本ファイル
- *     は周囲の枠 -- 上部バー・固定ブロックツールバー・ドキュメント概観
- *     パネル・キャンバス・設定サイドバー -- だけを整える。
  */
 .be-app {
 	display: flex;
@@ -44,15 +40,11 @@
 }
 
 /*
- * EN: The header icon buttons -- the WordPress logo (back to wp-admin), the
+ * The header icon buttons -- the WordPress logo (back to wp-admin), the
  *     "+" block inserter and the Document Overview toggle -- sit on the dark
  *     header bar, so their icons are forced white. The WordPress logo button
  *     is the black W square at the top-left of the modern editor: a dark tile
  *     that fills the header's height.
- * JA: ヘッダーのアイコンボタン -- WordPress ロゴ(wp-admin へ戻る)・「+」
- *     ブロックインサーター・Document Overview トグル -- は暗いヘッダーバー
- *     上にあるため、アイコンを白で固定する。WordPress ロゴボタンは最新
- *     エディタ左上の黒い W の四角: ヘッダーの高さを満たす暗いタイル。
  */
 .be-toolbar .components-button.has-icon {
 	color: #fff;
@@ -80,12 +72,9 @@
 }
 
 /*
- * EN: The post title input. It now lives inside .be-canvas, above the writing
+ * The post title input. It now lives inside .be-canvas, above the writing
  *     flow, so it is the width of the content column rather than a full-width
  *     bar; the canvas padding aligns it with the writing flow below.
- * JA: 投稿タイトル入力。.be-canvas 内の writing flow の上に置かれるように
- *     なり、全幅バーではなくコンテンツカラムの幅になる。キャンバスの余白で
- *     下の writing flow と揃う。
  */
 .be-title {
 	font-size: 1.8rem;
@@ -110,8 +99,7 @@
 }
 
 /*
- * EN: The Document Overview panel -- the block outline / list view.
- * JA: ドキュメント概観パネル -- ブロックのアウトライン / リストビュー。
+ * The Document Overview panel -- the block outline / list view.
  */
 .be-overview {
 	width: 280px;
@@ -128,16 +116,11 @@
 }
 
 /*
- * EN: BlockTools is the wrapper @wordpress/block-editor renders around the
+ * BlockTools is the wrapper @wordpress/block-editor renders around the
  *     writing flow (Editor.jsx passes it the be-block-tools class). Making it
  *     a flex column that fills the canvas height left below the title lets the
  *     writing flow's flex: 1 stretch to exactly that height -- so the editing
  *     area fills the canvas, without deriving any height from the viewport.
- * JA: BlockTools は @wordpress/block-editor が writing flow の周りに描画する
- *     ラッパー(Editor.jsx が be-block-tools クラスを渡す)。これをタイトルの
- *     下に残るキャンバスの高さを満たす flex カラムにすることで、writing flow
- *     の flex: 1 がその高さちょうどに伸びる -- 編集エリアがキャンバスを満たす。
- *     ビューポートから高さを導出しない。
  */
 .be-block-tools {
 	display: flex;
@@ -147,16 +130,11 @@
 }
 
 /*
- * EN: The writing flow -- the @wordpress/block-editor editable content area.
+ * The writing flow -- the @wordpress/block-editor editable content area.
  *     flex: 1 inside .be-block-tools makes it fill the canvas height left
  *     below the title, so the editing area fills the screen even with little
  *     content (a large click target / room to type). min-height: 0 lets it
  *     shrink within the flex column so its own overflow scrolls.
- * JA: writing flow -- @wordpress/block-editor の編集可能なコンテンツ領域。
- *     .be-block-tools 内の flex: 1 により、タイトルの下に残るキャンバスの
- *     高さを満たす。内容が少なくても編集エリアが画面を満たす(大きなクリック
- *     対象／入力する余地)。min-height: 0 で flex カラム内で縮められるように
- *     し、自身の overflow がスクロールする。
  */
 .be-canvas .block-editor-writing-flow {
 	flex: 1;
@@ -166,15 +144,11 @@
 }
 
 /*
- * EN: The block breadcrumb. It is a sibling of .be-body (rendered after it),
+ * The block breadcrumb. It is a sibling of .be-body (rendered after it),
  *     so it is a full-width bar pinned at the very bottom of the editor,
  *     spanning the Document Overview / canvas / settings columns. .be-app is a
  *     flex column with .be-body taking flex: 1, so the breadcrumb keeps its
  *     natural height at the bottom of the viewport.
- * JA: ブロックのパンくず。.be-body の兄弟(その後に描画)であり、エディタ
- *     最下部に固定された全幅バーとなり、Document Overview / キャンバス /
- *     設定カラムにまたがる。.be-app は flex カラムで .be-body が flex: 1 を
- *     取るため、パンくずはビューポート最下部で自然な高さを保つ。
  */
 .be-breadcrumb {
 	border-top: 1px solid #ddd;
@@ -190,14 +164,10 @@
 }
 
 /*
- * EN: The settings sidebar as tabs (Issue #152). TabPanel renders a tab
+ * The settings sidebar as tabs (Issue #152). TabPanel renders a tab
  *     list and a tab-content area; making the panel a full-height flex
  *     column lets the content area take the remaining height and scroll
  *     on its own, so a long block inspector never resizes the sidebar.
- * JA: 設定サイドバーのタブ化(Issue #152)。TabPanel はタブ一覧とタブ
- *     コンテンツ領域を描画する。パネルを全高の flex カラムにすることで、
- *     コンテンツ領域が残りの高さを取り単独でスクロールし、長いブロック
- *     インスペクタがサイドバーをリサイズしない。
  */
 .be-sidebar-tabs {
 	display: flex;
@@ -211,10 +181,8 @@
 }
 
 /*
- * EN: Padding for the Post tab's controls. The Block tab holds
+ * Padding for the Post tab's controls. The Block tab holds
  *     BlockInspector, which brings its own panels and spacing.
- * JA: Post タブの操作子の余白。Block タブは BlockInspector を保持し、
- *     自前のパネルと余白を持つ。
  */
 .be-tab-panel {
 	display: flex;
@@ -224,10 +192,8 @@
 }
 
 /*
- * EN: Each tab label pairs an icon with its text; .be-tab-title lays the
+ * Each tab label pairs an icon with its text; .be-tab-title lays the
  *     two out inline with a small gap.
- * JA: 各タブのラベルはアイコンとテキストを並べる。.be-tab-title が両者を
- *     小さな間隔で横並びにする。
  */
 .be-tab-title {
 	display: inline-flex;
@@ -241,7 +207,7 @@
 }
 
 /*
- * EN: Responsive header for narrow viewports (a phone, ~390px wide).
+ * Responsive header for narrow viewports (a phone, ~390px wide).
  *
  *     The desktop header is a single non-wrapping row, so on a phone its
  *     controls overflow the viewport: the "Back to wp-admin" link breaks word
@@ -253,17 +219,6 @@
  *     The toolbar is allowed to wrap onto multiple rows, the link text is kept
  *     on one line, and the save button's label may wrap inside the button --
  *     so every header control stays readable and within the viewport.
- * JA: 狭幅ビューポート(スマホ、幅 ~390px)向けレスポンシブヘッダー。
- *
- *     デスクトップのヘッダーは折り返さない 1 行のため、スマホでは操作子が
- *     ビューポートからはみ出す: 「Back to wp-admin」リンクが単語ごとに
- *     改行され、バッジが概観ボタンに重なり、保存ボタンが端からはみ出す。
- *
- *     これらの規則は max-width メディアクエリで囲い、782px(WordPress 自身の
- *     「小」ブレークポイント)未満でのみ適用する。デスクトップのヘッダーは
- *     そのまま。ツールバーを複数行へ折り返せるようにし、リンクテキストを
- *     1 行に保ち、保存ボタンのラベルはボタン内で折り返せるようにする --
- *     これでヘッダーの各操作子が読め、ビューポート内に収まる。
  */
 @media ( max-width: 782px ) {
 	.be-toolbar {
@@ -279,12 +234,9 @@
 	}
 
 	/*
-	 * EN: The right-hand group (front-end link + save button) takes a full
+	 * The right-hand group (front-end link + save button) takes a full
 	 *     row of its own and aligns its controls to the start so the save
 	 *     button no longer overflows the viewport edge.
-	 * JA: 右側グループ(フロントエンドリンク + 保存ボタン)を独立した 1 行
-	 *     にし、操作子を先頭寄せにする。保存ボタンがビューポート端から
-	 *     はみ出さなくなる。
 	 */
 	.be-toolbar-right {
 		flex-basis: 100%;
@@ -292,20 +244,16 @@
 	}
 
 	/*
-	 * EN: Keep the link text on one line -- without this the toolbar's
+	 * Keep the link text on one line -- without this the toolbar's
 	 *     narrow space breaks "Back to wp-admin" word by word.
-	 * JA: リンクテキストを 1 行に保つ -- これが無いと狭いツールバーで
-	 *     「Back to wp-admin」が単語ごとに改行される。
 	 */
 	.be-toolbar .be-link {
 		white-space: nowrap;
 	}
 
 	/*
-	 * EN: Let the save button's label wrap inside the button instead of
+	 * Let the save button's label wrap inside the button instead of
 	 *     pushing the button past the viewport edge.
-	 * JA: 保存ボタンのラベルをボタン内で折り返させ、ボタンが
-	 *     ビューポート端を越えて押し出されないようにする。
 	 */
 	.be-toolbar-right .components-button.is-primary {
 		height: auto;
@@ -316,7 +264,7 @@
 }
 
 /*
- * EN: Responsive editor body for narrow viewports (a phone, ~390px wide).
+ * Responsive editor body for narrow viewports (a phone, ~390px wide).
  *
  *     The desktop body is a three-column layout (Document Overview / canvas /
  *     settings sidebar) with two fixed 280px side columns. At a phone width
@@ -330,28 +278,12 @@
  *     The two side columns drop their fixed 280px width and become full-width
  *     auto-height blocks, so no region overlaps another and the canvas gets
  *     the full viewport width. The desktop layout is untouched.
- * JA: 狭幅ビューポート(スマホ、幅 ~390px)向けレスポンシブな本体。
- *
- *     デスクトップの本体は 3 カラムのレイアウト(ドキュメント概観 /
- *     キャンバス / 設定サイドバー)で、両脇は固定 280px のカラム。スマホ幅
- *     ではそのカラムがキャンバスの場所を奪い、各領域が重なる: キャンバスは
- *     幅ゼロに潰れてテキストが 1 文字ずつ折り返し、Post パネルのラベルが
- *     操作子に重なる。
- *
- *     このメディアクエリ(上のヘッダー規則と同じ 782px ブレークポイント)は
- *     本体を 1 カラムに畳む -- まずキャンバス、その下に設定サイドバーと
- *     ドキュメント概観パネルを段積みする。両脇のカラムは固定 280px 幅を
- *     やめて全幅・自動高さのブロックになり、どの領域も重ならず、キャンバスは
- *     ビューポートの全幅を得る。デスクトップのレイアウトはそのまま。
  */
 @media ( max-width: 782px ) {
 	/*
-	 * EN: Tighter title size and padding for the phone width. The title sits
+	 * Tighter title size and padding for the phone width. The title sits
 	 *     inside .be-canvas, so its horizontal padding matches the writing
 	 *     flow's 1rem phone padding below it.
-	 * JA: スマホ幅向けにタイトルのサイズと余白を詰める。タイトルは .be-canvas
-	 *     内にあるため、横の余白は下の writing flow のスマホ用 1rem 余白に
-	 *     揃える。
 	 */
 	.be-title {
 		font-size: 1.4rem;
@@ -363,12 +295,9 @@
 	}
 
 	/*
-	 * EN: The canvas leads the stacked column (order: 1); the panels follow.
+	 * The canvas leads the stacked column (order: 1); the panels follow.
 	 *     min-height gives the canvas a usable editing area; the whole page
 	 *     -- not a nested scroll region -- scrolls on a phone.
-	 * JA: 段積みカラムの先頭にキャンバスを置き(order: 1)、パネルを続ける。
-	 *     min-height でキャンバスに使える編集領域を与える。スマホでは
-	 *     入れ子のスクロール領域ではなくページ全体がスクロールする。
 	 */
 	.be-canvas {
 		order: 1;
@@ -384,13 +313,10 @@
 	}
 
 	/*
-	 * EN: The two side columns drop their fixed 280px width and their side
+	 * The two side columns drop their fixed 280px width and their side
 	 *     borders, becoming full-width blocks stacked under the canvas with a
 	 *     top divider; max-height keeps a long block outline from filling the
 	 *     screen.
-	 * JA: 両脇のカラムは固定 280px 幅と側面の枠線をやめ、上に区切り線を持つ
-	 *     全幅ブロックとしてキャンバスの下に段積みされる。max-height は長い
-	 *     ブロックアウトラインが画面を埋めるのを防ぐ。
 	 */
 	.be-overview,
 	.be-sidebar {
@@ -402,18 +328,12 @@
 	}
 
 	/*
-	 * EN: Tighter canvas padding for the phone width, and let the writing
+	 * Tighter canvas padding for the phone width, and let the writing
 	 *     flow grow with its content so the page scrolls as a whole rather
 	 *     than trapping the canvas in a short nested scroll box. The flex
 	 *     layout (.be-block-tools fills .be-canvas, the writing flow fills
 	 *     .be-block-tools) keeps the editing area filling the canvas, so no
 	 *     viewport-derived min-height is needed at this layout either.
-	 * JA: スマホ幅向けにキャンバスの余白を詰め、書き込みフローを内容に
-	 *     合わせて伸ばす。キャンバスを短い入れ子のスクロールボックスに
-	 *     閉じ込めず、ページ全体でスクロールさせる。flex レイアウト
-	 *     (.be-block-tools が .be-canvas を満たし、writing flow が
-	 *     .be-block-tools を満たす)が編集エリアにキャンバスを満たさせる
-	 *     ため、このレイアウトでもビューポート由来の min-height は不要。
 	 */
 	.be-canvas .block-editor-writing-flow {
 		padding: 1rem;
