@@ -4,8 +4,8 @@
  *     editing chrome added in Issue #79:
  *       - a per-block toolbar (the floating toolbar rendered by BlockTools),
  *       - a Document Overview panel (ListView, the block outline),
- *       - a settings sidebar with a Post panel (post_status + post_category)
- *         and a Block panel (block attributes via BlockInspector).
+ *       - a settings sidebar with a Post tab (post_status + post_category)
+ *         and a Block tab (block attributes via BlockInspector).
  *     It loads a 0.71 post via the load.php JSON endpoint, parses its
  *     post_content into a block tree, and saves the serialized block markup
  *     plus the status / category back through save.php.
@@ -14,8 +14,8 @@
  *     Issue #79 で追加した完全な編集 UI を備える:
  *       - 各ブロックツールバー(BlockTools が描画するフローティングツールバー)、
  *       - ドキュメント概観パネル(ListView、ブロックアウトライン)、
- *       - 設定サイドバー(Post パネル = post_status + post_category、
- *         Block パネル = BlockInspector によるブロック属性)。
+ *       - 設定サイドバー(Post タブ = post_status + post_category、
+ *         Block タブ = BlockInspector によるブロック属性)。
  *     load.php JSON エンドポイント経由で 0.71 の投稿を読み込み、その
  *     post_content をブロックツリーへ解析し、シリアライズしたブロック
  *     マークアップとステータス / カテゴリーを save.php で保存し戻す。
@@ -44,7 +44,10 @@ import {
 	SelectControl,
 	Panel,
 	PanelBody,
+	TabPanel,
+	Icon,
 } from '@wordpress/components';
+import { blockDefault, page } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
 /**
@@ -487,58 +490,68 @@ export function Editor( { config } ) {
 							</div>
 
 							<aside className="be-sidebar">
-								{ /* EN: Post panel -- post_status and the
-								       single post_category of 0.71.
-								     JA: Post パネル -- 0.71 の post_status と
-								       単一の post_category。 */ }
-								<Panel>
-									<PanelBody
-										title="Post"
-										initialOpen={ true }
-									>
-										<SelectControl
-											__next40pxDefaultSize
-							label="Status"
-											value={ postStatus }
-											options={ STATUS_OPTIONS }
-											onChange={ setPostStatus }
-											__nextHasNoMarginBottom
-										/>
-										<SelectControl
-											__next40pxDefaultSize
-							label="Category"
-											value={ String(
-												postCategory
-											) }
-											options={
-												categoryOptions.length
-													? categoryOptions
-													: [
-															{
-																value: '0',
-																label: 'General (#0)',
-															},
-													  ]
-											}
-											onChange={ ( value ) =>
-												setPostCategory(
-													Number( value )
-												)
-											}
-											__nextHasNoMarginBottom
-										/>
-									</PanelBody>
-									{ /* EN: Block panel -- attributes of the
-									       selected block via BlockInspector.
-									     JA: Block パネル -- 選択ブロックの
-									       属性を BlockInspector で表示。 */ }
-									<PanelBody
-										title="Block"
-										initialOpen={ true }
-									>
-										<BlockInspector />
-									</PanelBody>
-								</Panel>
+								{ /* EN: The settings sidebar as tabs, like modern WordPress
+								       -- a Post tab (the 0.71 post_status and single
+								       post_category) and a Block tab (BlockInspector).
+								       Full height, with no collapse control (Issue #152).
+								     JA: 設定サイドバーを最新の WordPress のようにタブ化する
+								       -- Post タブ(0.71 の post_status と単一の
+								       post_category)と Block タブ(BlockInspector)。
+								       全高、開閉トグルなし(Issue #152)。 */ }
+								<TabPanel
+									className="be-sidebar-tabs"
+									tabs={ [
+										{
+											name: 'post',
+											title: (
+												<span className="be-tab-title">
+													<Icon icon={ page } size={ 20 } />
+													Post
+												</span>
+											),
+										},
+										{
+											name: 'block',
+											title: (
+												<span className="be-tab-title">
+													<Icon icon={ blockDefault } size={ 20 } />
+													Block
+												</span>
+											),
+										},
+									] }
+								>
+									{ ( tab ) =>
+										tab.name === 'post' ? (
+											<div className="be-tab-panel">
+												<SelectControl
+													__next40pxDefaultSize
+													label="Status"
+													value={ postStatus }
+													options={ STATUS_OPTIONS }
+													onChange={ setPostStatus }
+													__nextHasNoMarginBottom
+												/>
+												<SelectControl
+													__next40pxDefaultSize
+													label="Category"
+													value={ String( postCategory ) }
+													options={
+														categoryOptions.length
+															? categoryOptions
+															: [ { value: '0', label: 'General (#0)' } ]
+													}
+													onChange={ ( value ) =>
+														setPostCategory( Number( value ) )
+													}
+													__nextHasNoMarginBottom
+												/>
+											</div>
+										) : (
+											<BlockInspector />
+										)
+									}
+								</TabPanel>
 							</aside>
 						</div>
 

@@ -146,6 +146,52 @@
 	background: #fff;
 }
 
+/*
+ * EN: The settings sidebar as tabs (Issue #152). TabPanel renders a tab
+ *     list and a tab-content area; making the panel a full-height flex
+ *     column lets the content area take the remaining height and scroll
+ *     on its own, so a long block inspector never resizes the sidebar.
+ * JA: 設定サイドバーのタブ化(Issue #152)。TabPanel はタブ一覧とタブ
+ *     コンテンツ領域を描画する。パネルを全高の flex カラムにすることで、
+ *     コンテンツ領域が残りの高さを取り単独でスクロールし、長いブロック
+ *     インスペクタがサイドバーをリサイズしない。
+ */
+.be-sidebar-tabs {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+}
+
+.be-sidebar-tabs .components-tab-panel__tab-content {
+	flex: 1;
+	overflow: auto;
+}
+
+/*
+ * EN: Padding for the Post tab's controls. The Block tab holds
+ *     BlockInspector, which brings its own panels and spacing.
+ * JA: Post タブの操作子の余白。Block タブは BlockInspector を保持し、
+ *     自前のパネルと余白を持つ。
+ */
+.be-tab-panel {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	padding: 1rem;
+}
+
+/*
+ * EN: Each tab label pairs an icon with its text; .be-tab-title lays the
+ *     two out inline with a small gap.
+ * JA: 各タブのラベルはアイコンとテキストを並べる。.be-tab-title が両者を
+ *     小さな間隔で横並びにする。
+ */
+.be-tab-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
 .be-state {
 	padding: 2rem;
 	font-family: -apple-system, system-ui, sans-serif;
