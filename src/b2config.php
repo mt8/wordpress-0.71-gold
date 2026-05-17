@@ -99,10 +99,18 @@ $use_fileupload = 0;
 //   note that the  directory must be writable by the webserver (ChMod 766)
 //   note for windows-servers users: use forwardslashes instead of backslashes
 //$fileupload_realpath = '/home/your/site/b2/images';
-$fileupload_realpath = '/home/example/public_html/images';
+// EN (Issue #93): the upload directory is src/images/, which Docker serves as
+//     the Apache document root (/var/www/html). Keeping uploads under src/ lets
+//     bin/static-export.php capture the referenced image assets at export time.
+// JA (Issue #93): アップロードディレクトリは src/images/。Docker が Apache の
+//     ドキュメントルート (/var/www/html) として配信する。uploads を src/ 配下に
+//     置くことで bin/static-export.php が書き出し時に参照画像アセットを取り込む。
+$fileupload_realpath = '/var/www/html/images';
 
 // enter the URL of that directory (it's used to generate the links to the pictures)
-$fileupload_url = 'http://example.com/images';
+// EN (Issue #93): derived from $siteurl so it follows the configured blog URL.
+// JA (Issue #93): $siteurl から導出し、設定されたブログ URL に追従する。
+$fileupload_url = $siteurl . '/images';
 
 // accepted file types, you can add to that list if you want
 //   note: add a space before and after each file type
