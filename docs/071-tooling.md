@@ -33,14 +33,14 @@ package.json          # root: "workspaces": ["tools/cli", "tools/env", "tools/pl
 tools/cli/            # 071-cli  package
 tools/env/            # 071-env  package
 tools/playground/     # 071-now  package
+tools/block-editor/   # custom block editor build source (own package.json)
 src/                  # WordPress 0.71 source (unchanged)
-src/block-editor/app/ # existing block-editor package (left as-is for now)
 ```
 
-Each package has its own `package.json`, version, and `bin` entry. The
-existing `src/block-editor/app` package is intentionally left outside the
-workspace set in this first step to keep the change small; it can be folded
-in later.
+Each workspace package has its own `package.json`, version, and `bin` entry.
+The custom block editor build source (`tools/block-editor`) has its own
+`package.json` but is intentionally left outside the workspace set; it is
+built on its own with `cd tools/block-editor && npm install && npm run build`.
 
 ## 3. `071-cli` (`/tools/cli`)
 
@@ -187,7 +187,8 @@ tools/env/
 | `071-env run cli <…>`  | run `071-cli` inside the `web` container |
 | `071-env run <cmd…>`   | run an arbitrary command in the `web` container |
 
-`071-env` wraps the existing `docker-compose.yml`; it does not replace it.
+`071-env` wraps the existing `tools/env/docker-compose.yml`; it does not
+replace it.
 
 ### 4.3 Reaching `071-cli` inside the container
 
@@ -198,7 +199,7 @@ web-served). `071-env` bridges this with a Compose **override file**
 container at `/opt/071-cli`. Every `071-env` Compose call passes both files:
 
 ```
-docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
+docker compose -f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 `071-env run cli <args>` then becomes:
@@ -251,21 +252,23 @@ Example `.071-env.json`:
 
 **How each field is applied:**
 
-- **`port` / `dbPort`** — `docker-compose.yml` uses Compose variable
+- **`port` / `dbPort`** — `tools/env/docker-compose.yml` uses Compose variable
   substitution with defaults — `"${WP_PORT:-8080}:80"` and
   `"${DB_PORT:-3306}:3306"` — and `071-env` passes `WP_PORT` / `DB_PORT` in
   the environment of the spawned `docker compose`. Compose **appends** port
   lists across `-f` files, so a layered override file cannot change a port;
   env-var substitution is the correct mechanism. A plain `docker compose up`
   with no variables set still uses 8080 / 3306.
-- **`phpVersion`** — the `Dockerfile` declares `ARG PHP_VERSION=8.3` and
-  `FROM php:${PHP_VERSION}-apache`; `docker-compose.yml`'s `web` service has a
-  `build.args` entry `PHP_VERSION: "${PHP_VERSION:-8.3}"`; and `071-env`
-  passes `PHP_VERSION`. A plain `docker build` still defaults to 8.3.
+- **`phpVersion`** — `tools/env/Dockerfile` declares `ARG PHP_VERSION=8.3` and
+  `FROM php:${PHP_VERSION}-apache`; the `web` service in
+  `tools/env/docker-compose.yml` has a `build.args` entry
+  `PHP_VERSION: "${PHP_VERSION:-8.3}"`; and `071-env` passes `PHP_VERSION`.
+  A plain `docker build` still defaults to 8.3.
 - **`mappings`** — `071-env` generates a Compose override at runtime
   (`docker-compose.071-mappings.yml` at the repository root, git-ignored)
   adding the extra `volumes` to the `web` service, and passes it as a third
-  `-f` after `docker-compose.yml` and `tools/env/docker-compose.071.yml`. Compose
+  `-f` after `tools/env/docker-compose.yml` and
+  `tools/env/docker-compose.071.yml`. Compose
   appends `volumes` cleanly across `-f` files. When `mappings` is empty the
   generated file is removed and no extra `-f` is passed.
 - **`lifecycleScripts`** — `071-env` runs the hook's shell command through the
@@ -435,13 +438,14 @@ package.json          # ルート: "workspaces": ["tools/cli", "tools/env", "too
 tools/cli/            # 071-cli  パッケージ
 tools/env/            # 071-env  パッケージ
 tools/playground/     # 071-now  パッケージ
+tools/block-editor/   # カスタムブロックエディタのビルドソース（独自 package.json）
 src/                  # WordPress 0.71 ソース（変更なし）
-src/block-editor/app/ # 既存のブロックエディタパッケージ（当面そのまま）
 ```
 
-各パッケージは独自の `package.json`・バージョン・`bin` エントリを持つ。既存の
-`src/block-editor/app` パッケージは、変更を小さく保つため、この最初の段階では
-意図的に workspaces 集合の外に置く。後から取り込むことは可能。
+各 workspace パッケージは独自の `package.json`・バージョン・`bin` エントリを
+持つ。カスタムブロックエディタのビルドソース（`tools/block-editor`）は独自の
+`package.json` を持つが、意図的に workspaces 集合の外に置かれ、
+`cd tools/block-editor && npm install && npm run build` で単独でビルドする。
 
 ## 3. `071-cli`（`/tools/cli`）
 
@@ -586,8 +590,8 @@ tools/env/
 | `071-env run cli <…>`  | `web` コンテナ内で `071-cli` を実行 |
 | `071-env run <cmd…>`   | `web` コンテナ内で任意のコマンドを実行 |
 
-`071-env` は既存の `docker-compose.yml` をラップするものであり、置き換える
-ものではない。
+`071-env` は既存の `tools/env/docker-compose.yml` をラップするものであり、
+置き換えるものではない。
 
 ### 4.3 コンテナ内の `071-cli` への到達
 
@@ -599,7 +603,7 @@ tools/env/
 呼び出しは両ファイルを渡す:
 
 ```
-docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
+docker compose -f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 `071-env run cli <args>` は次のようになる:
@@ -651,21 +655,22 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php <args>
 
 **各フィールドの適用方法:**
 
-- **`port` / `dbPort`** — `docker-compose.yml` は既定値付きの Compose 変数
-  置換 — `"${WP_PORT:-8080}:80"` と `"${DB_PORT:-3306}:3306"` — を使い、
-  `071-env` は起動する `docker compose` の環境に `WP_PORT` / `DB_PORT` を
-  渡す。Compose は `-f` ファイル間でポートのリストを**追記**するため、重ねた
-  上書きファイルではポートを変更できない。環境変数置換が正しい仕組みである。
-  変数を設定しない素の `docker compose up` は引き続き 8080 / 3306 を使う。
-- **`phpVersion`** — `Dockerfile` は `ARG PHP_VERSION=8.3` と
-  `FROM php:${PHP_VERSION}-apache` を宣言し、`docker-compose.yml` の `web`
-  サービスは `build.args` エントリ `PHP_VERSION: "${PHP_VERSION:-8.3}"` を
-  持ち、`071-env` は `PHP_VERSION` を渡す。素の `docker build` は引き続き
-  8.3 を既定とする。
+- **`port` / `dbPort`** — `tools/env/docker-compose.yml` は既定値付きの
+  Compose 変数置換 — `"${WP_PORT:-8080}:80"` と `"${DB_PORT:-3306}:3306"` —
+  を使い、`071-env` は起動する `docker compose` の環境に `WP_PORT` /
+  `DB_PORT` を渡す。Compose は `-f` ファイル間でポートのリストを**追記**する
+  ため、重ねた上書きファイルではポートを変更できない。環境変数置換が正しい
+  仕組みである。変数を設定しない素の `docker compose up` は引き続き
+  8080 / 3306 を使う。
+- **`phpVersion`** — `tools/env/Dockerfile` は `ARG PHP_VERSION=8.3` と
+  `FROM php:${PHP_VERSION}-apache` を宣言し、`tools/env/docker-compose.yml`
+  の `web` サービスは `build.args` エントリ
+  `PHP_VERSION: "${PHP_VERSION:-8.3}"` を持ち、`071-env` は `PHP_VERSION` を
+  渡す。素の `docker build` は引き続き 8.3 を既定とする。
 - **`mappings`** — `071-env` は実行時に Compose オーバーライド
   （リポジトリルートの `docker-compose.071-mappings.yml`、git 管理外）を
-  生成し、`web` サービスに追加の `volumes` を加え、`docker-compose.yml` と
-  `tools/env/docker-compose.071.yml` の後ろに 3 つ目の `-f` として渡す。Compose は
+  生成し、`web` サービスに追加の `volumes` を加え、`tools/env/docker-compose.yml`
+  と `tools/env/docker-compose.071.yml` の後ろに 3 つ目の `-f` として渡す。Compose は
   `-f` ファイル間で `volumes` をきれいに追記する。`mappings` が空のときは
   生成ファイルを削除し、追加の `-f` も渡さない。
 - **`lifecycleScripts`** — `071-env` はフックのシェルコマンドを、システム
