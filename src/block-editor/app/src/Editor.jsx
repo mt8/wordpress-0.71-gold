@@ -236,7 +236,9 @@ export function Editor( { config } ) {
 		<div className="be-app">
 			<header className="be-toolbar">
 				<div className="be-toolbar-left">
-					<strong>Block Editor</strong>
+					<a className="be-link" href={ config.adminUrl }>
+						← Back to wp-admin
+					</a>
 					<span className="be-badge">WordPress 0.71</span>
 					<Button
 						size="compact"
@@ -342,14 +344,16 @@ export function Editor( { config } ) {
 										initialOpen={ true }
 									>
 										<SelectControl
-											label="Status"
+											__next40pxDefaultSize
+							label="Status"
 											value={ postStatus }
 											options={ STATUS_OPTIONS }
 											onChange={ setPostStatus }
 											__nextHasNoMarginBottom
 										/>
 										<SelectControl
-											label="Category"
+											__next40pxDefaultSize
+							label="Category"
 											value={ String(
 												postCategory
 											) }

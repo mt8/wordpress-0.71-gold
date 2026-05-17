@@ -41,6 +41,7 @@ header( 'Content-Type: text/html; charset=utf-8' );
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="icon" href="data:," />
 <title>Block Editor Prototype (Issue #65) &mdash; post <?php echo (int) $post_id; ?></title>
 <?php foreach ( $css as $href ) : ?>
 <link rel="stylesheet" href="../assets/<?php echo htmlspecialchars( (string) $href, ENT_QUOTES ); ?>" />
@@ -78,7 +79,8 @@ npm run build</code></pre>
 		postId: <?php echo (int) $post_id; ?>,
 		loadEndpoint: 'load.php',
 		saveEndpoint: 'save.php',
-		frontEndUrl: '../../index.php?p=<?php echo (int) $post_id; ?>'
+		frontEndUrl: '../../index.php?p=<?php echo (int) $post_id; ?>',
+		adminUrl: '../../wp-admin/b2edit.php'
 	};
 </script>
 <script type="module" src="<?php echo htmlspecialchars( (string) $js_url, ENT_QUOTES ); ?>"></script>
