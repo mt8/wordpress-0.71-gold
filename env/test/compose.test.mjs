@@ -178,3 +178,45 @@ test( 'run: still passes both Compose files', () => {
 	assert.ok( args.includes( baseComposeFile ) );
 	assert.ok( args.includes( overrideComposeFile ) );
 } );
+
+test( 'composePrefix: extra override files are appended after the cli/ override', () => {
+	// EN: The generated mappings override is layered after docker-compose.071.yml.
+	// JA: 生成された mappings オーバーライドは docker-compose.071.yml の後に重ねる。
+	const prefix = composePrefix( [ '/repo/docker-compose.071-mappings.yml' ] );
+	assert.deepEqual( prefix, [
+		'compose',
+		'-f',
+		baseComposeFile,
+		'-f',
+		overrideComposeFile,
+		'-f',
+		'/repo/docker-compose.071-mappings.yml',
+	] );
+} );
+
+test( 'composePrefix: with no extra files is the original two-file prefix', () => {
+	assert.deepEqual( composePrefix(), composePrefix( [] ) );
+} );
+
+test( 'buildComposeArgs: extra files are passed for an environment command', () => {
+	const args = buildComposeArgs( 'start', [], [ '/repo/docker-compose.071-mappings.yml' ] );
+	assert.ok( args.includes( '/repo/docker-compose.071-mappings.yml' ) );
+	assert.ok( args.includes( baseComposeFile ) );
+	assert.ok( args.includes( overrideComposeFile ) );
+	// EN: the command tail is unchanged.
+	// JA: コマンド末尾は変わらない。
+	assert.deepEqual( args.slice( -3 ), [ 'up', '-d', '--build' ] );
+} );
+
+test( 'buildComposeArgs: extra files are passed through to `run` as well', () => {
+	const args = buildComposeArgs(
+		'run',
+		[ 'cli', 'post', 'list' ],
+		[ '/repo/docker-compose.071-mappings.yml' ]
+	);
+	assert.ok( args.includes( '/repo/docker-compose.071-mappings.yml' ) );
+} );
+
+test( 'buildComposeArgs: with no extra files the argv is the PR #110 argv', () => {
+	assert.deepEqual( buildComposeArgs( 'start' ), buildComposeArgs( 'start', [], [] ) );
+} );

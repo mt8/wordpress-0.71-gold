@@ -55,16 +55,36 @@ export const WEB_SERVICE = 'web';
 
 /**
  * EN: The leading arguments common to every `docker` invocation 071-env makes:
- *     the `compose` subcommand followed by both Compose files. Passing both
- *     files on every call is what makes the `cli/` bind mount take effect.
- * JA: 071-env が行うすべての `docker` 呼び出しに共通する先頭の引数:
- *     `compose` サブコマンドに続けて両 Compose ファイル。すべての呼び出しで
- *     両ファイルを渡すことが、`cli/` バインドマウントを有効にする。
+ *     the `compose` subcommand followed by the Compose files. Passing the
+ *     base file and the cli/ override on every call is what makes the `cli/`
+ *     bind mount take effect.
  *
+ *     `extraFiles` carries any additional override files appended in order
+ *     after the cli/ override -- in practice the runtime `mappings` override
+ *     when `.071-env.json` configures extra bind mounts. Compose appends
+ *     `volumes` cleanly across `-f` files, so the extra mounts add on without
+ *     disturbing the existing ones.
+ *
+ * JA: 071-env が行うすべての `docker` 呼び出しに共通する先頭の引数:
+ *     `compose` サブコマンドに続けて Compose ファイル群。すべての呼び出しで
+ *     ベースファイルと cli/ オーバーライドを渡すことが、`cli/` バインド
+ *     マウントを有効にする。
+ *
+ *     `extraFiles` は、cli/ オーバーライドの後ろに順に追加される追加の
+ *     上書きファイルを運ぶ -- 実際には `.071-env.json` が追加のバインド
+ *     マウントを設定するときの実行時 `mappings` オーバーライドである。
+ *     Compose は `-f` ファイル間で `volumes` をきれいに追記するため、追加の
+ *     マウントは既存のものを乱さずに加わる。
+ *
+ * @param {string[]} extraFiles Additional Compose override file paths.
  * @returns {string[]} the shared `docker` argument prefix.
  */
-export function composePrefix() {
-	return [ 'compose', '-f', baseComposeFile, '-f', overrideComposeFile ];
+export function composePrefix( extraFiles = [] ) {
+	const prefix = [ 'compose', '-f', baseComposeFile, '-f', overrideComposeFile ];
+	for ( const file of extraFiles ) {
+		prefix.push( '-f', file );
+	}
+	return prefix;
 }
 
 /**
@@ -82,11 +102,12 @@ export function composePrefix() {
  *
  * @param {string} command The 071-env subcommand (start/stop/destroy/...).
  * @param {string[]} args  The positional arguments after the subcommand.
+ * @param {string[]} extraFiles Additional Compose override file paths.
  * @returns {string[]} the argument vector to pass to the `docker` binary.
  * @throws {Error} if the command is not recognised.
  */
-export function buildComposeArgs( command, args = [] ) {
-	const prefix = composePrefix();
+export function buildComposeArgs( command, args = [], extraFiles = [] ) {
+	const prefix = composePrefix( extraFiles );
 
 	switch ( command ) {
 		case 'start':
@@ -118,7 +139,7 @@ export function buildComposeArgs( command, args = [] ) {
 		}
 
 		case 'run':
-			return buildRunArgs( args );
+			return buildRunArgs( args, extraFiles );
 
 		default:
 			throw new Error( `Unknown command: ${ command }` );
@@ -146,15 +167,16 @@ export function buildComposeArgs( command, args = [] ) {
  *     `run <command...>`      -> `web` コンテナ内で任意のコマンドを exec する。
  *
  * @param {string[]} args The arguments after `run`.
+ * @param {string[]} extraFiles Additional Compose override file paths.
  * @returns {string[]} the argument vector to pass to the `docker` binary.
  * @throws {Error} if no command is given to run.
  */
-export function buildRunArgs( args ) {
+export function buildRunArgs( args, extraFiles = [] ) {
 	if ( args.length === 0 ) {
 		throw new Error( 'run: a command is required (try `run cli post list`)' );
 	}
 
-	const prefix = composePrefix();
+	const prefix = composePrefix( extraFiles );
 
 	if ( args[ 0 ] === 'cli' ) {
 		// EN: `run cli <cli-args>` -> php /opt/071-cli/php/071-cli.php <cli-args>

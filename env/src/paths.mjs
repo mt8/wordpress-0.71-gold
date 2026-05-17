@@ -44,3 +44,15 @@ export const baseComposeFile = join( repoRoot, 'docker-compose.yml' );
  *     バインドマウントする。docs/071-tooling.md セクション 4.3 を参照。
  */
 export const overrideComposeFile = join( envDir, 'docker-compose.071.yml' );
+
+/**
+ * EN: The runtime Compose override 071-env generates from the `mappings`
+ *     field of `.071-env.json`. It lives at the repository root (so Compose
+ *     resolves relative host paths against the root) and is git-ignored. It
+ *     exists only when `mappings` has at least one entry.
+ * JA: 071-env が `.071-env.json` の `mappings` フィールドから生成する実行時
+ *     Compose オーバーライド。リポジトリルートに置かれ (Compose が相対の
+ *     ホストパスをルートから解決するため)、git 管理外である。`mappings` に
+ *     1 つ以上のエントリがあるときだけ存在する。
+ */
+export const mappingsOverrideFile = join( repoRoot, 'docker-compose.071-mappings.yml' );
