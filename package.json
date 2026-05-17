@@ -5,10 +5,12 @@
   "description": "End-to-end (Playwright) test suite for WordPress 0.71-gold on PHP 8.3 / WordPress 0.71-gold (PHP 8.3) の E2E (Playwright) テストスイート",
   "license": "GPL-2.0-or-later",
   "workspaces": [
-    "cli"
+    "cli",
+    "env"
   ],
   "scripts": {
     "test:e2e": "playwright test",
+    "test:env": "node --test \"env/test/**/*.test.mjs\"",
     "prepare": "husky"
   },
   "devDependencies": {
