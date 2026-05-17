@@ -1816,6 +1816,50 @@ the canvas; the block breadcrumb is a full-width bar at the bottom.
 `composer phpcs` / `phpstan` / `test` stay green and the playground e2e suite
 passes.
 
+## Issue #166: Redirect to wp-install.php when WordPress 0.71 is not installed
+
+When the WordPress 0.71 tables do not exist (a fresh / empty `b2` database --
+e.g. after `071-env destroy` + `071-env start`, or a first-time clone), the
+front-end entry points used to emit a raw SQL error
+(`Table 'b2.b2settings' doesn't exist`) instead of guiding the visitor to the
+installer. Issue #166 adds a check to the core bootstrap: when the database is
+reachable but WordPress 0.71 is not installed, the request is redirected to
+`wp-admin/wp-install.php`, mirroring standard WordPress behaviour.
+
+### Change
+
+`src/blog.header.php` -- required by `src/index.php` and the other front-end /
+feed entry points (`b2rss.php`, `b2rss2.php`, `b2rdf.php`) -- gains a check
+immediately after `b2config.php` has connected `$wpdb`:
+
+- The probe queries `SELECT 1 FROM b2settings LIMIT 1` with `wpdb->hide_errors()`
+  active and the call `@`-suppressed, so the probe itself never prints the SQL
+  error it is meant to replace.
+- "Connected but not installed" is distinguished from "cannot connect": the
+  check only runs when `$wpdb->dbh` is a `mysqli` object. A genuine connection
+  failure keeps its existing behaviour (wpdb's constructor reports it).
+- The redirect path is built from the request (`$_SERVER['SCRIPT_NAME']`), not
+  from stored settings: `$siteurl` and friends live in `b2settings`, the very
+  table that is missing. The target is `<request-dir>/wp-admin/wp-install.php`.
+- No redirect loop is possible: `wp-install.php` requires `b2config.php`
+  directly, never `blog.header.php`, so it never reaches this code. A defensive
+  `basename( SCRIPT_NAME ) === 'wp-install.php'` guard makes that intent
+  explicit.
+
+`wp-install.php` itself is not modified -- in particular its random password
+generation is unchanged. This issue only adds a redirect *to* it.
+
+### Verification
+
+Started a disposable Docker stack (ports 8166 / 3366, project `wp071-i166`)
+with an empty `b2` database. Visiting the site root returned HTTP 302 to
+`/wp-admin/wp-install.php` with no SQL error; `index.php` and the three feed
+entry points behaved the same. `wp-install.php` itself loaded with HTTP 200 (no
+loop). After running the installer (steps 1 and 2) the `b2*` tables existed,
+the site root returned HTTP 200 and rendered the blog with no redirect, and
+`wp-install.php` still loaded normally. `composer phpcs` / `phpstan` / `test`
+stayed green (0 / 0 / 94).
+
 ---
 
 # PHP 8.3 移行ログ
@@ -3571,3 +3615,48 @@ React アプリを再ビルドし、デスクトップとモバイル(`≤782px`
 切り替わる)を表示し、投稿タイトルはキャンバス内のコンテンツエリアの上に
 あり、ブロックパンくずは下部の全幅バーである。`composer phpcs` /
 `phpstan` / `test` は green のまま、playground e2e スイートが合格する。
+
+## Issue #166: 未インストール時に wp-install.php へリダイレクトする
+
+WordPress 0.71 のテーブルが存在しない場合(まっさらな／空の `b2` データベース
+— 例: `071-env destroy` + `071-env start` の後、または初回クローン時)、
+フロントエンドのエントリポイントは訪問者をインストーラへ誘導せず、生の SQL
+エラー(`Table 'b2.b2settings' doesn't exist`)を表示していた。Issue #166 は
+コアのブートストラップにチェックを追加する: データベースには接続できるが
+WordPress 0.71 が未インストールなら、リクエストを `wp-admin/wp-install.php`
+へリダイレクトする — 標準の WordPress の挙動に倣う。
+
+### 変更
+
+`src/blog.header.php` — `src/index.php` と他のフロントエンド／フィードの
+エントリポイント(`b2rss.php`・`b2rss2.php`・`b2rdf.php`)が require する —
+に、`b2config.php` が `$wpdb` を接続した直後のチェックを追加した:
+
+- 探索は `wpdb->hide_errors()` を有効にし呼び出しを `@` で抑制した状態で
+  `SELECT 1 FROM b2settings LIMIT 1` を実行する。これにより、探索自体が
+  置き換えようとしている SQL エラーを決して出さない。
+- 「接続できるが未インストール」と「接続できない」を区別する: チェックは
+  `$wpdb->dbh` が `mysqli` オブジェクトのときだけ実行される。真の接続失敗は
+  既存の挙動のまま(wpdb のコンストラクタが報告する)。
+- リダイレクト先のパスは保存済み設定ではなくリクエスト
+  (`$_SERVER['SCRIPT_NAME']`)から組み立てる: `$siteurl` 等は `b2settings`
+  にあり、まさに欠けているテーブルである。リダイレクト先は
+  `<リクエストのディレクトリ>/wp-admin/wp-install.php`。
+- リダイレクトループは発生し得ない: `wp-install.php` は `b2config.php` を
+  直接 require し、`blog.header.php` は決して経由しないため、このコードに
+  到達しない。防御的な `basename( SCRIPT_NAME ) === 'wp-install.php'` の
+  ガードでその意図を明示する。
+
+`wp-install.php` 自体は変更しない — 特にランダムパスワード生成は変更不可。
+本 issue はそこへリダイレクトを追加するのみ。
+
+### 検証
+
+空の `b2` データベースで使い捨ての Docker スタック(ポート 8166 / 3366、
+プロジェクト `wp071-i166`)を起動した。サイトルートを開くと SQL エラーなしで
+`/wp-admin/wp-install.php` へ HTTP 302 となり、`index.php` と 3 つのフィード
+エントリポイントも同じ挙動だった。`wp-install.php` 自体は HTTP 200 で
+読み込まれた(ループなし)。インストーラ(ステップ 1・2)を実行後、`b2*`
+テーブルが存在し、サイトルートは HTTP 200 を返してリダイレクトなしでブログを
+描画し、`wp-install.php` も引き続き通常どおり読み込まれた。`composer phpcs` /
+`phpstan` / `test` は green のまま(0 / 0 / 94)。
