@@ -726,6 +726,17 @@ async function verify() {
 			() => !! navigator.serviceWorker.controller
 		);
 
+		// EN: Cross-origin isolation (Issue #128). php-wasm runs PHP
+		//     threads on SharedArrayBuffer, which a browser only exposes to
+		//     a cross-origin-isolated page. The page must therefore be
+		//     served with the COOP/COEP headers -- by the vite preview
+		//     server here, and by the service worker on the GitHub Pages
+		//     deploy. window.crossOriginIsolated being true confirms the
+		//     headers are in place and SharedArrayBuffer is available.
+		const crossOriginIsolated = await page.evaluate(
+			() => window.crossOriginIsolated === true
+		);
+
 		// EN: The blog renders inside the iframe, served through the
 		//     service worker at a real scoped same-origin path.
 		const frontFrame = await waitForBlogFrame( page, ( url ) =>
@@ -835,6 +846,7 @@ async function verify() {
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
 			[ 'service worker controls the page', swController ],
+			[ 'page is cross-origin-isolated', crossOriginIsolated ],
 			[ 'loading splash shown while php-wasm boots', splashShownAtBoot ],
 			[ 'loading splash has a spinner', splashHasSpinner ],
 			[ 'loading splash removed once the blog is served', splashHiddenAfterBoot ],

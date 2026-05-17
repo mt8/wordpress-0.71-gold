@@ -1,4 +1,5 @@
-// EN: Vite config for the 071-now playground (Issue #108, #116, #118).
+// EN: Vite config for the 071-now playground (Issue #108, #116, #118,
+//     #128).
 //
 //     Bundles the browser app that boots @php-wasm/web. Three things
 //     need care: the WebAssembly PHP runtime ships large .wasm/.data
@@ -6,8 +7,30 @@
 //     code wants cross-origin isolation headers in dev; and @php-wasm/web
 //     statically references every PHP version it supports (5.2-8.5), so
 //     the build must be told to ship only the PHP 8.3 runtime.
-// JA: 071-now playground(Issue #108・#116・#118)向けの Vite 設定。
+// JA: 071-now playground(Issue #108・#116・#118・#128)向けの Vite 設定。
 import { defineConfig } from 'vite';
+
+// EN: The public base path the built app is served under (Issue #128).
+//
+//     `vite preview` and the headless verifier serve the app at the
+//     origin root, so the default is '/'. The GitHub Pages deploy serves
+//     it under the repository name (https://mt8.github.io/
+//     wordpress-0.71-gold/), so the Pages workflow sets PLAYGROUND_BASE
+//     to '/wordpress-0.71-gold/'. The value reaches the browser app as
+//     import.meta.env.BASE_URL: src/main.js registers the service worker
+//     and builds the scoped blog paths under it, so a project-page
+//     deploy and a root-served preview both work from one build config.
+// JA: ビルドされたアプリが配信される公開ベースパス(Issue #128)。
+//
+//     `vite preview` とヘッドレス検証はアプリをオリジンルートで配信する
+//     ため既定は '/'。GitHub Pages デプロイはリポジトリ名配下
+//     (https://mt8.github.io/wordpress-0.71-gold/)で配信するため、
+//     Pages ワークフローが PLAYGROUND_BASE を '/wordpress-0.71-gold/' に
+//     設定する。値は import.meta.env.BASE_URL としてブラウザアプリへ届き、
+//     src/main.js はサービスワーカー登録とスコープ付きブログパスをその
+//     配下に構築する。これでプロジェクトページ配信とルート配信の双方が
+//     単一のビルド設定で動作する。
+const PUBLIC_BASE = process.env.PLAYGROUND_BASE || '/';
 
 // EN: The only PHP version 071-now runs. WordPress 0.71-gold is being
 //     ported to PHP 8.3, so the playground boots @php-wasm/web with
@@ -141,6 +164,13 @@ function stubPhpWasmIntlData() {
 }
 
 export default defineConfig( {
+	// EN: Serve the app under PUBLIC_BASE so the built index.html and the
+	//     bundled assets resolve relative to the deploy path -- '/' for the
+	//     local preview, '/wordpress-0.71-gold/' for the GitHub Pages
+	//     project page (Issue #128).
+	// JA: PUBLIC_BASE 配下でアプリを配信し、ビルドされた index.html と
+	//     バンドルアセットがデプロイパス相対で解決されるようにする。
+	base: PUBLIC_BASE,
 	plugins: [ stubPhpWasmIntlData(), trimPhpWasmToTargetVersion() ],
 	// EN: @php-wasm/web imports its .wasm / .data runtime files as plain
 	//     module imports expecting a URL string (emscripten loads them
