@@ -80,8 +80,11 @@ same ownership rule as `b2edit.php`'s `editpost` handler.
 Block content is stored as block-markup HTML in 0.71's existing
 `post_content` column. The 0.71 front end renders it normally because the
 `<!-- wp:* -->` delimiters are HTML comments. A legacy 0.71 post that has no
-block delimiters is parsed by `parse()` as a single classic ("freeform")
-block, so existing posts open without data loss.
+block delimiters — a classic `b2edit.php` post — is parsed by `parse()` into
+a single Custom HTML (`core/html`) block, because `main.jsx` sets the
+freeform content handler to `core/html` after `registerCoreBlocks()`. Such
+posts open as an editable HTML block without data loss; without that handler
+they would fall through to the unsupported-block placeholder.
 
 ## Text-selection fix
 
@@ -285,8 +288,11 @@ Issue #31 でプロジェクトが適用したのと同じ SQL 堅牢化であ�
 ブロック内容はブロックマークアップ HTML として 0.71 の既存
 `post_content` カラムに保存される。`<!-- wp:* -->` 区切りは HTML コメントで
 あるため、0.71 のフロントエンドは通常どおり描画する。ブロック区切りの無い
-レガシーな 0.71 投稿は `parse()` により 1 つのクラシック(freeform)ブロック
-として解析されるため、既存の投稿はデータ欠落なく開ける。
+レガシーな 0.71 投稿 — クラシックな `b2edit.php` 投稿 — は `parse()` により
+1 つの Custom HTML(`core/html`)ブロックとして解析される。`main.jsx` が
+`registerCoreBlocks()` の後に freeform コンテンツハンドラを `core/html` に
+設定しているためである。そうした投稿は編集可能な HTML ブロックとしてデータ
+欠落なく開ける。ハンドラが無い場合は未対応ブロックのプレースホルダへ落ちる。
 
 ## テキスト選択の修正
 

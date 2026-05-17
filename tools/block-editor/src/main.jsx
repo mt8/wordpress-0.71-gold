@@ -5,6 +5,7 @@
  */
 import { createRoot } from '@wordpress/element';
 import { registerCoreBlocks } from '@wordpress/block-library';
+import { setFreeformContentHandlerName } from '@wordpress/blocks';
 // Importing @wordpress/format-library registers the core RichText formats
 //     (bold, italic, link, ...) as a side effect, so they appear in the block
 //     toolbar when editing text.
@@ -32,6 +33,13 @@ import './app.css';
 //     register themselves client-side -- no server-side register_block_type()
 //     is needed, which is exactly why this works on WordPress 0.71.
 registerCoreBlocks();
+
+// Route non-block ("freeform") content -- a classic b2edit.php post that has
+//     no <!-- wp:* --> delimiters -- to the Custom HTML block (core/html,
+//     already registered by registerCoreBlocks above). Without a freeform
+//     handler, parse() falls through to core/missing and renders such a post
+//     body as an unsupported block with an empty name (Issue #164).
+setFreeformContentHandlerName( 'core/html' );
 
 // Configuration comes from the boot page (editor.php). When the bundle is
 //     opened directly by Vite dev, fall back to sensible defaults.

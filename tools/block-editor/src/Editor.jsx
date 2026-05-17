@@ -218,8 +218,10 @@ export function Editor( { config } ) {
 			.then( ( data ) => {
 				setTitle( data.title || '' );
 				// parse() turns block-markup (or plain HTML) into blocks.
-				//     A legacy 0.71 post with no <!-- wp:* --> delimiters is
-				//     parsed as a single classic ("freeform") block.
+				//     A legacy 0.71 post with no <!-- wp:* --> delimiters has
+				//     no block markup, so parse() routes it through the
+				//     freeform content handler -- set to core/html in
+				//     main.jsx -- and it opens as a Custom HTML block.
 				setBlocks( parse( data.content || '' ) );
 				setPostStatus( data.status || 'publish' );
 				setPostCategory( Number( data.category ) || 0 );
