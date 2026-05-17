@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+  EN: 071-now host page (Issue #108 feasibility spike). Loads the
+      browser app that boots @php-wasm/web and renders WordPress 0.71.
+  JA: 071-now ホストページ(Issue #108 実現可能性検証)。@php-wasm/web を
+      起動し WordPress 0.71 を描画するブラウザアプリを読み込む。
+-->
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>071-now &mdash; browser-based WordPress 0.71</title>
+		<style>
+			html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+			#status {
+				padding: 6px 12px; font: 13px/1.5 monospace;
+				background: #1d2327; color: #c3c4c7;
+			}
+			#status.ok { background: #00450c; color: #b8e6bf; }
+			#status.err { background: #5c0000; color: #ffb3b3; }
+			#blog { width: 100%; height: calc(100% - 33px); border: 0; }
+		</style>
+	</head>
+	<body>
+		<div id="status">071-now: booting php-wasm&hellip;</div>
+		<iframe id="blog" title="WordPress 0.71 (071-now)"></iframe>
+		<script type="module" src="/src/main.js"></script>
+	</body>
+</html>

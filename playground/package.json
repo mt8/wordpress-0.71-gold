@@ -1,0 +1,22 @@
+{
+  "name": "071-now",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Feasibility spike: browser-based WordPress 0.71 on @php-wasm/web, wp-now / WordPress Playground in spirit (Issue #108).",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build:overlay": "node scripts/build-overlay.mjs",
+    "build": "node scripts/build-overlay.mjs && vite build",
+    "dev": "node scripts/build-overlay.mjs && vite",
+    "preview": "vite preview --port 4173",
+    "verify": "node test/verify.mjs"
+  },
+  "dependencies": {
+    "@php-wasm/web": "3.1.33"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.1",
+    "vite": "^5.4.21"
+  }
+}
