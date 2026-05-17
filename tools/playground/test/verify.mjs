@@ -1,17 +1,26 @@
-// EN: 071-now headless verification (Issue #108 feasibility spike).
+// EN: 071-now headless verification (Issue #116, full build 1/6).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, opens it in headless Chromium, and asserts that the
-//     WordPress 0.71 front page rendered in-browser with the seeded
-//     post visible. A PNG screenshot is written for the record.
+//     WordPress 0.71 blog is served through the service worker: the
+//     front page renders with its CSS, and a visitor can click through
+//     to a post page and a category page. A PNG screenshot is written
+//     for the record.
 //
-//     This is the spike's success check: php-wasm renders 0.71's front
-//     page from a SQLite-backed database, in a real browser.
-// JA: 071-now のヘッドレス検証(Issue #108 実現可能性検証)。
+//     This extends the feasibility spike's check (Issue #108, which
+//     only confirmed the front-page text rendered) with the two things
+//     the service-worker request handler unlocks -- styling and
+//     navigation -- the goal of this step.
+// JA: 071-now のヘッドレス検証(Issue #116、フル実装 1/6)。
 //
 //     playground をビルドし、`vite preview` で配信し、ヘッドレス
-//     Chromium で開き、WordPress 0.71 のフロントページがブラウザ内で
-//     描画され投入済み投稿が見えることを検証する。
+//     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
+//     配信されることを検証する。フロントページが CSS 付きで描画され、
+//     訪問者が投稿ページとカテゴリーページへ辿れることを確認する。
+//
+//     これは実現可能性検証(Issue #108、フロントページのテキスト描画のみ
+//     確認)を、サービスワーカーのリクエストハンドラが解放する 2 点 --
+//     スタイリングと遷移 -- で拡張したものである。
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -72,7 +81,31 @@ async function startPreview() {
 }
 
 /**
- * Verify the front page in headless Chromium.
+ * Wait until the blog iframe has navigated to a scoped path whose URL
+ * matches the given predicate, then return that frame.
+ *
+ * @param {import('playwright').Page}            page  The host page.
+ * @param {(url: string) => boolean}             match URL predicate.
+ * @return {Promise<import('playwright').Frame>} The blog frame.
+ */
+async function waitForBlogFrame( page, match ) {
+	const deadline = Date.now() + 30000;
+	while ( Date.now() < deadline ) {
+		const frame = page
+			.frames()
+			.find( ( f ) => f.url().includes( '/scope:' ) && match( f.url() ) );
+		if ( frame ) {
+			// EN: Make sure the document has actually rendered its body.
+			await frame.waitForSelector( 'body', { timeout: 10000 } );
+			return frame;
+		}
+		await new Promise( ( r ) => setTimeout( r, 250 ) );
+	}
+	throw new Error( 'blog iframe did not reach the expected scoped URL' );
+}
+
+/**
+ * Verify the service-worker-served blog in headless Chromium.
  *
  * @return {Promise<void>}
  */
@@ -85,11 +118,15 @@ async function verify() {
 			consoleErrors.push( message.text() );
 		}
 	} );
+	page.on( 'pageerror', ( error ) => {
+		consoleErrors.push( `pageerror: ${ error.message }` );
+	} );
 
 	try {
 		await page.goto( PREVIEW_URL, { waitUntil: 'load' } );
 
-		// EN: Wait for the boot hook the app sets once the render is done.
+		// EN: Wait for the boot hook the app sets once php-wasm is up and
+		//     the front page has been served through the request handler.
 		await page.waitForFunction(
 			() => window.__071now && typeof window.__071now.status === 'number',
 			{ timeout: 60000 }
@@ -98,25 +135,85 @@ async function verify() {
 		const result = await page.evaluate( () => ( {
 			status: window.__071now.status,
 			html: window.__071now.html,
+			scopePrefix: window.__071now.scopePrefix,
 			statusLine: document.getElementById( 'status' ).textContent,
 		} ) );
 
-		// EN: The front page renders inside the iframe; read it back.
-		const frame = page.frameLocator( '#blog' );
-		const titleVisible = await frame
+		// EN: The service worker controls the page and serves the blog.
+		const swController = await page.evaluate(
+			() => !! navigator.serviceWorker.controller
+		);
+
+		// EN: The blog renders inside the iframe, served through the
+		//     service worker at a real scoped same-origin path.
+		const frontFrame = await waitForBlogFrame( page, ( url ) =>
+			url.endsWith( '/index.php' )
+		);
+		const titleVisible = await frontFrame
 			.locator( `text=${ EXPECTED_TITLE }` )
 			.count();
+
+		// EN: CSS check -- layout2b.css gives #header a grey background.
+		//     A styled #header proves the stylesheet loaded through the
+		//     service worker; an unstyled page leaves it transparent.
+		const headerBackground = await frontFrame
+			.locator( '#header' )
+			.first()
+			.evaluate( ( el ) => getComputedStyle( el ).backgroundColor );
+		const cssApplied =
+			headerBackground !== 'rgba(0, 0, 0, 0)' &&
+			headerBackground !== 'transparent';
 
 		await page.screenshot( {
 			path: join( here, '071-now-frontpage.png' ),
 			fullPage: true,
 		} );
 
+		// EN: Navigation check 1 -- click the post permalink and confirm
+		//     the post page loads (still served through the worker).
+		const postLink = frontFrame.locator( 'h3.storytitle a' ).first();
+		const postHref = await postLink.getAttribute( 'href' );
+		await postLink.click();
+		const postFrame = await waitForBlogFrame( page, ( url ) =>
+			url.includes( '?' )
+		);
+		const postTitleVisible = await postFrame
+			.locator( `text=${ EXPECTED_TITLE }` )
+			.count();
+		const postCssApplied = await postFrame
+			.locator( '#header' )
+			.first()
+			.evaluate(
+				( el ) =>
+					getComputedStyle( el ).backgroundColor !==
+					'rgba(0, 0, 0, 0)'
+			);
+
+		// EN: Navigation check 2 -- click the post's category link and
+		//     confirm the category archive shows the seeded post.
+		const categoryLink = postFrame.locator( '.meta a' ).first();
+		const categoryHref = await categoryLink.getAttribute( 'href' );
+		await categoryLink.click();
+		const categoryFrame = await waitForBlogFrame( page, ( url ) =>
+			url.includes( 'cat=' )
+		);
+		const categoryPostVisible = await categoryFrame
+			.locator( `text=${ EXPECTED_TITLE }` )
+			.count();
+
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
+			[ 'service worker controls the page', swController ],
 			[ 'seeded post title in HTML', result.html.includes( EXPECTED_TITLE ) ],
 			[ 'seeded post body in HTML', result.html.includes( EXPECTED_BODY ) ],
-			[ 'seeded post title visible in iframe', titleVisible > 0 ],
+			[ 'front page served through the service worker', titleVisible > 0 ],
+			[ `front page CSS applied (#header bg ${ headerBackground })`, cssApplied ],
+			[ `post page reached by clicking "${ postHref }"`, postTitleVisible > 0 ],
+			[ 'post page keeps its CSS', postCssApplied ],
+			[
+				`category page reached by clicking "${ categoryHref }"`,
+				categoryPostVisible > 0,
+			],
 			[ 'no console errors', consoleErrors.length === 0 ],
 		];
 

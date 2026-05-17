@@ -1,16 +1,39 @@
-// EN: 071-now browser app (Issue #108 feasibility spike).
+// EN: 071-now browser app (Issue #116, full build 1/6).
 //
 //     Boots @php-wasm/web -- the WebAssembly PHP runtime behind
 //     WordPress Playground -- writes the overlaid WordPress 0.71 tree
-//     into the php-wasm virtual filesystem, and renders 0.71's front
-//     page. The database is in-browser SQLite (see playground/db/).
-//     No MySQL, no server: PHP and the database both run in the tab.
-// JA: 071-now ブラウザアプリ(Issue #108 実現可能性検証)。
+//     into the php-wasm virtual filesystem, and serves 0.71 through a
+//     service worker so the in-browser blog is reachable at real
+//     same-origin paths.
+//
+//     The spike (Issue #108) rendered 0.71's front-page HTML into a
+//     blob: URL iframe. Because of the blob URL the page's asset
+//     requests (layout2b.css, the block-library CSS) and link clicks
+//     never reached php-wasm, so the page rendered unstyled and could
+//     not be navigated. This build fixes that the way WordPress
+//     Playground does: a service worker (public/sw.js) intercepts the
+//     blog's scoped same-origin requests and routes them, via this
+//     page, through the @php-wasm/web request handler. The iframe is
+//     then pointed at a real scoped path (/scope:<id>/index.php) and
+//     the blog serves its own CSS and follows its own links.
+//
+//     The database is in-browser SQLite (see playground/db/). No MySQL,
+//     no server: PHP and the database both run in the tab.
+// JA: 071-now ブラウザアプリ(Issue #116、フル実装 1/6)。
 //
 //     @php-wasm/web(WordPress Playground を支える WebAssembly PHP
 //     ランタイム)を起動し、オーバーレイ済み WordPress 0.71 ツリーを
-//     php-wasm 仮想ファイルシステムへ書き込み、0.71 のフロントページを
-//     描画する。データベースはブラウザ内 SQLite。
+//     php-wasm 仮想ファイルシステムへ書き込み、サービスワーカー経由で
+//     0.71 を同一オリジンの実パスで配信する。
+//
+//     スパイク(Issue #108)は 0.71 のフロントページ HTML を blob: URL の
+//     iframe に描画した。blob URL のためアセット要求やリンククリックが
+//     php-wasm に届かず、ページは無装飾で描画され遷移もできなかった。本
+//     実装は WordPress Playground と同じ方式でそれを解決する。サービス
+//     ワーカー(public/sw.js)がブログのスコープ付き同一オリジン要求を
+//     横取りし、本ページ経由で @php-wasm/web リクエストハンドラへ通す。
+//     iframe を実スコープパス(/scope:<id>/index.php)に向け、ブログは
+//     自身の CSS を読み込み自身のリンクを辿る。
 import { loadWebRuntime } from '@php-wasm/web';
 import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal';
 import { wpFiles } from './wp-files.js';
@@ -19,10 +42,14 @@ import { wpFiles } from './wp-files.js';
 const DOCROOT = '/wordpress';
 
 // EN: The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
-//     absolute asset URLs against it. The app rewrites those to the
-//     playground's own origin so CSS and links resolve in-browser
-//     without modifying b2config.php.
+//     absolute asset URLs and internal links against it.
 const BLOG_SITEURL = 'http://localhost:8080';
+
+// EN: Every request the in-browser blog makes is served under a single
+//     scope path segment so the service worker can tell blog traffic
+//     apart from the app shell. The marker must match SCOPE_MARKER in
+//     public/sw.js. A per-boot random id keeps separate tabs distinct.
+const SCOPE_PREFIX = `/scope:${ Math.random().toString( 36 ).slice( 2, 10 ) }`;
 
 const statusEl = document.getElementById( 'status' );
 const blogEl = document.getElementById( 'blog' );
@@ -39,11 +66,46 @@ function setStatus( message, kind = '' ) {
 }
 
 /**
- * Boot php-wasm, mount WordPress 0.71 and render the front page.
+ * Register the request-routing service worker and wait until it
+ * controls this page.
+ *
+ * The worker must be controlling the page before the iframe is pointed
+ * at a scoped URL, otherwise the first navigation would miss the
+ * interception and hit the (nonexistent) network path.
  *
  * @return {Promise<void>}
  */
-async function boot() {
+async function registerServiceWorker() {
+	if ( ! ( 'serviceWorker' in navigator ) ) {
+		throw new Error( 'this browser has no service worker support' );
+	}
+
+	// EN: sw.js sits at the app root (Vite copies public/ verbatim), so
+	//     its default scope is the whole origin -- it can intercept the
+	//     scoped blog paths.
+	await navigator.serviceWorker.register( '/sw.js', { type: 'classic' } );
+	await navigator.serviceWorker.ready;
+
+	// EN: A freshly registered worker calls clients.claim() on activate,
+	//     but the current page may still be uncontrolled for a tick.
+	//     Wait for the controllerchange unless it already controls us.
+	if ( ! navigator.serviceWorker.controller ) {
+		await new Promise( ( resolve ) => {
+			navigator.serviceWorker.addEventListener(
+				'controllerchange',
+				() => resolve(),
+				{ once: true }
+			);
+		} );
+	}
+}
+
+/**
+ * Boot php-wasm and mount the overlaid WordPress 0.71 tree.
+ *
+ * @return {Promise<PHPRequestHandler>} The request handler serving 0.71.
+ */
+async function bootPhpWasm() {
 	setStatus( 'loading the WebAssembly PHP runtime…' );
 
 	// EN: php-wasm requires a process id; allocate one explicitly.
@@ -63,6 +125,30 @@ async function boot() {
 		php.writeFile( destination, contents );
 	}
 
+	// EN: Point the blog's $siteurl at this origin's scoped path so every
+	//     page it renders (front page, post pages, archives) emits its
+	//     own assets and internal links as same-origin, scoped URLs the
+	//     service worker intercepts.
+	//
+	//     b2config.php also derives $abspath -- the include path WordPress
+	//     0.71 uses for require_once -- from $siteurl by treating its path
+	//     component as a filesystem-relative path (line ~371-376). The
+	//     scope segment is a URL routing concern, not a filesystem one, so
+	//     that derivation is replaced with the plain document root; the
+	//     blog tree is mounted directly at DOCROOT.
+	//
+	//     Both rewrites touch only the in-VFS copy of b2config.php -- src/
+	//     and the on-disk overlay are never modified.
+	const scopedSiteUrl = location.origin + SCOPE_PREFIX;
+	const configPath = `${ DOCROOT }/b2config.php`;
+	let config = php.readFileAsText( configPath );
+	config = config.replaceAll( BLOG_SITEURL, scopedSiteUrl );
+	config = config.replace(
+		"$abspath    = getenv( 'DOCUMENT_ROOT' ) . $relpath . '/';",
+		"$abspath    = getenv( 'DOCUMENT_ROOT' ) . '/';"
+	);
+	php.writeFile( configPath, config );
+
 	// EN: Register the 071-now boot shim as the auto_prepend_file so the
 	//     SQLite database is seeded before WordPress 0.71's index.php
 	//     runs. error_reporting is trimmed: 0.71 is 2003-era code and
@@ -76,6 +162,9 @@ async function boot() {
 		].join( '\n' )
 	);
 
+	// EN: absoluteUrl is the origin root: the service worker strips the
+	//     /scope:<id> segment before handing the path to the handler, so
+	//     the handler always sees a plain blog-relative path.
 	const requestHandler = new PHPRequestHandler( {
 		php,
 		documentRoot: DOCROOT,
@@ -83,45 +172,116 @@ async function boot() {
 	} );
 	php.requestHandler = requestHandler;
 
-	setStatus( 'rendering the WordPress 0.71 front page…' );
+	return requestHandler;
+}
 
-	const response = await requestHandler.request( { url: '/index.php' } );
+/**
+ * Serve one service-worker-forwarded request through php-wasm and reply
+ * over the request's MessagePort.
+ *
+ * @param {PHPRequestHandler} requestHandler The php-wasm request handler.
+ * @param {object}            request        Forwarded request descriptor.
+ * @param {MessagePort}       port           Port to post the reply on.
+ * @return {Promise<import('@php-wasm/universal').PHPResponse|null>}
+ *         The php-wasm response, or null on failure.
+ */
+async function handleForwardedRequest( requestHandler, request, port ) {
+	try {
+		const response = await requestHandler.request( {
+			url: request.url,
+			method: request.method,
+			headers: request.headers,
+			...( request.body ? { body: request.body } : {} ),
+		} );
 
-	if ( response.httpStatusCode !== 200 ) {
-		setStatus( `front page returned HTTP ${ response.httpStatusCode }`, 'err' );
+		// EN: PHPResponse.bytes is a Uint8Array; structured-clone copies
+		//     it to the worker. headers is name -> string[].
+		port.postMessage( {
+			status: response.httpStatusCode,
+			headers: response.headers,
+			body: response.bytes,
+		} );
+		return response;
+	} catch ( error ) {
+		port.postMessage( {
+			error: ( error && error.message ) || 'php-wasm request failed',
+		} );
+		return null;
+	}
+}
+
+/**
+ * Boot php-wasm, wire up the service worker bridge and load the blog.
+ *
+ * @return {Promise<void>}
+ */
+async function boot() {
+	setStatus( 'registering the request-routing service worker…' );
+	await registerServiceWorker();
+
+	const requestHandler = await bootPhpWasm();
+
+	// EN: The service worker forwards every scoped blog request here.
+	//     Answer each one through the php-wasm request handler and reply
+	//     on the MessagePort that came with the message.
+	let firstResponseStatus = null;
+	navigator.serviceWorker.addEventListener( 'message', async ( event ) => {
+		if ( ! event.data || event.data.type !== '071-now-request' ) {
+			return;
+		}
+		const port = event.ports[ 0 ];
+		const response = await handleForwardedRequest(
+			requestHandler,
+			event.data.request,
+			port
+		);
+		if ( firstResponseStatus === null && response ) {
+			firstResponseStatus = response.httpStatusCode;
+		}
+	} );
+
+	setStatus( 'serving the WordPress 0.71 front page…' );
+
+	// EN: Sanity-check the front page before handing it to the iframe so
+	//     a boot failure shows up in the status line rather than as a
+	//     blank frame. This goes straight through the handler.
+	const frontPage = await requestHandler.request( {
+		url: '/index.php',
+	} );
+	if ( frontPage.httpStatusCode !== 200 ) {
+		setStatus(
+			`front page returned HTTP ${ frontPage.httpStatusCode }`,
+			'err'
+		);
 	}
 
-	// EN: Rewrite the blog's hard-coded $siteurl to the playground origin
-	//     so the page's own CSS / links resolve through the same php-wasm
-	//     request handler instead of the (absent) Docker host.
-	const html = response.text.replaceAll( BLOG_SITEURL, location.origin );
+	// EN: Point the iframe at the real scoped path. The navigation and
+	//     every asset request and link click inside it are intercepted
+	//     by the service worker and served through php-wasm -- so the
+	//     blog loads its own CSS and is fully navigable.
+	const frontPageUrl = SCOPE_PREFIX + '/index.php';
+	blogEl.src = frontPageUrl;
 
-	// EN: Serve the rendered HTML to the iframe via a blob URL. Static
-	//     asset requests the page makes (layout2b.css, ...) are answered
-	//     below from the same php-wasm request handler.
-	blogEl.src = URL.createObjectURL(
-		new Blob( [ html ], { type: 'text/html' } )
-	);
-
-	// EN: Expose a tiny fetch-style bridge for asset requests, and a
-	//     hook the headless verifier reads to confirm the render.
+	// EN: Expose a hook the headless verifier reads to confirm the boot,
+	//     plus a fetch-style bridge for direct request-handler probes.
 	window.__071now = {
-		php,
 		requestHandler,
-		html,
-		status: response.httpStatusCode,
+		scopePrefix: SCOPE_PREFIX,
+		frontPageUrl,
+		status: frontPage.httpStatusCode,
+		html: frontPage.text,
 		/**
 		 * Fetch a path from the in-browser WordPress 0.71 install.
 		 *
-		 * @param {string} url Path such as '/layout2b.css'.
+		 * @param {string} url Blog-relative path such as '/layout2b.css'.
 		 * @return {Promise<import('@php-wasm/universal').PHPResponse>}
 		 */
 		get: ( url ) => requestHandler.request( { url } ),
 	};
 
-	if ( response.httpStatusCode === 200 ) {
+	if ( frontPage.httpStatusCode === 200 ) {
 		setStatus(
-			'WordPress 0.71 front page rendered in-browser from SQLite.',
+			'WordPress 0.71 served in-browser through the service worker.',
 			'ok'
 		);
 	}
