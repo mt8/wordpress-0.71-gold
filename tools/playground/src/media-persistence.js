@@ -57,16 +57,26 @@ const IDB_KEY = 'tree';
 /**
  * Whether the Origin Private File System is usable in this browser.
  *
- * `navigator.storage.getDirectory` is the OPFS entry point; a browser
- * without it falls back to IndexedDB.
+ * `navigator.storage.getDirectory` is the OPFS entry point, but its mere
+ * presence is not enough: Safari exposes `getDirectory` yet does not
+ * implement `FileSystemFileHandle.prototype.createWritable()` on the main
+ * thread (its OPFS write path is the worker-only synchronous access
+ * handle). `opfsSave()` writes through `createWritable()`, so OPFS is
+ * only usable here when that method exists too. When it is absent the
+ * layer falls back to IndexedDB -- which Safari supports.
  *
- * @return {boolean} True when OPFS is available.
+ * Kept identical to the copy in src/persistence.js so the database and
+ * media layers always pick the same backend.
+ *
+ * @return {boolean} True when OPFS is available and writable here.
  */
 function hasOpfs() {
 	return (
 		typeof navigator !== 'undefined' &&
 		!! navigator.storage &&
-		typeof navigator.storage.getDirectory === 'function'
+		typeof navigator.storage.getDirectory === 'function' &&
+		typeof FileSystemFileHandle !== 'undefined' &&
+		typeof FileSystemFileHandle.prototype.createWritable === 'function'
 	);
 }
 
