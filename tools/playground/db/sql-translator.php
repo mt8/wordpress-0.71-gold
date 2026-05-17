@@ -54,8 +54,13 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			//     column an alias of ROWID only for exactly "INTEGER
 			//     PRIMARY KEY", so the per-column form is collapsed to
 			//     that and the table-level "PRIMARY KEY (col)" dropped.
+			//     A column definition starts right after "(" or a ",", so
+			//     the auto_increment column's name is the first word after
+			//     the delimiter that opens the definition containing it --
+			//     anchoring on the delimiter avoids capturing an earlier
+			//     word such as the "CREATE" keyword.
 			$pk_column = null;
-			if ( preg_match( '/(\w+)\s+[^,]*\bauto_increment\b/i', $sql, $m ) ) {
+			if ( preg_match( '/[(,]\s*`?(\w+)`?\s+[^,]*\bauto_increment\b/i', $sql, $m ) ) {
 				$pk_column = $m[1];
 			} elseif ( preg_match( '/PRIMARY\s+KEY\s*\(\s*`?(\w+)`?\s*\)/i', $sql, $m ) ) {
 				$pk_column = $m[1];
@@ -104,10 +109,10 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 */
 		private static function translate_dml( $sql ) {
 			// EN: 0.71 quotes string literals with double quotes in
-			//     places (post_status = "publish" in blog.header.php).
-			//     SQLite reads "..." as an identifier first, so convert a
-			//     double-quoted literal with no embedded quote to a
-			//     single-quoted literal.
+			//     places (post_status = "publish" in blog.header.php, the
+			//     post_date in b2edit.php's editpost UPDATE). SQLite reads
+			//     "..." as an identifier first, so convert a double-quoted
+			//     literal with no embedded quote to a single-quoted literal.
 			$sql = preg_replace_callback(
 				'/"([^"\\\\]*)"/',
 				function ( $m ) {
@@ -116,9 +121,138 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				$sql
 			);
 
-			// EN: MySQL date-part functions used by the archive queries
-			//     (b2template.functions.php get_archives) and the feed.
-			//     SQLite has strftime() instead.
+			// EN: A MySQL auto_increment column treats an explicit 0 (or
+			//     '0') as "assign the next id"; SQLite stores 0 verbatim
+			//     into an INTEGER PRIMARY KEY, so a second such INSERT
+			//     collides. The 0.71 admin INSERTs a post / category that
+			//     way -- b2edit.php "INSERT INTO b2posts (ID, ...) VALUES
+			//     ('0', ...)" and b2categories.php "INSERT INTO
+			//     b2categories (cat_ID, cat_name) VALUES ('0', ...)".
+			//     Drop the leading id column and its 0 value so the
+			//     AUTOINCREMENT primary key assigns the id, matching MySQL.
+			if ( preg_match( '/^\s*INSERT\b/i', $sql ) ) {
+				$sql = self::strip_zero_autoincrement_id( $sql );
+			}
+
+			// EN: The archive queries select bare date-part expressions --
+			//     SELECT DISTINCT YEAR(post_date), MONTH(post_date) ... --
+			//     and b2edit.showposts.php reads the result by the MySQL
+			//     column name ($arc_row['YEAR(post_date)']). SQLite would
+			//     name the column after the translated strftime() text, so
+			//     the lookup would miss. Give every such expression an
+			//     explicit alias of its MySQL spelling; the alias survives
+			//     the function rewrite and keeps the column's MySQL name.
+			$sql = self::alias_date_part_columns( $sql );
+
+			// EN: Rewrite date functions only outside string literals -- the
+			//     alias added above is a quoted literal that itself spells
+			//     "YEAR(post_date)", and the rewrite must not touch it.
+			$sql = self::apply_outside_strings( $sql, array( __CLASS__, 'translate_date_functions' ) );
+
+			// EN: rand() -> SQLite random() for the random-order links.
+			$sql = preg_replace( '/\brand\s*\(\s*\)/i', 'random()', $sql );
+
+			return $sql;
+		}
+
+		/**
+		 * Apply a transformation to the parts of an SQL string that lie
+		 * outside single-quoted string literals.
+		 *
+		 * The date-function and rand() rewrites must not reach into a
+		 * quoted literal (a post body, or the date-part column aliases
+		 * added by alias_date_part_columns(), which spell "YEAR(...)").
+		 * The string is split on '...' literals (SQLite escapes a quote by
+		 * doubling it) and the callback runs on the non-literal segments.
+		 *
+		 * @param string   $sql      SQL possibly containing string literals.
+		 * @param callable $callback Transformation for a non-literal segment.
+		 * @return string The SQL with the callback applied outside literals.
+		 */
+		private static function apply_outside_strings( $sql, $callback ) {
+			// EN: Split keeping the delimiters: a '...' literal (with ''
+			//     escapes) is an odd-indexed piece, code is even-indexed.
+			$parts = preg_split(
+				"/('(?:[^']|'')*')/",
+				$sql,
+				-1,
+				PREG_SPLIT_DELIM_CAPTURE
+			);
+			$out = '';
+			foreach ( $parts as $i => $part ) {
+				$out .= ( 0 === $i % 2 ) ? call_user_func( $callback, $part ) : $part;
+			}
+			return $out;
+		}
+
+		/**
+		 * Drop a leading auto-increment id column whose value is 0.
+		 *
+		 * Rewrites "INSERT INTO t (id, a, b) VALUES (0, x, y)" to
+		 * "INSERT INTO t (a, b) VALUES (x, y)" when the first inserted
+		 * value is 0 or '0'. Only the first column/value pair is removed;
+		 * any other column is untouched.
+		 *
+		 * @param string $sql A MySQL INSERT statement.
+		 * @return string The INSERT with a zero id column dropped, if any.
+		 */
+		private static function strip_zero_autoincrement_id( $sql ) {
+			// EN: Match "(col1, col2, ...) VALUES (v1, v2, ...)" where v1
+			//     is 0 / '0' / "0". The column list and value list are
+			//     captured so the first entry of each can be dropped.
+			$pattern = '/\(\s*([^()]+?)\s*\)\s*VALUES\s*\(\s*(?:\'0\'|"0"|0)\s*,\s*([^()]*)\)/i';
+			return preg_replace_callback(
+				$pattern,
+				function ( $m ) {
+					$columns = array_map( 'trim', explode( ',', $m[1] ) );
+					// EN: Drop the first column; keep the rest verbatim.
+					array_shift( $columns );
+					return '(' . implode( ', ', $columns ) . ') VALUES (' . $m[2] . ')';
+				},
+				$sql,
+				1
+			);
+		}
+
+		/**
+		 * Alias bare date-part expressions to their MySQL column name.
+		 *
+		 * In a SELECT list, an unaliased YEAR(post_date) becomes a SQLite
+		 * column named after the strftime() rewrite. The admin archive
+		 * code (b2edit.showposts.php) reads the row by the MySQL name, so
+		 * each such expression is given an explicit alias of its MySQL
+		 * spelling before the function rewrite runs.
+		 *
+		 * @param string $sql A MySQL SELECT statement.
+		 * @return string The SELECT with date-part columns aliased.
+		 */
+		private static function alias_date_part_columns( $sql ) {
+			$functions = 'YEAR|MONTH|DAYOFMONTH|HOUR|MINUTE|SECOND|WEEK';
+			// EN: A date-part call that is immediately followed by a comma
+			//     or by FROM is a SELECT-list column. One that is followed
+			//     by "AS" already has an alias; one inside a WHERE / ORDER
+			//     BY is followed by an operator and is left alone.
+			return preg_replace_callback(
+				'/\b(' . $functions . ')\s*\(\s*([^(),]+?)\s*(?:,\s*\d+\s*)?\)(?=\s*(?:,|FROM\b))/i',
+				function ( $m ) {
+					$expr  = $m[0];
+					$alias = strtoupper( $m[1] ) . '(' . trim( $m[2] ) . ')';
+					return $expr . " AS '" . $alias . "'";
+				},
+				$sql
+			);
+		}
+
+		/**
+		 * Rewrite MySQL date functions to their SQLite strftime() form.
+		 *
+		 * Used by the archive queries (b2edit.showposts.php,
+		 * b2template.functions.php get_archives) and the post feed.
+		 *
+		 * @param string $sql MySQL-dialect SQL.
+		 * @return string SQL with date functions in SQLite form.
+		 */
+		private static function translate_date_functions( $sql ) {
 			$sql = preg_replace( "/\bYEAR\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%Y', $1) AS INTEGER)", $sql );
 			$sql = preg_replace( "/\bMONTH\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%m', $1) AS INTEGER)", $sql );
 			$sql = preg_replace( "/\bDAYOFMONTH\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%d', $1) AS INTEGER)", $sql );
@@ -137,9 +271,6 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				},
 				$sql
 			);
-
-			// EN: rand() -> SQLite random() for the random-order links.
-			$sql = preg_replace( '/\brand\s*\(\s*\)/i', 'random()', $sql );
 
 			return $sql;
 		}
