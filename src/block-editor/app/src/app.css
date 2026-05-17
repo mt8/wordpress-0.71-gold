@@ -180,6 +180,18 @@
 	padding: 1rem;
 }
 
+/*
+ * EN: Each tab label pairs an icon with its text; .be-tab-title lays the
+ *     two out inline with a small gap.
+ * JA: 各タブのラベルはアイコンとテキストを並べる。.be-tab-title が両者を
+ *     小さな間隔で横並びにする。
+ */
+.be-tab-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+}
+
 .be-state {
 	padding: 2rem;
 	font-family: -apple-system, system-ui, sans-serif;

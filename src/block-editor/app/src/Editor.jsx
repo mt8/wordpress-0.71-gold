@@ -45,7 +45,9 @@ import {
 	Panel,
 	PanelBody,
 	TabPanel,
+	Icon,
 } from '@wordpress/components';
+import { blockDefault, page } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
 /**
@@ -499,8 +501,24 @@ export function Editor( { config } ) {
 								<TabPanel
 									className="be-sidebar-tabs"
 									tabs={ [
-										{ name: 'post', title: 'Post' },
-										{ name: 'block', title: 'Block' },
+										{
+											name: 'post',
+											title: (
+												<span className="be-tab-title">
+													<Icon icon={ page } size={ 20 } />
+													Post
+												</span>
+											),
+										},
+										{
+											name: 'block',
+											title: (
+												<span className="be-tab-title">
+													<Icon icon={ blockDefault } size={ 20 } />
+													Block
+												</span>
+											),
+										},
 									] }
 								>
 									{ ( tab ) =>
