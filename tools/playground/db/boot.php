@@ -7,16 +7,21 @@
 //
 //    1. defines WP071_DB_PATH -- the SQLite file inside the php-wasm
 //       virtual filesystem, read by the 071-now wp-db.php and seed;
-//    2. seeds that database once per php-wasm instance, so the very
-//       first front-page request already has a post to render;
+//    2. seeds that database when none exists yet, so the very first
+//       front-page request already has a post to render;
 //    3. auto-logs-in the seeded admin user, so the admin (wp-admin/) is
 //       reachable without a manual login -- the single-user browser
 //       playground model WordPress Playground uses (Issue #120).
 //
 //  Seeding is gated on the database file's existence: WordPress 0.71's
 //  b2config.php has no install check, so this prepend is where the
-//  in-browser blog gets its data. Subsequent requests in the same
-//  php-wasm instance see the file and skip re-seeding.
+//  in-browser blog gets its data. The app persists the database in the
+//  browser (OPFS / IndexedDB, Issue #122) and restores it to
+//  WP071_DB_PATH before the request runs, so on a returning visit the
+//  file already exists and the seed is skipped -- the persisted content
+//  is what the blog serves. A first visit, or a boot after a reset,
+//  finds no file and seeds afresh. Subsequent requests in the same
+//  php-wasm instance also see the file and skip re-seeding.
 // ==================================================================
 
 if ( ! defined( 'WP071_DB_PATH' ) ) {

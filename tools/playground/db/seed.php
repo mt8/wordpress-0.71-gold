@@ -14,6 +14,14 @@
 //  This file runs inside php-wasm at boot. It expects WP071_DB_PATH to
 //  be defined (the 071-now boot shim defines it) and the 071-now
 //  wp-db.php translator to be loadable.
+//
+//  The seed is conditional (Issue #122): the boot shim requires this
+//  file only when no database exists at WP071_DB_PATH. On a returning
+//  visit the app has restored the persisted SQLite database to that path
+//  before the request runs, so the seed is skipped and the persisted
+//  content -- posts and categories created earlier through the admin --
+//  is what the blog renders. The seed therefore runs on a first visit,
+//  and again after a reset clears the persisted database.
 // ==================================================================
 
 if ( ! defined( 'WP071_DB_PATH' ) ) {
@@ -24,7 +32,10 @@ if ( ! defined( 'WP071_DB_PATH' ) ) {
 //     the same MySQL -> SQLite path as the live blog's runtime queries.
 require_once __DIR__ . '/071-now-sql-translator.php';
 
-// EN: A fresh database every boot keeps the spike deterministic.
+// EN: Start from an empty file. The boot shim only requires this seed
+//     when no database exists at WP071_DB_PATH, so reaching here means a
+//     first visit or a post-reset boot; any stale file (a leftover
+//     journal) is removed so the schema is built cleanly.
 if ( file_exists( WP071_DB_PATH ) ) {
 	@unlink( WP071_DB_PATH );
 }
