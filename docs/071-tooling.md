@@ -343,6 +343,40 @@ steps under umbrella Issue #104:
 The package, its layout and the `npm run build` / `dev` / `preview` /
 `verify` workflow are documented in `tools/playground/README.md`.
 
+### 5.5 Public deployment — GitHub Pages (#128)
+
+`071-now` is deployed to GitHub Pages so anyone viewing the repository
+can launch it from <https://mt8.github.io/wordpress-0.71-gold/>.
+
+- **Workflow.** `.github/workflows/playground-pages.yml` builds the
+  `tools/playground` npm workspace and publishes its `dist/` with
+  `actions/configure-pages`, `actions/upload-pages-artifact` and
+  `actions/deploy-pages`. It runs on a push to `main` and on manual
+  dispatch, with the standard `pages: write` / `id-token: write` /
+  `contents: read` permissions and the `github-pages` environment. The
+  build output is roughly 54 MB (the ~40 MB PHP 8.3 `.wasm` runtime
+  included), well within the GitHub Pages 1 GB site-size limit.
+- **The base path.** A project page is served under the repository name,
+  so the workflow builds with `PLAYGROUND_BASE=/wordpress-0.71-gold/`.
+  `vite.config.js` reads it as the public base, and the browser app
+  (`src/main.js`) builds its service-worker registration and the scoped
+  blog paths under that base — so the service worker's scope covers the
+  scoped traffic. The local `preview` / `verify` keep the default `/`.
+- **Cross-origin isolation.** php-wasm runs PHP threads on
+  `SharedArrayBuffer`, which a browser exposes only to a
+  cross-origin-isolated page — one served with the COOP/COEP headers.
+  GitHub Pages cannot set custom HTTP headers, so the playground's
+  service worker (`public/sw.js`) adds them itself: alongside its
+  request-routing job it fetches every app-shell response from the
+  network and re-serves it with `Cross-Origin-Opener-Policy:
+  same-origin` / `Cross-Origin-Embedder-Policy: require-corp` (and a
+  `Cross-Origin-Resource-Policy`) attached — the `coi-serviceworker`
+  technique, in the one existing service worker rather than a second
+  registration. On the first visit the document is fetched before the
+  worker controls the page, so `src/main.js` reloads once (guarded by a
+  `sessionStorage` flag) to pick the headers up; the local dev / preview
+  server sends them itself, so no reload happens there.
+
 ## 6. Phasing
 
 Tracked under umbrella Issue #104. Child Issues, in order:
@@ -708,6 +742,41 @@ Issue #104 の下で 6 ステップで実施した:
 
 パッケージ・そのレイアウト・`npm run build` / `dev` / `preview` /
 `verify` のワークフローは `tools/playground/README.md` に記載している。
+
+### 5.5 公開デプロイ — GitHub Pages（#128）
+
+`071-now` は GitHub Pages へデプロイされ、リポジトリを見た人が
+<https://mt8.github.io/wordpress-0.71-gold/> から起動できる。
+
+- **ワークフロー。** `.github/workflows/playground-pages.yml` が
+  `tools/playground` の npm ワークスペースをビルドし、その `dist/` を
+  `actions/configure-pages`・`actions/upload-pages-artifact`・
+  `actions/deploy-pages` で公開する。`main` への push と手動ディスパッチ
+  で実行され、標準の `pages: write` / `id-token: write` /
+  `contents: read` 権限と `github-pages` 環境を用いる。ビルド成果物は
+  約 54 MB（約 40 MB の PHP 8.3 `.wasm` ランタイムを含む）で、GitHub
+  Pages の 1 GB サイトサイズ上限に十分収まる。
+- **ベースパス。** プロジェクトページはリポジトリ名配下で配信されるため、
+  ワークフローは `PLAYGROUND_BASE=/wordpress-0.71-gold/` でビルドする。
+  `vite.config.js` がこれを公開ベースとして読み取り、ブラウザアプリ
+  （`src/main.js`）はサービスワーカー登録とスコープ付きブログのパスを
+  そのベース配下に構築する — これでサービスワーカーのスコープが
+  スコープ付きトラフィックを覆う。ローカルの `preview` / `verify` は
+  既定の `/` のままである。
+- **クロスオリジン分離。** php-wasm は `SharedArrayBuffer` 上で PHP
+  スレッドを動かすが、ブラウザはこれを cross-origin-isolated なページ
+  — COOP/COEP ヘッダ付きで配信されたページ — にのみ公開する。GitHub
+  Pages はカスタム HTTP ヘッダを設定できないため、playground の
+  サービスワーカー（`public/sw.js`）が自前で付与する。リクエスト
+  ルーティングの役割と並んで、アプリシェルの全応答をネットワークから
+  取得し、`Cross-Origin-Opener-Policy: same-origin` /
+  `Cross-Origin-Embedder-Policy: require-corp`（および
+  `Cross-Origin-Resource-Policy`）を付けて再配信する — `coi-serviceworker`
+  の手法を、新たな登録ではなく既存の 1 つのサービスワーカー内で行う。
+  初回訪問ではワーカーがページを制御する前にドキュメントが取得される
+  ため、`src/main.js` が一度だけリロードして（`sessionStorage` フラグで
+  ガード）ヘッダを取り込む。ローカルの dev / preview サーバーは自身で
+  ヘッダを送るためリロードは起きない。
 
 ## 6. フェーズ
 

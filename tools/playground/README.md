@@ -7,6 +7,10 @@ This package runs WordPress 0.71 entirely in the browser — PHP compiled
 to WebAssembly via `@php-wasm/web`, reading posts from an in-browser
 SQLite database. No MySQL server, no web server.
 
+It is deployed to GitHub Pages at
+<https://mt8.github.io/wordpress-0.71-gold/>, so anyone can launch it
+from a link (Issue #128); see [Deployment](#deployment) below.
+
 It began as the **feasibility spike** of Issue #108 (a proof of concept
 that rendered the front page) and was then grown into a usable
 browser-based blog over six steps. Step 1 of that full build (Issue
@@ -52,21 +56,48 @@ remaining work for the full `071-now` build, are in
    handler), and turns the php-wasm response into a `Response`. The blog
    therefore loads its own CSS and is fully navigable.
 
-## The service worker request handler
+## The service worker
+
+`public/sw.js` is a single service worker doing two jobs (Issue #116,
+#128).
+
+### Request routing
 
 WordPress 0.71's front page emits absolute asset URLs and internal
 links against `$siteurl`. The spike rendered the front-page HTML into a
 `blob:` URL iframe, so those requests never reached php-wasm and the
 page was unstyled and not navigable.
 
-`public/sw.js` fixes this the way WordPress Playground does. The blog
-is served under a single scope path segment (`/scope:<id>/...`):
+The worker fixes this the way WordPress Playground does. The blog is
+served under a single scope path segment (`<base>scope:<id>/...`):
 `src/main.js` rewrites the in-VFS copy of `b2config.php` so `$siteurl`
 points at that scoped path, hence every URL the blog emits is
 same-origin and scoped. The service worker intercepts exactly those
-scoped requests, leaving the app shell and the `.wasm`/`.data` runtime
-assets to the network. `src/` and the on-disk overlay are untouched —
-only the in-memory php-wasm copy of `b2config.php` is rewritten.
+scoped requests and forwards them to the controlling page (which owns
+the php-wasm request handler). `src/` and the on-disk overlay are
+untouched — only the in-memory php-wasm copy of `b2config.php` is
+rewritten.
+
+### Cross-origin isolation
+
+php-wasm runs PHP threads on `SharedArrayBuffer`, which a browser
+exposes only to a cross-origin-isolated page — one served with the
+`Cross-Origin-Opener-Policy: same-origin` /
+`Cross-Origin-Embedder-Policy: require-corp` headers. The Vite dev /
+preview server sets them (`vite.config.js`), but GitHub Pages cannot
+set custom HTTP headers. So the same service worker adds them: every
+request that is *not* a scoped blog request — the host document, the
+bundled JS, the `.wasm`/`.data` runtime assets — is fetched from the
+network and re-served with the COOP/COEP (and a `Cross-Origin-Resource-
+Policy`) headers attached. This is the `coi-serviceworker` technique,
+folded into the one existing worker rather than a second registration.
+
+On the first visit the host document is fetched before the worker
+controls the page, so it carries no COOP/COEP and the page is not yet
+isolated. `src/main.js` reloads once (guarded by a `sessionStorage`
+flag) so the reload's document request goes through the now-controlling
+worker; the reloaded page is cross-origin-isolated. On the local dev /
+preview server the headers are already present, so no reload happens.
 
 ## Trimming the php-wasm bundle to PHP 8.3
 
@@ -268,5 +299,27 @@ persistence — creating a post, reloading the page and asserting the
 post is still present, then exercising the reset. Finally it checks
 image upload — uploading an image through `b2upload.php`, asserting it
 is stored and served from the VFS, reloading and asserting it survived,
-then asserting the reset clears it — with no console errors. It writes
+then asserting the reset clears it — with no console errors. It also
+asserts the page is cross-origin-isolated. It writes
 `test/071-now-frontpage.png` and `test/071-now-admin.png`.
+
+## Deployment
+
+The playground is deployed to GitHub Pages at
+<https://mt8.github.io/wordpress-0.71-gold/> by
+`.github/workflows/playground-pages.yml` (Issue #128). The workflow runs
+on a push to `main` and on manual dispatch: it builds this workspace and
+publishes its `dist/` with `actions/configure-pages`,
+`actions/upload-pages-artifact` and `actions/deploy-pages`.
+
+A project page is served under the repository name, so the workflow
+builds with `PLAYGROUND_BASE=/wordpress-0.71-gold/`. `vite.config.js`
+reads that environment variable as the public base path (`base`), and
+`src/main.js` builds the service-worker registration and the scoped
+blog paths under it. Locally `build` / `dev` / `preview` / `verify`
+leave `PLAYGROUND_BASE` unset and use the default `/`.
+
+GitHub Pages cannot set custom HTTP headers, and php-wasm needs the
+COOP/COEP cross-origin isolation headers for `SharedArrayBuffer`; the
+service worker adds them itself, as described under
+[Cross-origin isolation](#cross-origin-isolation).

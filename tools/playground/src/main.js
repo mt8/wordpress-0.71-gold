@@ -62,11 +62,26 @@ const UPLOADS_DIR = `${ DOCROOT }/wp-content/uploads`;
 //     absolute asset URLs and internal links against it.
 const BLOG_SITEURL = 'http://localhost:8080';
 
+// EN: The public base path the app is served under (Issue #128). Vite
+//     sets import.meta.env.BASE_URL to its `base` config: '/' for the
+//     local preview / headless verifier, '/wordpress-0.71-gold/' for the
+//     GitHub Pages project-page deploy. Every app-owned path -- the
+//     service worker, the scoped blog paths -- is built under this base
+//     so a project-page deploy and a root-served preview both work. The
+//     value always has a trailing slash.
+const APP_BASE = import.meta.env.BASE_URL;
+
 // EN: Every request the in-browser blog makes is served under a single
 //     scope path segment so the service worker can tell blog traffic
 //     apart from the app shell. The marker must match SCOPE_MARKER in
 //     public/sw.js. A per-boot random id keeps separate tabs distinct.
-const SCOPE_PREFIX = `/scope:${ Math.random().toString( 36 ).slice( 2, 10 ) }`;
+//     The segment sits under APP_BASE so it falls inside the service
+//     worker's scope -- a service worker served from APP_BASE controls
+//     only paths under APP_BASE, so on a project-page deploy a scope at
+//     the origin root would never be intercepted (Issue #128).
+const SCOPE_PREFIX = `${ APP_BASE }scope:${ Math.random()
+	.toString( 36 )
+	.slice( 2, 10 ) }`;
 
 const statusEl = document.getElementById( 'status' );
 const blogEl = document.getElementById( 'blog' );
@@ -111,25 +126,49 @@ function hideSplash() {
 	}
 }
 
+// EN: sessionStorage key guarding the one-time cross-origin isolation
+//     reload below, so the reload happens at most once per tab session
+//     and a tab that never becomes isolated does not reload forever.
+const COI_RELOAD_GUARD = '071-now-coi-reload';
+
 /**
- * Register the request-routing service worker and wait until it
- * controls this page.
+ * Register the service worker, wait until it controls this page, and --
+ * on the deployed site -- reload once so the document is re-served with
+ * the cross-origin isolation headers (Issue #116, #128).
  *
  * The worker must be controlling the page before the iframe is pointed
  * at a scoped URL, otherwise the first navigation would miss the
  * interception and hit the (nonexistent) network path.
  *
- * @return {Promise<void>}
+ * The same worker also adds the COOP/COEP headers php-wasm needs for
+ * SharedArrayBuffer (Issue #128). On the first visit the host document
+ * was fetched from the network before the worker controlled the page, so
+ * it carried no COOP/COEP and window.crossOriginIsolated is false. The
+ * local dev / preview server sends those headers itself, so there the
+ * page is already isolated and no reload happens. On GitHub Pages it is
+ * not, so this reloads once: the reload's document request goes through
+ * the now-controlling worker, which attaches the headers, and the
+ * reloaded page is cross-origin-isolated. A sessionStorage guard makes
+ * the reload fire at most once.
+ *
+ * @return {Promise<boolean>} True when the page is reloading to become
+ *                            cross-origin-isolated -- the caller must
+ *                            then stop booting and let the reload run.
  */
 async function registerServiceWorker() {
 	if ( ! ( 'serviceWorker' in navigator ) ) {
 		throw new Error( 'this browser has no service worker support' );
 	}
 
-	// EN: sw.js sits at the app root (Vite copies public/ verbatim), so
-	//     its default scope is the whole origin -- it can intercept the
-	//     scoped blog paths.
-	await navigator.serviceWorker.register( '/sw.js', { type: 'classic' } );
+	// EN: sw.js sits at the app base (Vite copies public/ verbatim), so
+	//     its default scope is APP_BASE -- it intercepts the scoped blog
+	//     paths, which src/main.js builds under APP_BASE. On the GitHub
+	//     Pages project-page deploy APP_BASE is '/wordpress-0.71-gold/',
+	//     so the worker is registered (and scoped) there, not at the
+	//     origin root (Issue #128).
+	await navigator.serviceWorker.register( `${ APP_BASE }sw.js`, {
+		type: 'classic',
+	} );
 	await navigator.serviceWorker.ready;
 
 	// EN: A freshly registered worker calls clients.claim() on activate,
@@ -144,6 +183,26 @@ async function registerServiceWorker() {
 			);
 		} );
 	}
+
+	// EN: Cross-origin isolation (Issue #128). php-wasm needs
+	//     SharedArrayBuffer, which a browser only exposes to a
+	//     cross-origin-isolated page. When the page is not isolated -- the
+	//     deployed GitHub Pages document carried no COOP/COEP -- reload
+	//     once: the now-controlling worker serves the reloaded document
+	//     with the headers. The guard makes this a one-shot, and a worker
+	//     must actually be in control for the reload to change anything.
+	if (
+		! self.crossOriginIsolated &&
+		navigator.serviceWorker.controller &&
+		! sessionStorage.getItem( COI_RELOAD_GUARD )
+	) {
+		sessionStorage.setItem( COI_RELOAD_GUARD, '1' );
+		setStatus( 'enabling cross-origin isolation…' );
+		location.reload();
+		return true;
+	}
+
+	return false;
 }
 
 /**
@@ -450,7 +509,15 @@ async function handleForwardedRequest( requestHandler, request, port ) {
  */
 async function boot() {
 	setStatus( 'registering the request-routing service worker…' );
-	await registerServiceWorker();
+
+	// EN: Register the service worker. On the deployed site this may
+	//     trigger a one-time reload to pick up the cross-origin isolation
+	//     headers (Issue #128); when it does, stop here and let the reload
+	//     run -- the reloaded page boots afresh, this time isolated.
+	const reloading = await registerServiceWorker();
+	if ( reloading ) {
+		return;
+	}
 
 	const { php, requestHandler } = await bootPhpWasm();
 
