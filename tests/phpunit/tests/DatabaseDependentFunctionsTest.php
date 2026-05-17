@@ -1,14 +1,10 @@
 <?php
 /**
- * EN: Tests for the database-dependent helpers in b2functions.php and
- *     b2template.functions.php. These read the global $wpdb; the
- *     DatabaseTestCase base installs a FakeWpdb stub plus the table-name
- *     globals, so each helper can be exercised -- and the SQL it builds
- *     asserted -- without a live MySQL server.
- * JA: b2functions.php と b2template.functions.php の DB 依存ヘルパーのテスト。
- *     これらはグローバル $wpdb を読む。DatabaseTestCase ベースが FakeWpdb
- *     スタブとテーブル名グローバルを差し込むため、各ヘルパーを実 MySQL
- *     サーバー無しで実行し、組み立てた SQL を検証できる。
+ * Tests for the database-dependent helpers in b2functions.php and
+ * b2template.functions.php. These read the global $wpdb; the
+ * DatabaseTestCase base installs a FakeWpdb stub plus the table-name
+ * globals, so each helper can be exercised -- and the SQL it builds
+ * asserted -- without a live MySQL server.
  */
 
 declare(strict_types=1);
@@ -36,10 +32,8 @@ final class DatabaseDependentFunctionsTest extends DatabaseTestCase
 
     public function testGetPostdataCastsTheIdAndBuildsTheExpectedSql(): void
     {
-        // EN: get_postdata() casts its id to int (SQL-injection guard from
-        //     Issue #31) and queries the posts table unquoted.
-        // JA: get_postdata() は id を int にキャストし(Issue #31 の SQL
-        //     インジェクション対策)、posts テーブルをクォート無しで照会する。
+        // get_postdata() casts its id to int (SQL-injection guard from
+        // Issue #31) and queries the posts table unquoted.
         $this->wpdb->row = $this->makePostRow();
         get_postdata('7abc');
         $this->assertSame(
@@ -50,16 +44,14 @@ final class DatabaseDependentFunctionsTest extends DatabaseTestCase
 
     public function testGetPostdataReturnsFalseForAMissingPost(): void
     {
-        // EN: a non-existent id yields a null row; get_postdata() returns false.
-        // JA: 存在しない id では行が null になり、get_postdata() は false を返す。
+        // a non-existent id yields a null row; get_postdata() returns false.
         $this->wpdb->row = null;
         $this->assertFalse(get_postdata(999));
     }
 
     public function testGetPostdata2ReadsTheGlobalPostObject(): void
     {
-        // EN: get_postdata2() runs no query -- it reads the global $post.
-        // JA: get_postdata2() はクエリを走らせず、グローバル $post を読む。
+        // get_postdata2() runs no query -- it reads the global $post.
         $GLOBALS['post'] = $this->makePostRow(['ID' => 4, 'post_title' => 'Cached']);
         $postdata        = get_postdata2();
         $this->assertSame(4, $postdata['ID']);
@@ -98,8 +90,7 @@ final class DatabaseDependentFunctionsTest extends DatabaseTestCase
 
     public function testGetUserdata2ReadsTheGlobalPostObject(): void
     {
-        // EN: get_userdata2() builds an array from the team-listing $post row.
-        // JA: get_userdata2() はチーム一覧の $post 行から配列を組み立てる。
+        // get_userdata2() builds an array from the team-listing $post row.
         $GLOBALS['post'] = (object) [
             'user_login'     => 'team',
             'user_firstname' => 'First',
@@ -174,8 +165,7 @@ final class DatabaseDependentFunctionsTest extends DatabaseTestCase
 
     public function testGetTheCategoryStripsSlashesFromTheName(): void
     {
-        // EN: get_the_category() runs the category name through stripslashes().
-        // JA: get_the_category() はカテゴリ名を stripslashes() に通す。
+        // get_the_category() runs the category name through stripslashes().
         $this->wpdb->var = "O\\'Brien";
         $this->assertSame("O'Brien", get_the_category_by_ID(1));
     }

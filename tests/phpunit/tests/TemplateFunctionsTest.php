@@ -1,12 +1,9 @@
 <?php
 /**
- * EN: Tests for the value-returning template helpers in
- *     b2-include/b2template.functions.php that do not touch the database:
- *     get_bloginfo(), get_the_title(), get_the_content(), get_the_excerpt(),
- *     single_month_title(), is_new_day() and the filter API.
- * JA: b2-include/b2template.functions.php の、DB に触れず値を返すテンプレート
- *     ヘルパーのテスト: get_bloginfo()・get_the_title()・get_the_content()・
- *     get_the_excerpt()・single_month_title()・is_new_day()・フィルタ API。
+ * Tests for the value-returning template helpers in
+ * b2-include/b2template.functions.php that do not touch the database:
+ * get_bloginfo(), get_the_title(), get_the_content(), get_the_excerpt(),
+ * single_month_title(), is_new_day() and the filter API.
  */
 
 declare(strict_types=1);
@@ -18,8 +15,7 @@ final class TemplateFunctionsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        // EN: the filter API reads the global $b2_filter registry; start empty.
-        // JA: フィルタ API はグローバル $b2_filter レジストリを読む。空で開始。
+        // the filter API reads the global $b2_filter registry; start empty.
         $GLOBALS['b2_filter'] = [];
     }
 
@@ -27,8 +23,7 @@ final class TemplateFunctionsTest extends TestCase
     {
         $GLOBALS['blogname'] = 'My Blog';
         $this->assertSame('My Blog', get_bloginfo('name'));
-        // EN: an unknown key defaults to the blog name.
-        // JA: 未知のキーは既定でブログ名を返す。
+        // an unknown key defaults to the blog name.
         $this->assertSame('My Blog', get_bloginfo(''));
     }
 
@@ -96,10 +91,8 @@ final class TemplateFunctionsTest extends TestCase
     {
         $this->primeLoopGlobals('Body text here', ['Body text here']);
         $GLOBALS['post']->post_excerpt = '';
-        // EN: with $fakeit = true and no stored excerpt it derives one from the
-        //     post content (stripped of tags, space-padded per word).
-        // JA: $fakeit = true で保存済み抜粋が無いとき、投稿本文から抜粋を
-        //     生成する(タグ除去・単語ごとに空白を付与)。
+        // with $fakeit = true and no stored excerpt it derives one from the
+        // post content (stripped of tags, space-padded per word).
         $this->assertSame('Body text here ', get_the_excerpt(true));
     }
 
@@ -146,8 +139,7 @@ final class TemplateFunctionsTest extends TestCase
     }
 
     /**
-     * EN: Prime the b2-loop globals get_the_content() / get_the_excerpt() read.
-     * JA: get_the_content() / get_the_excerpt() が読む b2 ループのグローバルを整える。
+     * Prime the b2-loop globals get_the_content() / get_the_excerpt() read.
      *
      * @param array<int, string> $pages
      */

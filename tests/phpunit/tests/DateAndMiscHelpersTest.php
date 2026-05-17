@@ -1,9 +1,7 @@
 <?php
 /**
- * EN: Tests for the pure date / time / misc helpers in b2functions.php that
- *     return a value with no database access.
- * JA: b2functions.php の純粋な日付/時刻/その他ヘルパー(DB アクセス無しで値を
- *     返すもの)のテスト。
+ * Tests for the pure date / time / misc helpers in b2functions.php that
+ * return a value with no database access.
  */
 
 declare(strict_types=1);
@@ -21,8 +19,7 @@ final class DateAndMiscHelpersTest extends TestCase
 
     public function testMysql2dateReturnsFalseForEmptyInput(): void
     {
-        // EN: an empty MySQL timestamp string yields false.
-        // JA: 空の MySQL タイムスタンプ文字列では false を返す。
+        // an empty MySQL timestamp string yields false.
         $this->assertFalse(mysql2date('Y', ''));
     }
 
@@ -39,16 +36,14 @@ final class DateAndMiscHelpersTest extends TestCase
         $this->assertArrayHasKey('end', $week);
         $this->assertIsInt($week['start']);
         $this->assertIsInt($week['end']);
-        // EN: the week spans (end - start) -- 604799 seconds, just short of
-        //     seven days (7 * 86400 - 1).
-        // JA: 1 週間は (end - start) で 604799 秒 -- 7 日弱(7 * 86400 - 1)になる。
+        // the week spans (end - start) -- 604799 seconds, just short of
+        // seven days (7 * 86400 - 1).
         $this->assertSame(604799, $week['end'] - $week['start']);
     }
 
     public function testGetWeekstartendStartFallsOnTheStartOfWeekDay(): void
     {
-        // EN: with start_of_week = 0 (Sunday) the computed start is a Sunday.
-        // JA: start_of_week = 0(日曜)のとき、算出された start は日曜になる。
+        // with start_of_week = 0 (Sunday) the computed start is a Sunday.
         $week = get_weekstartend('2003-05-27 12:00:00', 0);
         $this->assertSame('0', date('w', $week['start']));
     }
@@ -73,8 +68,7 @@ final class DateAndMiscHelpersTest extends TestCase
 
     public function testCockneyContractionsAreTexturized(): void
     {
-        // EN: wptexturize() rewrites cockney contractions with a curly apostrophe.
-        // JA: wptexturize() はコックニーの短縮形を曲線アポストロフィに書き換える。
+        // wptexturize() rewrites cockney contractions with a curly apostrophe.
         $this->assertStringContainsString('&#8217;twas', wptexturize("'twas"));
     }
 

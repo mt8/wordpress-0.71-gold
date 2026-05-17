@@ -1,7 +1,6 @@
 <?php
 /**
- * EN: Tests for small pure helper functions in b2functions.php.
- * JA: b2functions.php の小さな純粋ヘルパー関数のテスト。
+ * Tests for small pure helper functions in b2functions.php.
  */
 
 declare(strict_types=1);
@@ -18,10 +17,8 @@ final class HelpersTest extends TestCase
 
     public function testZeroiseLeavesLongEnoughNumberUnchanged(): void
     {
-        // EN: when no padding is needed zeroise() returns the value as given
-        //     (an int stays an int); only a padded result becomes a string.
-        // JA: パディング不要のとき zeroise() は与えられた値をそのまま返す
-        //     (int は int のまま)。パディングした結果のみ文字列になる。
+        // when no padding is needed zeroise() returns the value as given
+        // (an int stays an int); only a padded result becomes a string.
         $this->assertSame(42, zeroise(42, 2));
         $this->assertSame(12345, zeroise(12345, 2));
     }
