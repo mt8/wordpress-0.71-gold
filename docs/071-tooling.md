@@ -17,21 +17,22 @@ WordPress 0.71 (b2/cafelog, 2003) cannot use the modern WordPress tooling:
 
 The goal is 0.71-specific equivalents, each an npm package inside this repo.
 
-| Tool      | Equivalent of            | Directory     |
-|-----------|--------------------------|---------------|
-| `071-cli` | wp-cli                   | `/cli`        |
-| `071-env` | wp-env                   | `/env`        |
-| `071-now` | wp-now / WP Playground   | `/playground` |
+| Tool      | Equivalent of            | Directory           |
+|-----------|--------------------------|---------------------|
+| `071-cli` | wp-cli                   | `/tools/cli`        |
+| `071-env` | wp-env                   | `/tools/env`        |
+| `071-now` | wp-now / WP Playground   | `/tools/playground` |
 
 ## 2. Repository layout — npm workspaces
 
-The three packages are declared as npm workspaces in the root `package.json`:
+The three packages live under `tools/` and are declared as npm workspaces in
+the root `package.json`:
 
 ```
-package.json          # root: adds "workspaces": ["cli", "env", "playground"]
-cli/                  # 071-cli  package
-env/                  # 071-env  package
-playground/           # 071-now  package
+package.json          # root: "workspaces": ["tools/cli", "tools/env", "tools/playground"]
+tools/cli/            # 071-cli  package
+tools/env/            # 071-env  package
+tools/playground/     # 071-now  package
 src/                  # WordPress 0.71 source (unchanged)
 src/block-editor/app/ # existing block-editor package (left as-is for now)
 ```
@@ -41,7 +42,7 @@ existing `src/block-editor/app` package is intentionally left outside the
 workspace set in this first step to keep the change small; it can be folded
 in later.
 
-## 3. `071-cli` (`/cli`)
+## 3. `071-cli` (`/tools/cli`)
 
 A wp-cli-style CLI covering what WordPress 0.71 can actually do.
 
@@ -54,7 +55,7 @@ the substance of `071-cli` is a PHP program. The npm package wraps it.
 ### 3.2 Package structure
 
 ```
-cli/
+tools/cli/
   package.json        # name "071-cli", bin { "071": "bin/071.mjs" }
   bin/071.mjs         # Node entry: locate a PHP binary, spawn the PHP CLI,
                       #   pass through arguments and the exit code
@@ -118,7 +119,7 @@ primary entry point.
 
 ### 3.6 phpcs / phpstan
 
-The new PHP under `/cli` is a maintained tool, not a throwaway prototype, so
+The new PHP under `/tools/cli` is a maintained tool, not a throwaway prototype, so
 it **is** included in the `phpcs` / `phpstan` scan (unlike
 `src/block-editor/api/`, which is excluded as experimental). This is settled
 in the Phase 1 Issue.
@@ -126,26 +127,26 @@ in the Phase 1 Issue.
 ### 3.7 Functional test suite (Behat)
 
 `071-cli` has a Behat functional test suite, the 0.71 equivalent of wp-cli's
-own Behat tests. The Gherkin feature files live under `cli/features/`, one per
+own Behat tests. The Gherkin feature files live under `tools/cli/features/`, one per
 command group plus `cli.feature` for the entry point; they cover every verb,
 every `--format` variant, `--fields`, and the error cases. A PHP
-`FeatureContext` (`cli/features/bootstrap/FeatureContext.php`) runs the `071`
+`FeatureContext` (`tools/cli/features/bootstrap/FeatureContext.php`) runs the `071`
 CLI as a child process and asserts on its STDOUT / STDERR / exit code.
 
 **Database isolation.** The suite never touches the developer's `b2`
-database. `cli/tests/docker-compose.yml` is a **separate Docker Compose
+database. `tools/cli/tests/docker-compose.yml` is a **separate Docker Compose
 project** (`071-cli-test`) running its own MySQL 8 on host port **3307** with
 a database named `b2_test`. A `@BeforeScenario` hook reseeds that database
-from `cli/tests/fixtures.sql` (the WordPress 0.71 schema from
+from `tools/cli/tests/fixtures.sql` (the WordPress 0.71 schema from
 `wp-admin/wp-install.php`, plus a fixed minimal fixture set) before every
 scenario, so each scenario starts from an identical, known state.
 
 Run it with `composer behat` (which starts the test database, waits for it to
-become healthy, then runs Behat). The `cli/php` PHP stays in the
-`phpcs` / `phpstan` scope; the Behat PHP under `cli/features/` and `cli/tests/`
-is test code, outside that scope. See `cli/README.md`.
+become healthy, then runs Behat). The `tools/cli/php` PHP stays in the
+`phpcs` / `phpstan` scope; the Behat PHP under `tools/cli/features/` and `tools/cli/tests/`
+is test code, outside that scope. See `tools/cli/README.md`.
 
-## 4. `071-env` (`/env`)
+## 4. `071-env` (`/tools/env`)
 
 A Node CLI that wraps the existing Docker Compose environment — parity with
 `wp-env`.
@@ -153,7 +154,7 @@ A Node CLI that wraps the existing Docker Compose environment — parity with
 ### 4.1 Package structure
 
 ```
-env/
+tools/env/
   package.json        # name "071-env", bin { "071-env": "bin/071-env.mjs" }
   bin/071-env.mjs     # Node CLI entry point
   src/*.mjs           # one module per subcommand
@@ -176,13 +177,13 @@ env/
 ### 4.3 Reaching `071-cli` inside the container
 
 Only `./src` is mounted into the `web` container, and `071-cli`'s PHP lives
-in `/cli` — outside the web document root (intentionally, so the CLI is not
+in `/tools/cli` — outside the web document root (intentionally, so the CLI is not
 web-served). `071-env` bridges this with a Compose **override file**
-(`env/docker-compose.071.yml`) that bind-mounts `./cli` read-only into the
+(`tools/env/docker-compose.071.yml`) that bind-mounts `./tools/cli` read-only into the
 container at `/opt/071-cli`. Every `071-env` Compose call passes both files:
 
 ```
-docker compose -f docker-compose.yml -f env/docker-compose.071.yml …
+docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 `071-env run cli <args>` then becomes:
@@ -249,7 +250,7 @@ Example `.071-env.json`:
 - **`mappings`** — `071-env` generates a Compose override at runtime
   (`docker-compose.071-mappings.yml` at the repository root, git-ignored)
   adding the extra `volumes` to the `web` service, and passes it as a third
-  `-f` after `docker-compose.yml` and `env/docker-compose.071.yml`. Compose
+  `-f` after `docker-compose.yml` and `tools/env/docker-compose.071.yml`. Compose
   appends `volumes` cleanly across `-f` files. When `mappings` is empty the
   generated file is removed and no extra `-f` is passed.
 - **`lifecycleScripts`** — `071-env` runs the hook's shell command through the
@@ -261,7 +262,7 @@ Example `.071-env.json`:
 All defaults are preserved, so a plain `docker compose up` without `071-env`
 still works exactly as before — the change is non-breaking.
 
-## 5. `071-now` (`/playground`)
+## 5. `071-now` (`/tools/playground`)
 
 Browser-based WordPress 0.71 — wp-now / WordPress Playground in spirit.
 
@@ -303,9 +304,9 @@ scope for the spike.
 Tracked under umbrella Issue #104. Child Issues, in order:
 
 1. **Design document** — this file (current PR).
-2. **Phase 1 — `071-cli`** — npm workspaces setup + the `/cli` package and
+2. **Phase 1 — `071-cli`** — npm workspaces setup + the `/tools/cli` package and
    its command groups.
-3. **Phase 2 — `071-env`** — the `/env` package.
+3. **Phase 2 — `071-env`** — the `/tools/env` package.
 4. **Phase 3 — `071-now`** — a feasibility-spike Issue first, then the build.
 
 Each phase is its own branch, PR, code review, and merge, per CLAUDE.md.
@@ -340,21 +341,22 @@ WordPress 0.71（b2/cafelog、2003 年）は現代の WordPress ツールを利�
 目標は 0.71 専用の代替ツールであり、各々を本リポジトリ内の npm パッケージと
 する。
 
-| ツール    | 相当するもの             | ディレクトリ  |
-|-----------|--------------------------|---------------|
-| `071-cli` | wp-cli                   | `/cli`        |
-| `071-env` | wp-env                   | `/env`        |
-| `071-now` | wp-now / WP Playground   | `/playground` |
+| ツール    | 相当するもの             | ディレクトリ        |
+|-----------|--------------------------|---------------------|
+| `071-cli` | wp-cli                   | `/tools/cli`        |
+| `071-env` | wp-env                   | `/tools/env`        |
+| `071-now` | wp-now / WP Playground   | `/tools/playground` |
 
 ## 2. リポジトリ構成 — npm workspaces
 
-3 パッケージはルート `package.json` の npm workspaces として宣言する:
+3 パッケージは `tools/` 配下に置かれ、ルート `package.json` の npm
+workspaces として宣言する:
 
 ```
-package.json          # ルート: "workspaces": ["cli", "env", "playground"] を追加
-cli/                  # 071-cli  パッケージ
-env/                  # 071-env  パッケージ
-playground/           # 071-now  パッケージ
+package.json          # ルート: "workspaces": ["tools/cli", "tools/env", "tools/playground"]
+tools/cli/            # 071-cli  パッケージ
+tools/env/            # 071-env  パッケージ
+tools/playground/     # 071-now  パッケージ
 src/                  # WordPress 0.71 ソース（変更なし）
 src/block-editor/app/ # 既存のブロックエディタパッケージ（当面そのまま）
 ```
@@ -363,7 +365,7 @@ src/block-editor/app/ # 既存のブロックエディタパッケージ（当�
 `src/block-editor/app` パッケージは、変更を小さく保つため、この最初の段階では
 意図的に workspaces 集合の外に置く。後から取り込むことは可能。
 
-## 3. `071-cli`（`/cli`）
+## 3. `071-cli`（`/tools/cli`）
 
 WordPress 0.71 が実際にできることを対象とした wp-cli 風 CLI。
 
@@ -377,7 +379,7 @@ WordPress 0.71 が実際にできることを対象とした wp-cli 風 CLI。
 ### 3.2 パッケージ構成
 
 ```
-cli/
+tools/cli/
   package.json        # name "071-cli"、bin { "071": "bin/071.mjs" }
   bin/071.mjs         # Node エントリ: PHP バイナリを探し、PHP CLI を起動し、
                       #   引数と終了コードを橋渡しする
@@ -439,41 +441,41 @@ $ 071 post list --fields=ID,post_title,post_status
 
 ### 3.6 phpcs / phpstan
 
-`/cli` 配下の新しい PHP は使い捨ての試作ではなく保守されるツールであるため、
+`/tools/cli` 配下の新しい PHP は使い捨ての試作ではなく保守されるツールであるため、
 `phpcs` / `phpstan` のスキャン対象に**含める**（実験的として除外している
 `src/block-editor/api/` とは異なる）。これは Phase 1 の Issue で確定する。
 
 ### 3.7 機能テストスイート（Behat）
 
 `071-cli` には Behat の機能テストスイートがある。wp-cli 自身の Behat
-テストの 0.71 版である。Gherkin の feature ファイルは `cli/features/` 配下に
+テストの 0.71 版である。Gherkin の feature ファイルは `tools/cli/features/` 配下に
 置き、コマンドグループごとに 1 ファイルとエントリポイント用の
 `cli.feature` を持つ。すべての動詞、すべての `--format` バリアント、
 `--fields`、エラーケースをカバーする。PHP の `FeatureContext`
-（`cli/features/bootstrap/FeatureContext.php`）は `071` CLI を子プロセスとして
+（`tools/cli/features/bootstrap/FeatureContext.php`）は `071` CLI を子プロセスとして
 実行し、その STDOUT / STDERR / 終了コードに対してアサートする。
 
 **データベース分離。** スイートは開発者の `b2` データベースに決して触れない。
-`cli/tests/docker-compose.yml` は**別の Docker Compose プロジェクト**
+`tools/cli/tests/docker-compose.yml` は**別の Docker Compose プロジェクト**
 （`071-cli-test`）であり、独自の MySQL 8 をホストポート **3307** で実行し、
 `b2_test` という名前のデータベースを持つ。`@BeforeScenario` フックが各
-シナリオの前に `cli/tests/fixtures.sql`（`wp-admin/wp-install.php` 由来の
+シナリオの前に `tools/cli/tests/fixtures.sql`（`wp-admin/wp-install.php` 由来の
 WordPress 0.71 スキーマと、固定の最小フィクスチャ集合）からそのデータ
 ベースを再投入するため、各シナリオは同一の既知の状態から開始する。
 
 実行は `composer behat`（テストデータベースを起動し、healthy になるのを
-待ってから Behat を実行する）。`cli/php` の PHP は `phpcs` / `phpstan` の
-対象のまま。`cli/features/` と `cli/tests/` 配下の Behat の PHP はテスト
-コードであり、その対象外である。`cli/README.md` を参照。
+待ってから Behat を実行する）。`tools/cli/php` の PHP は `phpcs` / `phpstan` の
+対象のまま。`tools/cli/features/` と `tools/cli/tests/` 配下の Behat の PHP はテスト
+コードであり、その対象外である。`tools/cli/README.md` を参照。
 
-## 4. `071-env`（`/env`）
+## 4. `071-env`（`/tools/env`）
 
 既存の Docker Compose 環境をラップする Node CLI — `wp-env` との対応。
 
 ### 4.1 パッケージ構成
 
 ```
-env/
+tools/env/
   package.json        # name "071-env"、bin { "071-env": "bin/071-env.mjs" }
   bin/071-env.mjs     # Node CLI エントリポイント
   src/*.mjs           # サブコマンドごとに 1 モジュール
@@ -497,14 +499,14 @@ env/
 ### 4.3 コンテナ内の `071-cli` への到達
 
 `web` コンテナにマウントされるのは `./src` のみで、`071-cli` の PHP は
-`/cli` — Web ドキュメントルートの外 — に置かれる（CLI を Web 配信させない
+`/tools/cli` — Web ドキュメントルートの外 — に置かれる（CLI を Web 配信させない
 ための意図的な配置）。`071-env` はこれを Compose の**オーバーライドファイル**
-（`env/docker-compose.071.yml`）で橋渡しする。これは `./cli` を読み取り専用で
+（`tools/env/docker-compose.071.yml`）で橋渡しする。これは `./tools/cli` を読み取り専用で
 コンテナ内 `/opt/071-cli` にバインドマウントする。`071-env` の各 Compose
 呼び出しは両ファイルを渡す:
 
 ```
-docker compose -f docker-compose.yml -f env/docker-compose.071.yml …
+docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 `071-env run cli <args>` は次のようになる:
@@ -570,7 +572,7 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php <args>
 - **`mappings`** — `071-env` は実行時に Compose オーバーライド
   （リポジトリルートの `docker-compose.071-mappings.yml`、git 管理外）を
   生成し、`web` サービスに追加の `volumes` を加え、`docker-compose.yml` と
-  `env/docker-compose.071.yml` の後ろに 3 つ目の `-f` として渡す。Compose は
+  `tools/env/docker-compose.071.yml` の後ろに 3 つ目の `-f` として渡す。Compose は
   `-f` ファイル間で `volumes` をきれいに追記する。`mappings` が空のときは
   生成ファイルを削除し、追加の `-f` も渡さない。
 - **`lifecycleScripts`** — `071-env` はフックのシェルコマンドを、システム
@@ -582,7 +584,7 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php <args>
 すべての既定値が保持されるため、`071-env` を介さない素の `docker compose up`
 も以前とまったく同じく動作する — 変更は非破壊的である。
 
-## 5. `071-now`（`/playground`）
+## 5. `071-now`（`/tools/playground`）
 
 ブラウザ内 WordPress 0.71 — wp-now / WordPress Playground に倣う。
 
@@ -624,9 +626,9 @@ Phase 3 は**実現可能性検証（feasibility spike）**から始める: 本�
 アンブレラ Issue #104 の下で追跡する。子 Issue は順に:
 
 1. **設計ドキュメント** — 本ファイル（現在の PR）。
-2. **Phase 1 — `071-cli`** — npm workspaces の整備と `/cli` パッケージ・
+2. **Phase 1 — `071-cli`** — npm workspaces の整備と `/tools/cli` パッケージ・
    そのコマンドグループ。
-3. **Phase 2 — `071-env`** — `/env` パッケージ。
+3. **Phase 2 — `071-env`** — `/tools/env` パッケージ。
 4. **Phase 3 — `071-now`** — まず実現可能性検証の Issue、その後に本実装。
 
 各フェーズは CLAUDE.md に従い、個別のブランチ・PR・コードレビュー・マージと

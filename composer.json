@@ -14,11 +14,11 @@
         "phpcs": "phpcs",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "test": "phpunit",
-        "behat": "bash cli/tests/run-behat.sh",
+        "behat": "bash tools/cli/tests/run-behat.sh",
         "static-export": "php bin/static-export.php"
     },
     "scripts-descriptions": {
-        "behat": "Run the 071-cli Behat functional test suite (starts a dedicated test database; see cli/README.md)."
+        "behat": "Run the 071-cli Behat functional test suite (starts a dedicated test database; see tools/cli/README.md)."
     },
     "config": {
         "allow-plugins": {

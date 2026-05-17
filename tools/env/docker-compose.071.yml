@@ -1,0 +1,30 @@
+# EN: Compose override file used by 071-env. It is layered on top of the
+#     repository root docker-compose.yml -- every 071-env Compose invocation
+#     passes both files
+#     (`-f docker-compose.yml -f tools/env/docker-compose.071.yml`).
+#
+#     Its sole purpose is to bind-mount the repository's `tools/cli/`
+#     directory read-only into the `web` container at /opt/071-cli, so
+#     `071-env run cli` can execute the 071-cli PHP CLI inside the container.
+#     `tools/cli/` lives outside the Apache document root (only `./src` is
+#     web-served), which is intentional -- the CLI must not be reachable over
+#     HTTP. See docs/071-tooling.md section 4.3.
+# JA: 071-env が使う Compose オーバーライドファイル。リポジトリ直下の
+#     docker-compose.yml の上に重ねる -- 071-env の各 Compose 呼び出しは
+#     両ファイルを渡す
+#     (`-f docker-compose.yml -f tools/env/docker-compose.071.yml`)。
+#
+#     唯一の目的は、リポジトリの `tools/cli/` ディレクトリを読み取り専用で
+#     `web` コンテナ内 /opt/071-cli にバインドマウントし、`071-env run cli`
+#     がコンテナ内で 071-cli の PHP CLI を実行できるようにすることである。
+#     `tools/cli/` は Apache のドキュメントルートの外にある (Web 配信される
+#     のは `./src` のみ)。これは CLI を HTTP で到達不能にするための意図的な
+#     配置である。docs/071-tooling.md セクション 4.3 を参照。
+services:
+  web:
+    volumes:
+      # EN: Read-only bind mount of the 071-cli package; `:ro` keeps the
+      #     container from writing back into the repository.
+      # JA: 071-cli パッケージの読み取り専用バインドマウント。`:ro` により
+      #     コンテナがリポジトリへ書き戻すことを防ぐ。
+      - ./tools/cli:/opt/071-cli:ro

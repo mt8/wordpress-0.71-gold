@@ -15,7 +15,7 @@ full build.
 
 ## Result
 
-The `/playground` package boots WordPress 0.71 entirely in the browser:
+The `/tools/playground` package boots WordPress 0.71 entirely in the browser:
 PHP 8.3 compiled to WebAssembly (`@php-wasm/web` 3.1.33), serving 0.71's
 `src/` from the php-wasm virtual filesystem, with the database an
 in-browser SQLite file. No MySQL server and no web server are involved.
@@ -35,7 +35,7 @@ The rendered front page shows the blog title, the seeded post
 ("Hello world from 071-now") with its category, author and date, the
 category list and the search form — WordPress 0.71's real front-page
 template output, produced in the browser. A screenshot is written to
-`playground/test/071-now-frontpage.png`.
+`tools/playground/test/071-now-frontpage.png`.
 
 ## The database approach — chosen and why
 
@@ -64,7 +64,7 @@ A 0.71-specific `wp-db.php` whose `$wpdb` runs against SQLite. php-wasm
 ships PDO with the `sqlite` driver (`PDO::getAvailableDrivers()` =
 `mysql, sqlite`; SQLite 3.51), so the backend needs no custom runtime.
 
-The implementation (`playground/db/wp-db.php`) keeps the **exact public
+The implementation (`tools/playground/db/wp-db.php`) keeps the **exact public
 surface** of 0.71's ezSQL `wpdb` class — `query()`, `get_var()`,
 `get_row()`, `get_col()`, `get_results()`, `escape()`, and the public
 properties (`last_result`, `num_rows`, `insert_id`, …) — but is backed
@@ -75,14 +75,14 @@ function files, `wp-links/links.php`) runs **unchanged** against it.
 
 This is a one-file overlay. It is applied only to the in-browser copy
 of the source: `scripts/build-overlay.mjs` snapshots `src/` into the
-generated `playground/wp/` directory and replaces
+generated `tools/playground/wp/` directory and replaces
 `b2-include/wp-db.php` there. **`src/` and its MySQL / Docker setup are
 never touched.**
 
 ## The MySQL → SQLite translation layer
 
 Both approaches need 0.71's SQL translated to the SQLite dialect.
-`playground/db/sql-translator.php` (`WP071_SqlTranslator`) does this. It
+`tools/playground/db/sql-translator.php` (`WP071_SqlTranslator`) does this. It
 is shared by the SQLite `wpdb` (runtime queries) and the seed (schema
 DDL), so the schema and the live queries go through one path.
 
@@ -223,7 +223,7 @@ Suggested order for the full build:
 
 ## 結果
 
-`/playground` パッケージは WordPress 0.71 を完全にブラウザ内で起動する。
+`/tools/playground` パッケージは WordPress 0.71 を完全にブラウザ内で起動する。
 PHP 8.3 を WebAssembly へコンパイルしたもの（`@php-wasm/web` 3.1.33）が
 0.71 の `src/` を php-wasm 仮想ファイルシステムから配信し、データベース
 はブラウザ内の SQLite ファイルである。MySQL サーバーも Web サーバーも
@@ -244,7 +244,7 @@ PASS  no console errors
 （「Hello world from 071-now」）とそのカテゴリー・著者・日付、カテゴ
 リー一覧、検索フォームが表示される — WordPress 0.71 本来のフロント
 ページテンプレートの出力が、ブラウザ内で生成されている。スクリーン
-ショットは `playground/test/071-now-frontpage.png` に書き出される。
+ショットは `tools/playground/test/071-now-frontpage.png` に書き出される。
 
 ## データベースのアプローチ — 選択と理由
 
@@ -274,7 +274,7 @@ SQLite の上に `mysqli` 互換のユーザーランド層を設ければ 0.71 
 `mysql, sqlite`、SQLite 3.51）、バックエンドにカスタムランタイムは
 不要である。
 
-実装（`playground/db/wp-db.php`）は 0.71 の ezSQL `wpdb` クラスの**公開
+実装（`tools/playground/db/wp-db.php`）は 0.71 の ezSQL `wpdb` クラスの**公開
 表面をそのまま**保つ — `query()`・`get_var()`・`get_row()`・
 `get_col()`・`get_results()`・`escape()`、および公開プロパティ
 （`last_result`・`num_rows`・`insert_id` …）— が、内部は PDO/SQLite を
@@ -285,14 +285,14 @@ SQLite の上に `mysqli` 互換のユーザーランド層を設ければ 0.71 
 
 これは 1 ファイルのオーバーレイである。ソースのブラウザ内コピーにのみ
 適用される: `scripts/build-overlay.mjs` が `src/` を生成物の
-`playground/wp/` ディレクトリへスナップショットし、そこで
+`tools/playground/wp/` ディレクトリへスナップショットし、そこで
 `b2-include/wp-db.php` を置き換える。**`src/` とその MySQL / Docker
 構成には一切触れない。**
 
 ## MySQL → SQLite 変換層
 
 いずれのアプローチも 0.71 の SQL を SQLite 方言へ変換する必要がある。
-`playground/db/sql-translator.php`（`WP071_SqlTranslator`）がこれを行う。
+`tools/playground/db/sql-translator.php`（`WP071_SqlTranslator`）がこれを行う。
 SQLite の `wpdb`（実行時クエリ）とシード（スキーマ DDL）が共有するため、
 スキーマとライブクエリは 1 つの経路を通る。
 
