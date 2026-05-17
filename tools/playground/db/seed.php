@@ -30,11 +30,11 @@ if ( ! defined( 'WP071_DB_PATH' ) ) {
 	define( 'WP071_DB_PATH', sys_get_temp_dir() . '/071-now.sqlite' );
 }
 
-// EN: Reuse the SQL translator so seed-time DDL goes through exactly
+// Reuse the SQL translator so seed-time DDL goes through exactly
 //     the same MySQL -> SQLite path as the live blog's runtime queries.
 require_once __DIR__ . '/071-now-sql-translator.php';
 
-// EN: Start from an empty file. The boot shim only requires this seed
+// Start from an empty file. The boot shim only requires this seed
 //     when no database exists at WP071_DB_PATH, so reaching here means a
 //     first visit or a post-reset boot; any stale file (a leftover
 //     journal) is removed so the schema is built cleanly.
@@ -45,14 +45,14 @@ if ( file_exists( WP071_DB_PATH ) ) {
 $pdo = new PDO( 'sqlite:' . WP071_DB_PATH );
 $pdo->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 
-// EN: Table names from src/b2config.php.
+// Table names from src/b2config.php.
 $tableposts      = 'b2posts';
 $tableusers      = 'b2users';
 $tablesettings   = 'b2settings';
 $tablecategories = 'b2categories';
 $tablelinks      = 'b2links';
 
-// EN: WordPress 0.71 schema DDL, verbatim from wp-admin/wp-install.php,
+// WordPress 0.71 schema DDL, verbatim from wp-admin/wp-install.php,
 //     translated to SQLite by the 071-now translator.
 $ddl = array(
 	"CREATE TABLE $tableposts (
@@ -129,7 +129,7 @@ foreach ( $ddl as $statement ) {
 	$pdo->exec( WP071_SqlTranslator::translate( $statement ) );
 }
 
-// EN: The demo blog's categories. WordPress 0.71 stores a post's
+// The demo blog's categories. WordPress 0.71 stores a post's
 //     category as an integer in b2posts.post_category, and the front
 //     page renders each post's category name and a sidebar category
 //     list -- so a few categories show 0.71's real category rendering.
@@ -148,7 +148,7 @@ foreach ( $categories as $catId => $catName ) {
 }
 $catStmt = null;
 
-// EN: The b2settings row. what_to_show = 'posts' keeps the front page
+// The b2settings row. what_to_show = 'posts' keeps the front page
 //     on the simple "latest N posts" path (blog.header.php), avoiding
 //     the date-window path. date_format / time_format are 0.71 defaults.
 $pdo->exec(
@@ -157,14 +157,14 @@ $pdo->exec(
 	  VALUES (1, 20, 'posts', 'monthly', 0, 1, 'g:i a', 'n/j/Y')"
 );
 
-// EN: The admin user (post_author 1 references this row).
+// The admin user (post_author 1 references this row).
 $pdo->exec(
 	"INSERT INTO $tableusers
 	  (ID, user_login, user_pass, user_nickname, user_email, user_level, user_idmode, dateYMDhour, user_ip, user_domain)
 	  VALUES (1, 'admin', '" . md5( 'spike' ) . "', 'admin', 'you@example.com', 10, 'nickname', '2003-05-27 00:00:01', '127.0.0.1', '127.0.0.1')"
 );
 
-// EN: The demo blog's posts. A fresh playground shows a small,
+// The demo blog's posts. A fresh playground shows a small,
 //     meaningful WordPress 0.71 blog -- several published posts across
 //     the categories above -- so a visitor sees 0.71's real post,
 //     category and author rendering rather than a single placeholder
@@ -251,7 +251,7 @@ $postStmt = $pdo->prepare(
 	  VALUES (:id, 1, :d, :c, :t, :cat, '', 'publish', 'open', 'open', '')"
 );
 foreach ( $posts as $index => $post ) {
-	// EN: The newest post (index 0) is an hour old; each later entry is
+	// The newest post (index 0) is an hour old; each later entry is
 	//     a further day older, so the front page lists them newest-first.
 	$postDate = gmdate( 'Y-m-d H:i:s', $baseTime - ( $index * 86400 ) );
 	$postStmt->execute(
@@ -266,7 +266,7 @@ foreach ( $posts as $index => $post ) {
 }
 $postStmt = null;
 
-// EN: A demo link for the front page's Links sidebar. WordPress 0.71's
+// A demo link for the front page's Links sidebar. WordPress 0.71's
 //     index.php renders a "Links:" sidebar with get_links(), and that
 //     query selects DATE_FORMAT(link_updated, '%d/%m/%Y %h:%i') -- so a
 //     seeded link both gives the sidebar visible content and exercises
@@ -281,7 +281,7 @@ $pdo->exec(
 	. "', '')"
 );
 
-// EN: Close the seed's SQLite connection. The blog's own wpdb opens its
+// Close the seed's SQLite connection. The blog's own wpdb opens its
 //     own connection moments later (b2config.php). A lingering write
 //     connection here would hold a lock and make the admin's first
 //     INSERT fail with "database is locked"; dropping the prepared
@@ -289,6 +289,6 @@ $pdo->exec(
 //     wpdb takes over.
 $pdo = null;
 
-// EN: No output here -- this file runs as an auto_prepend before the
+// No output here -- this file runs as an auto_prepend before the
 //     blog's own output. The seed result is visible in the rendered
 //     front page (the demo posts appear) and in WP071_DB_PATH on disk.

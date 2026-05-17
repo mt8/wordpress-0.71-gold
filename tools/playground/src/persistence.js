@@ -1,4 +1,4 @@
-// EN: 071-now SQLite database persistence (Issue #122, full build 4/6).
+// 071-now SQLite database persistence (Issue #122, full build 4/6).
 //
 //     The 071-now playground keeps WordPress 0.71's content in a single
 //     in-browser SQLite file inside the php-wasm virtual filesystem. That
@@ -20,27 +20,8 @@
 //     them into the php-wasm VFS before the first request (so the boot
 //     shim sees an existing database and skips seeding) and writes them
 //     back after every request that changes the database.
-// JA: 071-now SQLite データベースの永続化(Issue #122、フル実装 4/6)。
-//
-//     071-now playground は WordPress 0.71 の内容を php-wasm 仮想ファイル
-//     システム上の単一の SQLite ファイルに保持する。そのファイルシステムは
-//     タブを閉じると失われるため、本モジュールが無いと管理画面から作成した
-//     投稿やカテゴリーはリロードで失われる(起動シムが php-wasm インスタンス
-//     ごとに新しいデータベースを再シードする)。
-//
-//     本モジュールはその SQLite ファイルをブラウザ内に永続化し、ブログの
-//     内容がリロード / タブを閉じても残るようにする(WordPress Playground が
-//     ファイルシステムを永続化するのと同じ考え方):
-//
-//       - OPFS(Origin Private File System)が使える場合はそれを使う。
-//       - OPFS の無いブラウザでは IndexedDB をフォールバックに使う。
-//
-//     ストアは SQLite ファイルの生バイト列を保持する。src/main.js が最初の
-//     リクエスト前にそれを php-wasm VFS へ読み込み(起動シムが既存データ
-//     ベースを検出しシードを省く)、データベースを変更したリクエストの後に
-//     書き戻す。
 
-// EN: Stable identifiers for the persisted database. The OPFS file name
+// Stable identifiers for the persisted database. The OPFS file name
 //     and the IndexedDB database / store / key names never change, so a
 //     returning visitor finds the same persisted database.
 const OPFS_FILE_NAME = '071-now.sqlite';
@@ -48,7 +29,7 @@ const IDB_NAME = '071-now-persistence';
 const IDB_STORE = 'database';
 const IDB_KEY = 'sqlite';
 
-// EN: A throwaway file name the OPFS runtime probe writes and deletes.
+// A throwaway file name the OPFS runtime probe writes and deletes.
 //     Distinct from OPFS_FILE_NAME so the probe never disturbs a real
 //     persisted database.
 const OPFS_PROBE_FILE_NAME = '071-now-opfs-probe';
@@ -118,7 +99,7 @@ async function opfsUsable() {
 		await root.removeEntry( OPFS_PROBE_FILE_NAME );
 		return true;
 	} catch {
-		// EN: OPFS API present but not usable -- fall back to IndexedDB.
+		// OPFS API present but not usable -- fall back to IndexedDB.
 		return false;
 	}
 }
@@ -133,7 +114,7 @@ async function opfsLoad() {
 	const root = await navigator.storage.getDirectory();
 	let handle;
 	try {
-		// EN: create:false -- a missing file means nothing is persisted.
+		// create:false -- a missing file means nothing is persisted.
 		handle = await root.getFileHandle( OPFS_FILE_NAME, { create: false } );
 	} catch {
 		return null;
@@ -172,7 +153,7 @@ async function opfsClear() {
 	try {
 		await root.removeEntry( OPFS_FILE_NAME );
 	} catch {
-		// EN: Already absent -- nothing to clear.
+		// Already absent -- nothing to clear.
 	}
 }
 
@@ -224,7 +205,7 @@ async function idbLoad() {
 	if ( ! stored ) {
 		return null;
 	}
-	// EN: idbSave stores a Uint8Array (see toStorableBytes). A Blob is
+	// idbSave stores a Uint8Array (see toStorableBytes). A Blob is
 	//     still handled so a database persisted by an earlier build --
 	//     which stored a Blob -- is read back without loss.
 	const buffer =
@@ -268,7 +249,7 @@ function toStorableBytes( bytes ) {
  * @return {Promise<void>}
  */
 async function idbSave( bytes ) {
-	// EN: Store a standalone Uint8Array -- see toStorableBytes: WebKit's
+	// Store a standalone Uint8Array -- see toStorableBytes: WebKit's
 	//     IndexedDB cannot store a Blob in a cross-origin-isolated page,
 	//     and the php-wasm heap the bytes come from may be a
 	//     SharedArrayBuffer.
@@ -342,7 +323,7 @@ export class DatabasePersistence {
 				? await opfsLoad()
 				: await idbLoad();
 		} catch {
-			// EN: A storage read failure is treated as "nothing
+			// A storage read failure is treated as "nothing
 			//     persisted" so the playground still boots -- it just
 			//     falls back to a fresh seeded database.
 			return null;

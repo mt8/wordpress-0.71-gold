@@ -1,4 +1,4 @@
-// EN: 071-now service worker (Issue #116, #128).
+// 071-now service worker (Issue #116, #128).
 //
 //     This one service worker does two jobs.
 //
@@ -31,55 +31,24 @@
 //        the COOP/COEP (and CORP) headers attached. This is the
 //        coi-serviceworker technique; the deployed page becomes
 //        cross-origin-isolated once this worker controls it.
-// JA: 071-now サービスワーカー(Issue #116・#128)。
-//
-//     この 1 つのサービスワーカーが 2 つの役割を担う。
-//
-//     1. リクエストルーティング(Issue #116)。playground オリジンへの
-//        要求を、ブラウザ内 @php-wasm/web リクエストハンドラ経由で
-//        ルーティングする(WordPress Playground と同じ方式)。これが無い
-//        と描画済みフロントページは blob: URL で表示され、そのアセット
-//        要求やリンククリックが php-wasm に届かず、ページは無装飾で描画
-//        され遷移もできない。
-//
-//        ブログは単一のスコープパスセグメント(<base>scope:<id>/...)
-//        配下で配信される。WordPress 0.71 の b2config.php をオーバーレイ
-//        して $siteurl をそのスコープパスに向け、ブログが出力する全
-//        アセット URL と内部リンクが同一オリジンかつスコープ付きになる。
-//        本ワーカーはそのスコープ付き要求だけを横取りし、php-wasm
-//        リクエストハンドラを持つ制御中のページへ MessageChannel 経由で
-//        転送し、応答を Response に変換する。
-//
-//     2. クロスオリジン分離(Issue #128)。php-wasm は SharedArrayBuffer
-//        上で PHP スレッドを動かすが、ブラウザはこれを
-//        cross-origin-isolated なページ -- Cross-Origin-Opener-Policy /
-//        Cross-Origin-Embedder-Policy ヘッダ付きで配信されたページ --
-//        にのみ公開する。ローカルの dev / preview サーバーはこれらを
-//        設定する(vite.config.js 参照)が、GitHub Pages はカスタム HTTP
-//        ヘッダを設定できない。そこで本ワーカーが自前で付与する。それ以外
-//        の全要求 -- アプリシェルのドキュメント、バンドル JS、.wasm/.data
-//        ランタイムアセット -- はネットワークから取得し、COOP/COEP(および
-//        CORP)ヘッダを付けて再配信する。これは coi-serviceworker の手法で
-//        あり、本ワーカーが制御を握るとデプロイ後のページは
-//        cross-origin-isolated になる。
 
-// EN: Path segment that marks a request as belonging to the in-browser
+// Path segment that marks a request as belonging to the in-browser
 //     blog. Must match the SCOPE_PREFIX in src/main.js.
 const SCOPE_MARKER = 'scope:';
 
-// EN: The public base path the app is served under. The worker is
+// The public base path the app is served under. The worker is
 //     registered from <base>sw.js, so its registration scope IS that
 //     base -- '/' for the local preview, '/wordpress-0.71-gold/' for the
 //     GitHub Pages project-page deploy. Deriving it from the scope keeps
 //     the worker free of any hard-coded deploy path (Issue #128).
 const APP_BASE = new URL( self.registration.scope ).pathname;
 
-// EN: How long to wait for the controlling page to answer a forwarded
+// How long to wait for the controlling page to answer a forwarded
 //     request before giving up. The page runs PHP in WebAssembly; the
 //     first request after boot is the slowest.
 const REPLY_TIMEOUT_MS = 30000;
 
-// EN: The cross-origin isolation headers (Issue #128). COOP/COEP make the
+// The cross-origin isolation headers (Issue #128). COOP/COEP make the
 //     page cross-origin-isolated so php-wasm's SharedArrayBuffer is
 //     available; CORP marks the worker's own responses embeddable under
 //     the require-corp policy.
@@ -90,13 +59,13 @@ const COOP_COEP_HEADERS = {
 };
 
 self.addEventListener( 'install', () => {
-	// EN: Activate this worker immediately instead of waiting for the
+	// Activate this worker immediately instead of waiting for the
 	//     previous one's clients to close.
 	self.skipWaiting();
 } );
 
 self.addEventListener( 'activate', ( event ) => {
-	// EN: Take control of already-open clients so the very first blog
+	// Take control of already-open clients so the very first blog
 	//     navigation after registration is intercepted, and so the next
 	//     document load is served with the cross-origin isolation headers.
 	event.waitUntil( self.clients.claim() );
@@ -112,7 +81,7 @@ self.addEventListener( 'activate', ( event ) => {
 async function serveThroughPhpWasm( request ) {
 	const url = new URL( request.url );
 
-	// EN: Strip the leading "<base>scope:<id>" segment so the path handed
+	// Strip the leading "<base>scope:<id>" segment so the path handed
 	//     to the php-wasm request handler is the blog-relative path. The
 	//     base may be '/' or a project-page sub-path; either way the
 	//     scope segment is the first path segment after it.
@@ -122,21 +91,21 @@ async function serveThroughPhpWasm( request ) {
 	const scopedPath = url.pathname.replace( scopeRegExp, '' ) || '/';
 	const phpUrl = scopedPath + url.search;
 
-	// EN: Collect headers as a plain object; the page re-attaches them
+	// Collect headers as a plain object; the page re-attaches them
 	//     to the php-wasm request.
 	const headers = {};
 	for ( const [ name, value ] of request.headers.entries() ) {
 		headers[ name ] = value;
 	}
 
-	// EN: Buffer a request body for non-GET/HEAD methods (the admin write
+	// Buffer a request body for non-GET/HEAD methods (the admin write
 	//     paths and image upload; the front end issues only GETs).
 	let body;
 	if ( request.method !== 'GET' && request.method !== 'HEAD' ) {
 		body = new Uint8Array( await request.clone().arrayBuffer() );
 	}
 
-	// EN: There must be a controlling client that owns the php-wasm
+	// There must be a controlling client that owns the php-wasm
 	//     request handler. If there is none the page has not booted yet.
 	const clients = await self.clients.matchAll( {
 		includeUncontrolled: true,
@@ -152,7 +121,7 @@ async function serveThroughPhpWasm( request ) {
 		);
 	}
 
-	// EN: Request/response over a dedicated MessageChannel so concurrent
+	// Request/response over a dedicated MessageChannel so concurrent
 	//     asset requests do not cross wires.
 	const reply = await new Promise( ( resolve, reject ) => {
 		const channel = new MessageChannel();
@@ -188,7 +157,7 @@ async function serveThroughPhpWasm( request ) {
 		} );
 	}
 
-	// EN: The php-wasm request handler returns headers as name -> string[]
+	// The php-wasm request handler returns headers as name -> string[]
 	//     (one entry per header line). Flatten them onto a Headers object.
 	const responseHeaders = new Headers();
 	for ( const [ name, values ] of Object.entries( reply.headers || {} ) ) {
@@ -197,7 +166,7 @@ async function serveThroughPhpWasm( request ) {
 		}
 	}
 
-	// EN: The page is cross-origin-isolated (the document was served with
+	// The page is cross-origin-isolated (the document was served with
 	//     COOP/COEP -- by the dev/preview server, or by this worker on the
 	//     deployed site). Under Cross-Origin-Embedder-Policy: require-corp
 	//     the embedded blog iframe and its sub-resources are blocked unless
@@ -233,7 +202,7 @@ async function serveThroughPhpWasm( request ) {
 async function serveCrossOriginIsolated( request ) {
 	const response = await fetch( request );
 
-	// EN: An opaque response (a no-cors cross-origin fetch) has an
+	// An opaque response (a no-cors cross-origin fetch) has an
 	//     unreadable, immutable body and headers -- it cannot be rebuilt,
 	//     and an opaque resource is blocked under require-corp anyway.
 	//     Pass it through untouched; the COOP/COEP rebuild only applies to
@@ -258,7 +227,7 @@ self.addEventListener( 'fetch', ( event ) => {
 	const url = new URL( event.request.url );
 	const sameOrigin = url.origin === self.location.origin;
 
-	// EN: Scoped blog requests -- the in-browser blog's pages, assets and
+	// Scoped blog requests -- the in-browser blog's pages, assets and
 	//     link clicks -- are served through php-wasm (Issue #116).
 	if (
 		sameOrigin &&
@@ -268,7 +237,7 @@ self.addEventListener( 'fetch', ( event ) => {
 		return;
 	}
 
-	// EN: Every other request -- the app shell document, the bundled JS,
+	// Every other request -- the app shell document, the bundled JS,
 	//     the .wasm/.data runtime assets -- is fetched from the network and
 	//     re-served with the cross-origin isolation headers, so the
 	//     deployed page becomes cross-origin-isolated (Issue #128).

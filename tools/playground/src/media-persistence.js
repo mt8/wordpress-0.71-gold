@@ -1,4 +1,4 @@
-// EN: 071-now uploaded-media persistence (Issue #124, full build 5/6).
+// 071-now uploaded-media persistence (Issue #124, full build 5/6).
 //
 //     WordPress 0.71's classic admin has an upload page
 //     (wp-admin/b2upload.php) that writes uploaded images to
@@ -24,29 +24,8 @@
 //     uploads tree. The reset control clears this store alongside the
 //     database, so a reset returns the playground to its image-free
 //     seeded state.
-// JA: 071-now のアップロードメディア永続化(Issue #124、フル実装 5/6)。
-//
-//     WordPress 0.71 の従来型管理画面にはアップロードページ
-//     (wp-admin/b2upload.php)があり、アップロード画像を
-//     $fileupload_realpath -- wp-content/uploads/ -- へ書き込む。playground
-//     ではそのパスは php-wasm 仮想ファイルシステム上にあり、タブを閉じると
-//     失われるため、本モジュールが無いと管理画面からアップロードした画像は
-//     リロードで失われる(Issue #122 以前の SQLite データベースと同じ)。
-//
-//     本モジュールは src/persistence.js のメディア版である。persistence.js
-//     が単一の SQLite ファイルを保存するのに対し、本モジュールは
-//     アップロードメディアツリー全体(wp-content/uploads/)を「パス ->
-//     バイト列」のマップとして、同じブラウザストアに保存する:
-//
-//       - OPFS が使える場合はメディアツリーを専用 OPFS サブディレクトリへ
-//         複製する。
-//       - OPFS の無いブラウザでは IndexedDB をフォールバックに使う。
-//
-//     src/main.js が最初のリクエスト前に永続メディアを php-wasm VFS へ
-//     読み込み、uploads ツリーを変更したリクエストの後に書き戻す。リセット
-//     操作はこのストアをデータベースと併せてクリアする。
 
-// EN: Stable identifiers for the persisted media. The OPFS directory name
+// Stable identifiers for the persisted media. The OPFS directory name
 //     and the IndexedDB database / store / key names never change, so a
 //     returning visitor finds the same persisted uploads tree.
 const OPFS_DIR_NAME = '071-now-uploads';
@@ -54,7 +33,7 @@ const IDB_NAME = '071-now-media';
 const IDB_STORE = 'uploads';
 const IDB_KEY = 'tree';
 
-// EN: A throwaway file name the OPFS runtime probe writes and deletes.
+// A throwaway file name the OPFS runtime probe writes and deletes.
 //     Distinct from OPFS_DIR_NAME so the probe never disturbs the real
 //     persisted uploads tree.
 const OPFS_PROBE_FILE_NAME = '071-now-opfs-probe';
@@ -124,7 +103,7 @@ async function opfsUsable() {
 		await root.removeEntry( OPFS_PROBE_FILE_NAME );
 		return true;
 	} catch {
-		// EN: OPFS API present but not usable -- fall back to IndexedDB.
+		// OPFS API present but not usable -- fall back to IndexedDB.
 		return false;
 	}
 }
@@ -163,7 +142,7 @@ async function opfsLoad() {
 	const root = await navigator.storage.getDirectory();
 	let dir;
 	try {
-		// EN: create:false -- a missing directory means nothing is persisted.
+		// create:false -- a missing directory means nothing is persisted.
 		dir = await root.getDirectoryHandle( OPFS_DIR_NAME, { create: false } );
 	} catch {
 		return null;
@@ -196,12 +175,12 @@ async function opfsEnsureDir( root, segments ) {
  */
 async function opfsSave( tree ) {
 	const root = await navigator.storage.getDirectory();
-	// EN: Replace the whole sub-tree so a file deleted in the VFS is also
+	// Replace the whole sub-tree so a file deleted in the VFS is also
 	//     dropped from the persistent store.
 	try {
 		await root.removeEntry( OPFS_DIR_NAME, { recursive: true } );
 	} catch {
-		// EN: Not present yet -- nothing to remove.
+		// Not present yet -- nothing to remove.
 	}
 	const mediaRoot = await root.getDirectoryHandle( OPFS_DIR_NAME, {
 		create: true,
@@ -230,7 +209,7 @@ async function opfsClear() {
 	try {
 		await root.removeEntry( OPFS_DIR_NAME, { recursive: true } );
 	} catch {
-		// EN: Already absent -- nothing to clear.
+		// Already absent -- nothing to clear.
 	}
 }
 
@@ -282,7 +261,7 @@ async function idbLoad() {
 	if ( ! stored || typeof stored !== 'object' ) {
 		return null;
 	}
-	// EN: idbSave stores Uint8Array values (see toStorableBytes). A Blob
+	// idbSave stores Uint8Array values (see toStorableBytes). A Blob
 	//     value is still handled so a media tree persisted by an earlier
 	//     build -- which stored Blobs -- is read back without loss.
 	const tree = {};
@@ -330,7 +309,7 @@ function toStorableBytes( bytes ) {
  * @return {Promise<void>}
  */
 async function idbSave( tree ) {
-	// EN: Store each file as a standalone Uint8Array -- see
+	// Store each file as a standalone Uint8Array -- see
 	//     toStorableBytes: WebKit's IndexedDB cannot store a Blob in a
 	//     cross-origin-isolated page, and the php-wasm heap the bytes
 	//     come from may be a SharedArrayBuffer.
@@ -408,7 +387,7 @@ export class MediaPersistence {
 				? await opfsLoad()
 				: await idbLoad();
 		} catch {
-			// EN: A storage read failure is treated as "nothing
+			// A storage read failure is treated as "nothing
 			//     persisted" so the playground still boots -- it just
 			//     starts with no uploaded media.
 			return null;

@@ -50,7 +50,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 * @return string SQLite CREATE TABLE statement.
 		 */
 		private static function translate_create_table( $sql ) {
-			// EN: An auto-increment integer primary key. SQLite makes a
+			// An auto-increment integer primary key. SQLite makes a
 			//     column an alias of ROWID only for exactly "INTEGER
 			//     PRIMARY KEY", so the per-column form is collapsed to
 			//     that and the table-level "PRIMARY KEY (col)" dropped.
@@ -66,27 +66,27 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				$pk_column = $m[1];
 			}
 
-			// EN: Drop MySQL KEY / UNIQUE KEY index lines -- SQLite
+			// Drop MySQL KEY / UNIQUE KEY index lines -- SQLite
 			//     declares indexes separately and 0.71 never relies on
 			//     them at query time on the front page.
 			$sql = preg_replace( '/,\s*UNIQUE\s+KEY\s*[^,)]*\([^)]*\)/i', '', $sql );
 			$sql = preg_replace( '/,\s*KEY\s+\w+\s*\([^)]*\)/i', '', $sql );
 
-			// EN: Drop the table-level PRIMARY KEY clause; it is folded
+			// Drop the table-level PRIMARY KEY clause; it is folded
 			//     into the column definition below.
 			$sql = preg_replace( '/,\s*PRIMARY\s+KEY\s*\([^)]*\)/i', '', $sql );
 
-			// EN: enum('a','b',...) -> TEXT. SQLite has no ENUM type.
+			// enum('a','b',...) -> TEXT. SQLite has no ENUM type.
 			$sql = preg_replace( '/\benum\s*\([^)]*\)/i', 'TEXT', $sql );
 
-			// EN: Sized integer / char types -> SQLite storage classes.
+			// Sized integer / char types -> SQLite storage classes.
 			$sql = preg_replace( '/\b(tiny|small|medium|big)?int\s*\(\s*\d+\s*\)(\s+unsigned)?/i', 'INTEGER', $sql );
 			$sql = preg_replace( '/\b(tiny|small|medium|big)?int\b(\s+unsigned)?/i', 'INTEGER', $sql );
 			$sql = preg_replace( '/\bvarchar\s*\(\s*\d+\s*\)/i', 'TEXT', $sql );
 			$sql = preg_replace( '/\btinytext\b/i', 'TEXT', $sql );
 			$sql = preg_replace( '/\bdatetime\b/i', 'TEXT', $sql );
 
-			// EN: Make the primary-key column the ROWID alias and drop
+			// Make the primary-key column the ROWID alias and drop
 			//     the now-meaningless auto_increment keyword everywhere.
 			if ( null !== $pk_column ) {
 				$sql = preg_replace(
@@ -108,7 +108,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 * @return string SQLite-dialect DML.
 		 */
 		private static function translate_dml( $sql ) {
-			// EN: 0.71 quotes string literals with double quotes in
+			// 0.71 quotes string literals with double quotes in
 			//     places (post_status = "publish" in blog.header.php, the
 			//     post_date in b2edit.php's editpost UPDATE). SQLite reads
 			//     "..." as an identifier first, so convert a double-quoted
@@ -121,7 +121,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				$sql
 			);
 
-			// EN: A MySQL auto_increment column treats an explicit 0 (or
+			// A MySQL auto_increment column treats an explicit 0 (or
 			//     '0') as "assign the next id"; SQLite stores 0 verbatim
 			//     into an INTEGER PRIMARY KEY, so a second such INSERT
 			//     collides. The 0.71 admin INSERTs a post / category that
@@ -134,7 +134,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				$sql = self::strip_zero_autoincrement_id( $sql );
 			}
 
-			// EN: The archive queries select bare date-part expressions --
+			// The archive queries select bare date-part expressions --
 			//     SELECT DISTINCT YEAR(post_date), MONTH(post_date) ... --
 			//     and b2edit.showposts.php reads the result by the MySQL
 			//     column name ($arc_row['YEAR(post_date)']). SQLite would
@@ -144,7 +144,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			//     the function rewrite and keeps the column's MySQL name.
 			$sql = self::alias_date_part_columns( $sql );
 
-			// EN: DATE_FORMAT(col, 'fmt') is rewritten before the
+			// DATE_FORMAT(col, 'fmt') is rewritten before the
 			//     outside-string-literals pass below. Its format argument
 			//     is itself a string literal -- the links query emits
 			//     DATE_FORMAT(link_updated, '%d/%m/%Y %h:%i') -- so
@@ -156,13 +156,13 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			//     left for the outside-string pass to skip over.
 			$sql = self::translate_date_format( $sql );
 
-			// EN: Rewrite the remaining date functions only outside string
+			// Rewrite the remaining date functions only outside string
 			//     literals -- the alias added above is a quoted literal that
 			//     itself spells "YEAR(post_date)", and the rewrite must not
 			//     touch it.
 			$sql = self::apply_outside_strings( $sql, array( __CLASS__, 'translate_date_functions' ) );
 
-			// EN: rand() -> SQLite random() for the random-order links.
+			// rand() -> SQLite random() for the random-order links.
 			$sql = preg_replace( '/\brand\s*\(\s*\)/i', 'random()', $sql );
 
 			return $sql;
@@ -183,7 +183,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 * @return string The SQL with the callback applied outside literals.
 		 */
 		private static function apply_outside_strings( $sql, $callback ) {
-			// EN: Split keeping the delimiters: a '...' literal (with ''
+			// Split keeping the delimiters: a '...' literal (with ''
 			//     escapes) is an odd-indexed piece, code is even-indexed.
 			$parts = preg_split(
 				"/('(?:[^']|'')*')/",
@@ -210,7 +210,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 * @return string The INSERT with a zero id column dropped, if any.
 		 */
 		private static function strip_zero_autoincrement_id( $sql ) {
-			// EN: Match "(col1, col2, ...) VALUES (v1, v2, ...)" where v1
+			// Match "(col1, col2, ...) VALUES (v1, v2, ...)" where v1
 			//     is 0 / '0' / "0". The column list and value list are
 			//     captured so the first entry of each can be dropped.
 			$pattern = '/\(\s*([^()]+?)\s*\)\s*VALUES\s*\(\s*(?:\'0\'|"0"|0)\s*,\s*([^()]*)\)/i';
@@ -218,7 +218,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				$pattern,
 				function ( $m ) {
 					$columns = array_map( 'trim', explode( ',', $m[1] ) );
-					// EN: Drop the first column; keep the rest verbatim.
+					// Drop the first column; keep the rest verbatim.
 					array_shift( $columns );
 					return '(' . implode( ', ', $columns ) . ') VALUES (' . $m[2] . ')';
 				},
@@ -241,7 +241,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 		 */
 		private static function alias_date_part_columns( $sql ) {
 			$functions = 'YEAR|MONTH|DAYOFMONTH|HOUR|MINUTE|SECOND|WEEK';
-			// EN: A date-part call that is immediately followed by a comma
+			// A date-part call that is immediately followed by a comma
 			//     or by FROM is a SELECT-list column. One that is followed
 			//     by "AS" already has an alias; one inside a WHERE / ORDER
 			//     BY is followed by an operator and is left alone.
@@ -275,7 +275,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			$sql = preg_replace( "/\bHOUR\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%H', $1) AS INTEGER)", $sql );
 			$sql = preg_replace( "/\bMINUTE\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%M', $1) AS INTEGER)", $sql );
 			$sql = preg_replace( "/\bSECOND\s*\(\s*([^()]+?)\s*\)/i", "CAST(strftime('%S', $1) AS INTEGER)", $sql );
-			// EN: MySQL WEEK(date,mode) / WEEK(date) -> strftime('%W').
+			// MySQL WEEK(date,mode) / WEEK(date) -> strftime('%W').
 			$sql = preg_replace( "/\bWEEK\s*\(\s*([^(),]+?)\s*(?:,\s*\d+\s*)?\)/i", "CAST(strftime('%W', $1) AS INTEGER)", $sql );
 
 			return $sql;

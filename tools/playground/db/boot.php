@@ -25,11 +25,11 @@
 // ==================================================================
 
 if ( ! defined( 'WP071_DB_PATH' ) ) {
-	// EN: A writable location in the php-wasm virtual filesystem.
+	// A writable location in the php-wasm virtual filesystem.
 	define( 'WP071_DB_PATH', '/tmp/071-now.sqlite' );
 }
 
-// EN: WordPress 0.71's b2config.php builds its include path from
+// WordPress 0.71's b2config.php builds its include path from
 //     getenv('DOCUMENT_ROOT') (line 376: $abspath = getenv('DOCUMENT_ROOT')
 //     . $relpath . '/'). php-wasm does not populate DOCUMENT_ROOT in the
 //     process environment, so getenv() returns false and the path
@@ -43,7 +43,7 @@ if ( ! getenv( 'DOCUMENT_ROOT' ) ) {
 	unset( $wp071_docroot );
 }
 
-// EN: Set the working directory to the requested script's directory.
+// Set the working directory to the requested script's directory.
 //     WordPress 0.71's admin pages include their dependencies with bare
 //     relative paths -- b2edit.php does require './b2header.php', and
 //     b2header.php does require '../b2config.php'. PHP resolves such a
@@ -62,13 +62,13 @@ if ( ! empty( $_SERVER['SCRIPT_FILENAME'] ) ) {
 }
 
 if ( ! file_exists( WP071_DB_PATH ) ) {
-	// EN: seed.php builds the schema and inserts the seeded post. It is
+	// seed.php builds the schema and inserts the seeded post. It is
 	//     overlaid into b2-include/ as 071-now-seed.php by the overlay
 	//     builder, so __DIR__ here is that b2-include directory.
 	require __DIR__ . '/071-now-seed.php';
 }
 
-// EN: Ensure the image-upload directory exists (Issue #124). WordPress
+// Ensure the image-upload directory exists (Issue #124). WordPress
 //     0.71's wp-admin/b2upload.php writes uploaded images to
 //     $fileupload_realpath and, before writing, calls
 //     realpath( $fileupload_realpath ) to verify the destination -- a
@@ -84,7 +84,7 @@ if ( ! is_dir( $wp071_uploads_dir ) ) {
 }
 unset( $wp071_uploads_dir );
 
-// EN: The mysqli compat helpers (wp071_db_query / wp071_db_fetch_* /
+// The mysqli compat helpers (wp071_db_query / wp071_db_fetch_* /
 //     wp071_db_error). A few 0.71 functions call mysqli_*( $wpdb->dbh,
 //     ... ) directly; the overlay builder rewrites those sites to these
 //     helpers (see scripts/build-overlay.mjs). Declaring the functions
@@ -94,7 +94,7 @@ unset( $wp071_uploads_dir );
 //     instanceof touches it, so the early declaration is safe.
 require_once __DIR__ . '/071-now-mysqli-compat.php';
 
-// EN: Auto-login. 071-now is a single-user browser playground -- there
+// Auto-login. 071-now is a single-user browser playground -- there
 //     is one seeded admin user and no one else to log in as -- so the
 //     admin is made reachable without a manual login, the model
 //     WordPress Playground follows.
@@ -133,7 +133,7 @@ if ( ! function_exists( 'wp071_seeded_admin' ) ) {
 			$pdo  = null;
 			return $row;
 		} catch ( Exception $e ) {
-			// EN: Auth is best-effort at boot; on error the visitor is
+			// Auth is best-effort at boot; on error the visitor is
 			//     just left logged out, which the blog already handles.
 			return false;
 		}

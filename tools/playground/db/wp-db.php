@@ -29,7 +29,7 @@
 	define( 'ARRAY_A', 'ARRAY_A' );
 	define( 'ARRAY_N', 'ARRAY_N' );
 
-	// EN: The MySQL -> SQLite translator, shared with the database seed.
+	// The MySQL -> SQLite translator, shared with the database seed.
 	require_once __DIR__ . '/071-now-sql-translator.php';
 
 /**
@@ -139,12 +139,12 @@ class wpdb {
 	public $insert_id;
 	public $func_call;
 
-	// EN: The message of the most recent failed query. db_error() returns
+	// The message of the most recent failed query. db_error() returns
 	//     it for the call sites the overlay rewrites away from
 	//     mysqli_error( $wpdb->dbh ).
 	public $last_error = '';
 
-	// EN: The PDO handle. Named "dbh" because a few 0.71 call sites read
+	// The PDO handle. Named "dbh" because a few 0.71 call sites read
 	//     $wpdb->dbh directly (get_lastpostdate, dropdown_cats, the admin
 	//     pages). Those direct mysqli_*( $wpdb->dbh, ... ) sites are
 	//     rewritten by the 071-now overlay (scripts/build-overlay.mjs) to
@@ -166,7 +166,7 @@ class wpdb {
 	 * @param string $dbhost     Unused (kept for signature parity).
 	 */
 	public function __construct( $dbuser, $dbpassword, $dbname, $dbhost ) {
-		// EN: WP071_DB_PATH is defined by the 071-now boot shim; fall
+		// WP071_DB_PATH is defined by the 071-now boot shim; fall
 		//     back to a temp path so the class is still usable standalone.
 		$path = defined( 'WP071_DB_PATH' ) ? WP071_DB_PATH : ( sys_get_temp_dir() . '/071-now.sqlite' );
 
@@ -174,7 +174,7 @@ class wpdb {
 			$this->dbh = new PDO( 'sqlite:' . $path );
 			$this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 			$this->dbh->exec( 'PRAGMA foreign_keys = ON' );
-			// EN: The 071-now boot shim opens its own short-lived SQLite
+			// The 071-now boot shim opens its own short-lived SQLite
 			//     connections (the seed, the auto-login lookup) just
 			//     before this one. They are closed promptly, but a busy
 			//     timeout makes the admin's first write wait briefly for
@@ -296,7 +296,7 @@ class wpdb {
 			}
 			$this->num_rows = count( $rows );
 
-			// EN: Column metadata, in the {name: ...} shape get_col_info
+			// Column metadata, in the {name: ...} shape get_col_info
 			//     expects. Best-effort: PDO exposes it per column index.
 			$this->col_info = array();
 			$cols           = $stmt->columnCount();
@@ -455,7 +455,7 @@ class wpdb {
 			return $ok;
 		}
 
-		// EN: query() returns false for a SELECT that matched no rows; the
+		// query() returns false for a SELECT that matched no rows; the
 		//     mysqli_* call sites still expect a walkable (empty) result,
 		//     so wrap last_result -- which query() left as an array -- and
 		//     only report failure when the query itself errored.

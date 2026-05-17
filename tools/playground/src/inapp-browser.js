@@ -1,4 +1,4 @@
-// EN: 071-now in-app browser detection (Issue #140).
+// 071-now in-app browser detection (Issue #140).
 //
 //     The playground boots @php-wasm/web, which needs cross-origin
 //     isolation / SharedArrayBuffer and a reliably controlling service
@@ -15,23 +15,8 @@
 //     it is unit-testable: it derives everything from the navigator
 //     fields passed in (the caller supplies window.navigator in the app
 //     and a stub in a test), and returns a plain result object.
-// JA: 071-now のアプリ内ブラウザ検出(Issue #140)。
-//
-//     playground は @php-wasm/web を起動し、それには cross-origin
-//     isolation / SharedArrayBuffer と確実にページを制御するサービス
-//     ワーカーが必要。モバイルのアプリ内ブラウザ -- X/Twitter・
-//     Facebook・Instagram・LINE 等のネイティブアプリに埋め込まれた
-//     WebView -- はこれらを欠くか不安定なことが多く、playground は
-//     起動に失敗したり誤動作したりしうる。壊れた playground を見せる
-//     より、src/main.js は最初に detectInAppBrowser() を呼び、モバイル
-//     アプリ内ブラウザを検出したら起動せず「標準ブラウザで開く」画面を
-//     表示する。これは公式の WordPress Playground と同じ方針。
-//
-//     検出は単体テスト可能な小さく副作用のないモジュールとしてここに
-//     置く。渡された navigator フィールド(アプリでは window.navigator、
-//     テストではスタブ)からすべてを導出し、素のオブジェクトを返す。
 
-// EN: User-agent substrings that identify a specific app's in-app
+// User-agent substrings that identify a specific app's in-app
 //     browser. Each entry pairs a case-insensitive marker with the
 //     human-readable app name shown on the prompt screen. The markers
 //     are the tokens these apps inject into their WebView user-agent:
@@ -109,7 +94,7 @@ function isMobileUserAgent( ua ) {
 function isGenericMobileWebView( ua ) {
 	const isIOS = /iphone|ipod|ipad/.test( ua );
 	if ( isIOS ) {
-		// EN: A genuine iOS browser carries a "safari/" token (Safari) or
+		// A genuine iOS browser carries a "safari/" token (Safari) or
 		//     an explicit other-browser token; a WKWebView carries none.
 		const looksLikeIOSBrowser =
 			ua.includes( 'safari/' ) ||
@@ -119,7 +104,7 @@ function isGenericMobileWebView( ua ) {
 		return ! looksLikeIOSBrowser;
 	}
 
-	// EN: Android injects "; wv" into the WebView user-agent's platform
+	// Android injects "; wv" into the WebView user-agent's platform
 	//     section -- the standard Android WebView marker.
 	if ( ua.includes( 'android' ) ) {
 		return /;\s*wv[);]/.test( ua );
@@ -153,14 +138,14 @@ export function detectInAppBrowser( navigatorLike = {} ) {
 		return notDetected;
 	}
 
-	// EN: Precise path first -- a known app's in-app browser marker.
+	// Precise path first -- a known app's in-app browser marker.
 	for ( const { marker, name } of APP_MARKERS ) {
 		if ( ua.includes( marker ) ) {
 			return { isInApp: true, appName: name, reason: 'named-app' };
 		}
 	}
 
-	// EN: Generic mobile-WebView heuristics for the in-app browsers not
+	// Generic mobile-WebView heuristics for the in-app browsers not
 	//     on the named list.
 	if ( isGenericMobileWebView( ua ) ) {
 		return { isInApp: true, appName: null, reason: 'mobile-webview' };

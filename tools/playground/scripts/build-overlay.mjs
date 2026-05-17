@@ -1,4 +1,4 @@
-// EN: 071-now overlay builder (Issue #108 feasibility spike).
+// 071-now overlay builder (Issue #108 feasibility spike).
 //
 //     The browser-based blog runs an in-php-wasm copy of WordPress 0.71.
 //     That copy is built here: src/ is snapshotted into tools/playground/wp/,
@@ -13,15 +13,6 @@
 //     tools/playground/db/wp-db.php, the SQLite-backed reimplementation.
 //     The boot prepend (tools/playground/db/seed.php) is also copied in so
 //     the php-wasm boot shim can run it.
-// JA: 071-now のオーバーレイビルダー(Issue #108 実現可能性検証)。
-//
-//     ブラウザ内ブログは php-wasm 内の WordPress 0.71 のコピーを動かす。
-//     そのコピーをここで作る: src/ を tools/playground/wp/ にスナップショット
-//     し、071-now の SQLite データベースシムを上から重ねる。
-//
-//     src/ 自体は決して変更しない。Issue #108 に従い、本物の WordPress
-//     0.71 ソースとその MySQL / Docker 構成は動き続けねばならない。
-//     オーバーレイは生成物の(git 管理外の)tools/playground/wp/ だけを変える。
 import {
 	cpSync,
 	rmSync,
@@ -35,10 +26,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
-// EN: This file is tools/playground/scripts/build-overlay.mjs, so the
+// This file is tools/playground/scripts/build-overlay.mjs, so the
 //     playground package is one level up and the repo root is three.
-// JA: 本ファイルは tools/playground/scripts/build-overlay.mjs であり、
-//     playground パッケージは 1 つ上、リポジトリルートは 3 つ上である。
 const here = dirname( fileURLToPath( import.meta.url ) );
 const playgroundDir = join( here, '..' );
 const repoRoot = join( playgroundDir, '..', '..' );
@@ -53,7 +42,7 @@ if ( ! existsSync( srcDir ) ) {
 	process.exit( 1 );
 }
 
-// EN: Build the block-editor app so its bundle lands in the overlay.
+// Build the block-editor app so its bundle lands in the overlay.
 //
 //     The block editor is a custom @wordpress/block-editor app over a
 //     thin WordPress 0.71 JSON backend. Its React app, tools/
@@ -72,34 +61,12 @@ if ( ! existsSync( srcDir ) ) {
 //     build writes only into src/block-editor/assets/ (git-ignored); src/
 //     itself is otherwise untouched, exactly as the overlay contract
 //     requires.
-// JA: ブロックエディタアプリをビルドし、そのバンドルをオーバーレイへ
-//     入れる。
-//
-//     ブロックエディタは、薄い WordPress 0.71 の JSON バックエンド上の
-//     カスタム @wordpress/block-editor アプリである。その React アプリ
-//     tools/block-editor/ は独自の package.json と package-lock.json を
-//     持つ自己完結したパッケージであり(意図的にリポジトリルートの
-//     ワークスペースにしていない)、そこで `npm run build` するとバンドルと
-//     Vite マニフェストが src/block-editor/assets/(git 管理外のビルド
-//     成果物)へ書き出される。src/block-editor/api/editor.php はその
-//     マニフェストを読んでエディタを配信する。バンドルが無いと
-//     「Block editor bundle not built」フォールバックを表示する。
-//
-//     playground のオーバーレイは src/ のスナップショットなので、
-//     スナップショット取得時に src/block-editor/assets/ が存在して
-//     初めてブロックエディタが playground で動く。スナップショットの前に
-//     ここでアプリをビルドし、オーバーレイが常に新しいバンドルを持つ
-//     ようにする。ビルドは src/block-editor/assets/(git 管理外)にのみ
-//     書き込み、src/ 自体はそれ以外変更しない。
 const blockEditorAppDir = join( toolsDir, 'block-editor' );
 const blockEditorAssetsDir = join( srcDir, 'block-editor', 'assets' );
 
 /**
- * EN: Run a command in a directory, inheriting stdio, and exit the build
+ * Run a command in a directory, inheriting stdio, and exit the build
  *     on failure.
- * JA: ディレクトリ内でコマンドを実行し、stdio を継承し、失敗時はビルドを
- *     終了する。
- *
  * @param {string}   command The executable to run.
  * @param {string[]} args    Its arguments.
  * @param {string}   cwd     The working directory.
@@ -109,7 +76,7 @@ function run( command, args, cwd, label ) {
 	const result = spawnSync( command, args, {
 		cwd,
 		stdio: 'inherit',
-		// EN: npm is a .cmd shim on Windows; a shell run resolves it.
+		// npm is a .cmd shim on Windows; a shell run resolves it.
 		shell: process.platform === 'win32',
 	} );
 	if ( result.status !== 0 ) {
@@ -134,7 +101,7 @@ if ( ! existsSync( join( blockEditorAssetsDir, '.vite', 'manifest.json' ) ) ) {
 	process.exit( 1 );
 }
 
-// EN: Fresh snapshot of the WordPress 0.71 source.
+// Fresh snapshot of the WordPress 0.71 source.
 //
 //     The block editor's build inputs -- the React source, its
 //     node_modules and the Vite config -- live in tools/block-editor/,
@@ -142,18 +109,11 @@ if ( ! existsSync( join( blockEditorAssetsDir, '.vite', 'manifest.json' ) ) ) {
 //     Only src/block-editor/assets/, the build OUTPUT produced just
 //     above, is under src/ and belongs in the overlay (editor.php loads
 //     it).
-// JA: WordPress 0.71 ソースの新規スナップショット。
-//
-//     ブロックエディタのビルド入力 -- React ソース・その node_modules・
-//     Vite 設定 -- は src/ の外の tools/block-editor/ にあるため、src/
-//     のスナップショットは自然にそれらを除外する。src/ 配下にあるのは
-//     直前にビルドした出力 src/block-editor/assets/ だけで、これが
-//     オーバーレイに属する(editor.php がそれを読み込む)。
 rmSync( wpDir, { recursive: true, force: true } );
 mkdirSync( wpDir, { recursive: true } );
 cpSync( srcDir, wpDir, { recursive: true } );
 
-// EN: The 071-now database layer files, copied into b2-include/ so the
+// The 071-now database layer files, copied into b2-include/ so the
 //     in-browser blog and the boot shim can reach them via the virtual
 //     filesystem. wp-db.php replaces 0.71's mysqli-based file; the
 //     others sit alongside it with a 071-now- prefix to avoid clashing
@@ -171,7 +131,7 @@ for ( const [ from, to ] of overlayFiles ) {
 	copyFileSync( join( dbDir, from ), join( wpDir, 'b2-include', to ) );
 }
 
-// EN: Resolve the direct mysqli_*( $wpdb->dbh, ... ) call sites.
+// Resolve the direct mysqli_*( $wpdb->dbh, ... ) call sites.
 //
 //     A few WordPress 0.71 functions bypass the wpdb methods and call
 //     the procedural mysqli_* built-ins directly on $wpdb->dbh, then
@@ -191,13 +151,6 @@ for ( const [ from, to ] of overlayFiles ) {
 //     handle. b2register.php is deliberately absent: it opens its own
 //     mysqli connection ($id), not $wpdb->dbh, and is not part of the
 //     SQLite-backed blog.
-// JA: 直接の mysqli_*( $wpdb->dbh, ... ) 呼び出し箇所を解消する。
-//     一部の 0.71 関数は wpdb メソッドを介さず $wpdb->dbh に対して
-//     手続き型 mysqli_* 組み込み関数を直接呼ぶ。SQLite ベースの wpdb
-//     では $wpdb->dbh は PDO であり致命的エラーになる。組み込み関数は
-//     再宣言できないため、呼び出し箇所を 071-now の mysqli 互換
-//     ヘルパーへ書き換える。書き換えは tools/playground/wp/ のコピー
-//     にのみ適用し、src/ には触れない。
 const mysqliRewriteTargets = [
 	'b2-include/b2functions.php',
 	'b2-include/b2template.functions.php',
@@ -214,18 +167,15 @@ const mysqliRewriteTargets = [
 ];
 
 /**
- * EN: Rewrite the direct mysqli_* call sites in one file's text to the
+ * Rewrite the direct mysqli_* call sites in one file's text to the
  *     071-now mysqli compat helpers.
- * JA: 1 ファイルのテキスト中の直接の mysqli_* 呼び出し箇所を 071-now の
- *     mysqli 互換ヘルパーへ書き換える。
- *
  * @param {string} php The PHP source of an affected file.
  * @return {string} The source with the mysqli_* sites rewritten.
  */
 function rewriteMysqliCallSites( php ) {
 	return (
 		php
-			// EN: mysqli_query( $wpdb->dbh, X ) -> wp071_db_query( X ).
+			// mysqli_query( $wpdb->dbh, X ) -> wp071_db_query( X ).
 			//     A leading @ (error suppression) is preserved. Only the
 			//     "$wpdb->dbh," first argument is consumed; X and the
 			//     closing paren are left intact.
@@ -233,14 +183,14 @@ function rewriteMysqliCallSites( php ) {
 				/(@?)mysqli_query\(\s*\$wpdb->dbh\s*,\s*/g,
 				'$1wp071_db_query( '
 			)
-			// EN: mysqli_error() / mysqli_errno() on the connection handle
+			// mysqli_error() / mysqli_errno() on the connection handle
 			//     -> wp071_db_error(). 0.71 passes either $wpdb->dbh or a
 			//     parameter that holds it (linkmanager.php's $dbh).
 			.replace(
 				/mysqli_err(?:or|no)\(\s*\$[\w>-]+\s*\)/g,
 				'wp071_db_error()'
 			)
-			// EN: The result-walking built-ins -> the cursor helpers. In
+			// The result-walking built-ins -> the cursor helpers. In
 			//     these files every such call walks a $wpdb->dbh result.
 			.replace( /mysqli_fetch_object\(/g, 'wp071_db_fetch_object(' )
 			.replace( /mysqli_fetch_array\(/g, 'wp071_db_fetch_array(' )
@@ -260,7 +210,7 @@ for ( const relativePath of mysqliRewriteTargets ) {
 	if ( rewritten !== original ) {
 		writeFileSync( filePath, rewritten );
 	}
-	// EN: A target that still mentions mysqli_ on $wpdb->dbh would fatal
+	// A target that still mentions mysqli_ on $wpdb->dbh would fatal
 	//     in php-wasm; fail the build so a regression is caught here.
 	if ( /mysqli_\w+\(\s*\$wpdb->dbh/.test( rewritten ) ) {
 		console.error(
@@ -270,7 +220,7 @@ for ( const relativePath of mysqliRewriteTargets ) {
 	}
 }
 
-// EN: WordPress 0.71's front page (src/index.php) links the block-library
+// WordPress 0.71's front page (src/index.php) links the block-library
 //     front-end stylesheet at block-editor/assets/block-library.css, and
 //     src/block-editor/api/editor.php loads the block-editor bundle from
 //     block-editor/assets/. Both files are build artifacts of the
@@ -280,15 +230,6 @@ for ( const relativePath of mysqliRewriteTargets ) {
 //     placeholder here because the block editor was a later step; now the
 //     real bundle is in place, so only assert it -- a missing file would
 //     mean the block-editor build silently produced nothing.
-// JA: WordPress 0.71 のフロントページ(src/index.php)は
-//     block-editor/assets/block-library.css にブロックライブラリの
-//     フロント用スタイルシートを link し、src/block-editor/api/editor.php
-//     は block-editor/assets/ からブロックエディタバンドルを読み込む。
-//     どちらも上の `npm run build` が src/block-editor/assets/ へ生成し、
-//     スナップショットがオーバーレイへ運んだビルド成果物である。以前の
-//     071-now ビルドはブロックエディタが後工程だったため空の
-//     block-library.css プレースホルダをここに書いていたが、今は実
-//     バンドルが揃っているので存在確認のみ行う。
 const blockLibraryCss = join(
 	wpDir,
 	'block-editor',
@@ -311,7 +252,7 @@ for ( const required of [ blockLibraryCss, blockEditorManifest ] ) {
 	}
 }
 
-// EN: Relocate the Vite manifest out of the dot-directory and point the
+// Relocate the Vite manifest out of the dot-directory and point the
 //     overlay's editor.php at the new location.
 //
 //     Vite writes its build manifest to block-editor/assets/.vite/
@@ -329,23 +270,6 @@ for ( const required of [ blockLibraryCss, blockEditorManifest ] ) {
 //     This is the same overlay-only patching as the mysqli rewrite
 //     above: the change touches tools/playground/wp/ only -- src/ and the
 //     block editor's own assets/ are left exactly as built.
-// JA: Vite マニフェストをドットディレクトリの外へ移し、オーバーレイの
-//     editor.php をその新しい場所に向ける。
-//
-//     Vite はビルドマニフェストを block-editor/assets/.vite/
-//     manifest.json へ書き、src/block-editor/api/editor.php はそこから
-//     読む。しかし playground は wp/ ツリー全体を src/wp-files.js の
-//     wp/ に対する import.meta.glob で php-wasm ファイルシステムへ書き、
-//     Vite の import.meta.glob はドットディレクトリ内のファイルに一致
-//     しない。よって .vite/manifest.json はブラウザ内ブログへ届かず、
-//     バンドルが揃っていても editor.php は「bundle not built」へ
-//     フォールバックしてしまう。
-//
-//     マニフェストを非ドットの兄弟パス
-//     (block-editor/assets/vite-manifest.json)へコピーし、グロブが
-//     拾えるようにし、オーバーレイの editor.php をそのパスを読むよう
-//     書き換える。これは上の mysqli 書き換えと同じオーバーレイ限定の
-//     パッチであり、tools/playground/wp/ のみを変更する。
 const flatManifest = join(
 	wpDir,
 	'block-editor',

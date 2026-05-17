@@ -1,4 +1,4 @@
-// EN: 071-now browser app (Issue #116, full build 1/6).
+// 071-now browser app (Issue #116, full build 1/6).
 //
 //     Boots @php-wasm/web -- the WebAssembly PHP runtime behind
 //     WordPress Playground -- writes the overlaid WordPress 0.71 tree
@@ -19,21 +19,6 @@
 //
 //     The database is in-browser SQLite (see playground/db/). No MySQL,
 //     no server: PHP and the database both run in the tab.
-// JA: 071-now ブラウザアプリ(Issue #116、フル実装 1/6)。
-//
-//     @php-wasm/web(WordPress Playground を支える WebAssembly PHP
-//     ランタイム)を起動し、オーバーレイ済み WordPress 0.71 ツリーを
-//     php-wasm 仮想ファイルシステムへ書き込み、サービスワーカー経由で
-//     0.71 を同一オリジンの実パスで配信する。
-//
-//     スパイク(Issue #108)は 0.71 のフロントページ HTML を blob: URL の
-//     iframe に描画した。blob URL のためアセット要求やリンククリックが
-//     php-wasm に届かず、ページは無装飾で描画され遷移もできなかった。本
-//     実装は WordPress Playground と同じ方式でそれを解決する。サービス
-//     ワーカー(public/sw.js)がブログのスコープ付き同一オリジン要求を
-//     横取りし、本ページ経由で @php-wasm/web リクエストハンドラへ通す。
-//     iframe を実スコープパス(/scope:<id>/index.php)に向け、ブログは
-//     自身の CSS を読み込み自身のリンクを辿る。
 import { loadWebRuntime } from '@php-wasm/web';
 import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal';
 import { wpFiles } from './wp-files.js';
@@ -41,16 +26,16 @@ import { DatabasePersistence } from './persistence.js';
 import { MediaPersistence } from './media-persistence.js';
 import { detectInAppBrowser } from './inapp-browser.js';
 
-// EN: Document root inside the php-wasm virtual filesystem.
+// Document root inside the php-wasm virtual filesystem.
 const DOCROOT = '/wordpress';
 
-// EN: The SQLite database file inside the php-wasm virtual filesystem.
+// The SQLite database file inside the php-wasm virtual filesystem.
 //     Must match WP071_DB_PATH in tools/playground/db/boot.php -- that
 //     boot shim seeds and reads the database at this path, and this app
 //     loads the persisted bytes into it and saves them back from it.
 const DB_PATH = '/tmp/071-now.sqlite';
 
-// EN: The uploaded-media directory inside the php-wasm virtual
+// The uploaded-media directory inside the php-wasm virtual
 //     filesystem. WordPress 0.71's wp-admin/b2upload.php writes uploaded
 //     images to $fileupload_realpath; the in-VFS copy of b2config.php is
 //     rewritten so that path is this directory (see bootPhpWasm), under
@@ -59,11 +44,11 @@ const DB_PATH = '/tmp/071-now.sqlite';
 //     restores its contents (Issue #124).
 const UPLOADS_DIR = `${ DOCROOT }/wp-content/uploads`;
 
-// EN: The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
+// The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
 //     absolute asset URLs and internal links against it.
 const BLOG_SITEURL = 'http://localhost:8080';
 
-// EN: The public base path the app is served under (Issue #128). Vite
+// The public base path the app is served under (Issue #128). Vite
 //     sets import.meta.env.BASE_URL to its `base` config: '/' for the
 //     local preview / headless verifier, '/wordpress-0.71-gold/' for the
 //     GitHub Pages project-page deploy. Every app-owned path -- the
@@ -72,7 +57,7 @@ const BLOG_SITEURL = 'http://localhost:8080';
 //     value always has a trailing slash.
 const APP_BASE = import.meta.env.BASE_URL;
 
-// EN: Every request the in-browser blog makes is served under a single
+// Every request the in-browser blog makes is served under a single
 //     scope path segment so the service worker can tell blog traffic
 //     apart from the app shell. The marker must match SCOPE_MARKER in
 //     public/sw.js. A per-boot random id keeps separate tabs distinct.
@@ -91,7 +76,7 @@ const splashEl = document.getElementById( 'splash' );
 const splashPhaseEl = document.getElementById( 'splash-phase' );
 const inAppNoticeEl = document.getElementById( 'inapp-notice' );
 
-// EN: The query flag the "continue anyway" escape hatch sets (Issue
+// The query flag the "continue anyway" escape hatch sets (Issue
 //     #140). When the in-app browser notice is shown and a visitor taps
 //     "Continue anyway" -- in case the detection was a false positive --
 //     the page reloads with this flag, and showInAppNoticeIfNeeded()
@@ -113,10 +98,10 @@ const CONTINUE_ANYWAY_FLAG = '071-now-continue';
  */
 function setStatus( message, kind = '' ) {
 	statusEl.textContent = `071-now: ${ message }`;
-	// EN: The ok / err colours live on the toolbar so the reset button
+	// The ok / err colours live on the toolbar so the reset button
 	//     shares the status background.
 	statusEl.parentElement.className = kind;
-	// EN: Mirror the phase into the splash while it is still visible.
+	// Mirror the phase into the splash while it is still visible.
 	if ( splashPhaseEl && splashEl && ! splashEl.classList.contains( 'hidden' ) ) {
 		splashPhaseEl.textContent = message;
 	}
@@ -135,7 +120,7 @@ function hideSplash() {
 	}
 }
 
-// EN: sessionStorage key guarding the one-time cross-origin isolation
+// sessionStorage key guarding the one-time cross-origin isolation
 //     reload below, so the reload happens at most once per tab session
 //     and a tab that never becomes isolated does not reload forever.
 const COI_RELOAD_GUARD = '071-now-coi-reload';
@@ -169,7 +154,7 @@ async function registerServiceWorker() {
 		throw new Error( 'this browser has no service worker support' );
 	}
 
-	// EN: sw.js sits at the app base (Vite copies public/ verbatim), so
+	// sw.js sits at the app base (Vite copies public/ verbatim), so
 	//     its default scope is APP_BASE -- it intercepts the scoped blog
 	//     paths, which src/main.js builds under APP_BASE. On the GitHub
 	//     Pages project-page deploy APP_BASE is '/wordpress-0.71-gold/',
@@ -180,7 +165,7 @@ async function registerServiceWorker() {
 	} );
 	await navigator.serviceWorker.ready;
 
-	// EN: A freshly registered worker calls clients.claim() on activate,
+	// A freshly registered worker calls clients.claim() on activate,
 	//     but the current page may still be uncontrolled for a tick.
 	//     Wait for the controllerchange unless it already controls us.
 	if ( ! navigator.serviceWorker.controller ) {
@@ -193,7 +178,7 @@ async function registerServiceWorker() {
 		} );
 	}
 
-	// EN: Cross-origin isolation (Issue #128). php-wasm needs
+	// Cross-origin isolation (Issue #128). php-wasm needs
 	//     SharedArrayBuffer, which a browser only exposes to a
 	//     cross-origin-isolated page. When the page is not isolated -- the
 	//     deployed GitHub Pages document carried no COOP/COEP -- reload
@@ -269,13 +254,13 @@ function clearWebStorage() {
 	try {
 		sessionStorage.clear();
 	} catch {
-		// EN: Web Storage can be unavailable (a privacy mode) -- the
+		// Web Storage can be unavailable (a privacy mode) -- the
 		//     reset proceeds regardless.
 	}
 	try {
 		localStorage.clear();
 	} catch {
-		// EN: As above -- ignore an unavailable store.
+		// As above -- ignore an unavailable store.
 	}
 }
 
@@ -312,7 +297,7 @@ async function clearAllStateAndReload() {
 async function bootPhpWasm() {
 	setStatus( 'loading the WebAssembly PHP runtime…' );
 
-	// EN: php-wasm requires a process id; allocate one explicitly.
+	// php-wasm requires a process id; allocate one explicitly.
 	const processIds = new ProcessIdAllocator();
 	const runtime = await loadWebRuntime( '8.3', {
 		emscriptenOptions: { processId: processIds.claim() },
@@ -329,7 +314,7 @@ async function bootPhpWasm() {
 		php.writeFile( destination, contents );
 	}
 
-	// EN: Point the blog's $siteurl at this origin's scoped path so every
+	// Point the blog's $siteurl at this origin's scoped path so every
 	//     page it renders (front page, post pages, archives) emits its
 	//     own assets and internal links as same-origin, scoped URLs the
 	//     service worker intercepts.
@@ -352,7 +337,7 @@ async function bootPhpWasm() {
 		"$abspath    = getenv( 'DOCUMENT_ROOT' ) . '/';"
 	);
 
-	// EN: Point WordPress 0.71's image-upload directory at the php-wasm
+	// Point WordPress 0.71's image-upload directory at the php-wasm
 	//     virtual filesystem (Issue #124). b2config.php hard-codes
 	//     $fileupload_realpath at the Docker document root
 	//     (/var/www/html/wp-content/uploads), a path that does not exist
@@ -371,7 +356,7 @@ async function bootPhpWasm() {
 	);
 	php.writeFile( configPath, config );
 
-	// EN: Register the 071-now boot shim as the auto_prepend_file so the
+	// Register the 071-now boot shim as the auto_prepend_file so the
 	//     SQLite database is seeded before WordPress 0.71's index.php
 	//     runs. error_reporting is trimmed: 0.71 is 2003-era code and
 	//     would otherwise drown the page in deprecation notices.
@@ -384,7 +369,7 @@ async function bootPhpWasm() {
 		].join( '\n' )
 	);
 
-	// EN: absoluteUrl is the origin root: the service worker strips the
+	// absoluteUrl is the origin root: the service worker strips the
 	//     /scope:<id> segment before handing the path to the handler, so
 	//     the handler always sees a plain blog-relative path.
 	const requestHandler = new PHPRequestHandler( {
@@ -417,7 +402,7 @@ async function restorePersistedDatabase( php, persistence ) {
 	if ( ! bytes ) {
 		return false;
 	}
-	// EN: DB_PATH lives under /tmp; make sure the directory exists before
+	// DB_PATH lives under /tmp; make sure the directory exists before
 	//     writing the restored database file into it.
 	php.mkdirTree( DB_PATH.slice( 0, DB_PATH.lastIndexOf( '/' ) ) );
 	php.writeFile( DB_PATH, bytes );
@@ -477,7 +462,7 @@ function readMediaTree( php ) {
 	 */
 	const walk = ( absoluteDir, prefix ) => {
 		for ( const name of php.listFiles( absoluteDir ) ) {
-			// EN: listFiles includes the '.'/'..' entries on some
+			// listFiles includes the '.'/'..' entries on some
 			//     emscripten builds; skip them so the walk terminates.
 			if ( name === '.' || name === '..' ) {
 				continue;
@@ -584,7 +569,7 @@ async function handleForwardedRequest( requestHandler, request, port ) {
 			...( request.body ? { body: request.body } : {} ),
 		} );
 
-		// EN: PHPResponse.bytes is a Uint8Array; structured-clone copies
+		// PHPResponse.bytes is a Uint8Array; structured-clone copies
 		//     it to the worker. headers is name -> string[].
 		port.postMessage( {
 			status: response.httpStatusCode,
@@ -624,7 +609,7 @@ async function handleForwardedRequest( requestHandler, request, port ) {
  *                    be booted; false when the playground should boot.
  */
 function showInAppNoticeIfNeeded() {
-	// EN: Honour the "continue anyway" escape hatch -- a reload carrying
+	// Honour the "continue anyway" escape hatch -- a reload carrying
 	//     the flag boots the playground even though the user agent still
 	//     looks like an in-app browser.
 	const params = new URLSearchParams( location.search );
@@ -637,14 +622,14 @@ function showInAppNoticeIfNeeded() {
 		return false;
 	}
 
-	// EN: Show the page URL so a visitor can copy it into a standard
+	// Show the page URL so a visitor can copy it into a standard
 	//     browser; the address bar of an in-app browser is often hidden.
 	const urlEl = document.getElementById( 'inapp-url' );
 	if ( urlEl ) {
 		urlEl.textContent = location.href;
 	}
 
-	// EN: "Copy address" puts the URL on the clipboard. The Clipboard API
+	// "Copy address" puts the URL on the clipboard. The Clipboard API
 	//     is not guaranteed in every in-app browser, so a failure falls
 	//     back to selecting the URL text for a manual copy.
 	const copyButtonEl = document.getElementById( 'inapp-copy' );
@@ -666,7 +651,7 @@ function showInAppNoticeIfNeeded() {
 		} );
 	}
 
-	// EN: "Continue anyway" is the false-positive escape hatch: reload
+	// "Continue anyway" is the false-positive escape hatch: reload
 	//     with the flag so this function lets the playground boot.
 	const continueButtonEl = document.getElementById( 'inapp-continue' );
 	if ( continueButtonEl ) {
@@ -676,13 +661,13 @@ function showInAppNoticeIfNeeded() {
 		} );
 	}
 
-	// EN: Reveal the notice and remove the loading splash so it does not
+	// Reveal the notice and remove the loading splash so it does not
 	//     sit on top of the screen.
 	inAppNoticeEl.classList.add( 'shown' );
 	hideSplash();
 	setStatus( 'opened in an in-app browser — open in a standard browser' );
 
-	// EN: Expose a hook the headless verifier reads to confirm the notice
+	// Expose a hook the headless verifier reads to confirm the notice
 	//     was shown in place of the php-wasm boot (Issue #140).
 	window.__071now = {
 		inAppBrowser: true,
@@ -699,7 +684,7 @@ function showInAppNoticeIfNeeded() {
  * @return {Promise<void>}
  */
 async function boot() {
-	// EN: In-app browser check (Issue #140). When the playground is
+	// In-app browser check (Issue #140). When the playground is
 	//     opened inside a mobile in-app browser -- a WebView that often
 	//     lacks the cross-origin isolation and reliable service worker
 	//     php-wasm needs -- show the "open in your standard browser"
@@ -711,7 +696,7 @@ async function boot() {
 
 	setStatus( 'registering the request-routing service worker…' );
 
-	// EN: Register the service worker. On the deployed site this may
+	// Register the service worker. On the deployed site this may
 	//     trigger a one-time reload to pick up the cross-origin isolation
 	//     headers (Issue #128); when it does, stop here and let the reload
 	//     run -- the reloaded page boots afresh, this time isolated.
@@ -722,7 +707,7 @@ async function boot() {
 
 	const { php, requestHandler } = await bootPhpWasm();
 
-	// EN: Persist the SQLite database in the browser (Issue #122). OPFS is
+	// Persist the SQLite database in the browser (Issue #122). OPFS is
 	//     used when available, IndexedDB otherwise. Restore any persisted
 	//     database into the php-wasm filesystem before the first request:
 	//     when one is found the boot shim sees an existing database and
@@ -738,7 +723,7 @@ async function boot() {
 	await persistence.selectBackend();
 	const restored = await restorePersistedDatabase( php, persistence );
 
-	// EN: Persist the uploaded-media tree in the browser (Issue #124).
+	// Persist the uploaded-media tree in the browser (Issue #124).
 	//     WordPress 0.71's wp-admin/b2upload.php writes uploaded images
 	//     under UPLOADS_DIR; the media persistence layer (the counterpart
 	//     of the database one above) restores any media persisted on an
@@ -751,12 +736,12 @@ async function boot() {
 	await mediaPersistence.selectBackend();
 	const mediaRestored = await restorePersistedMedia( php, mediaPersistence );
 
-	// EN: The last database snapshot written to the persistent store.
+	// The last database snapshot written to the persistent store.
 	//     A request is persisted only when it changed the database, so a
 	//     front-page view or an asset request triggers no storage write.
 	let lastSavedDb = restored ? readDatabaseBytes( php ) : null;
 
-	// EN: The last uploaded-media tree written to the persistent store,
+	// The last uploaded-media tree written to the persistent store,
 	//     compared the same way so only an upload triggers a storage write.
 	let lastSavedMedia = readMediaTree( php );
 
@@ -772,7 +757,7 @@ async function boot() {
 			lastSavedDb = current;
 		}
 
-		// EN: Persist the uploaded-media tree the same way -- an upload
+		// Persist the uploaded-media tree the same way -- an upload
 		//     through the admin adds a file under UPLOADS_DIR, and that
 		//     new tree is written to the media store so the image
 		//     survives a reload the way the database does.
@@ -783,7 +768,7 @@ async function boot() {
 		}
 	}
 
-	// EN: The service worker forwards every scoped blog request here.
+	// The service worker forwards every scoped blog request here.
 	//     Answer each one through the php-wasm request handler, reply on
 	//     the MessagePort that came with the message, then persist the
 	//     database if that request changed it -- so a post or category
@@ -808,7 +793,7 @@ async function boot() {
 
 	setStatus( 'serving the WordPress 0.71 front page…' );
 
-	// EN: Sanity-check the front page before handing it to the iframe so
+	// Sanity-check the front page before handing it to the iframe so
 	//     a boot failure shows up in the status line rather than as a
 	//     blank frame. This goes straight through the handler.
 	const frontPage = await requestHandler.request( {
@@ -821,12 +806,12 @@ async function boot() {
 		);
 	}
 
-	// EN: On a first run this front-page request is what triggered the
+	// On a first run this front-page request is what triggered the
 	//     boot shim's seed; persist that freshly seeded database now so
 	//     the seeded post survives the very first reload.
 	await persistIfChanged();
 
-	// EN: Point the iframe at the real scoped path. The navigation and
+	// Point the iframe at the real scoped path. The navigation and
 	//     every asset request and link click inside it are intercepted
 	//     by the service worker and served through php-wasm -- so the
 	//     blog loads its own CSS and is fully navigable.
@@ -860,7 +845,7 @@ async function boot() {
 	 * @return {Promise<void>}
 	 */
 	async function resetPlayground() {
-		// EN: Clear the persisted SQLite database and uploaded-media
+		// Clear the persisted SQLite database and uploaded-media
 		//     stores, and drop the in-VFS database file so the current
 		//     php-wasm instance holds no stale content either.
 		await persistence.clear();
@@ -871,7 +856,7 @@ async function boot() {
 		lastSavedDb = null;
 		lastSavedMedia = {};
 
-		// EN: Clear the service worker, the Cache API caches and the
+		// Clear the service worker, the Cache API caches and the
 		//     session/local storage, then reload to a pristine
 		//     first-visit state (Issue #144).
 		await clearAllStateAndReload();
@@ -886,7 +871,7 @@ async function boot() {
 		} );
 	} );
 
-	// EN: Expose a hook the headless verifier reads to confirm the boot,
+	// Expose a hook the headless verifier reads to confirm the boot,
 	//     plus a fetch-style bridge for direct request-handler probes and
 	//     the persistence controls (the backend in use and the reset).
 	window.__071now = {
@@ -897,7 +882,7 @@ async function boot() {
 		html: frontPage.text,
 		persistenceBackend: persistence.backend,
 		databaseRestored: restored,
-		// EN: The number of uploaded-media files restored from the
+		// The number of uploaded-media files restored from the
 		//     persistent store at boot (Issue #124). The verifier reads
 		//     this after a reload to confirm an uploaded image was
 		//     restored, and after a reset to confirm it was cleared.
@@ -938,7 +923,7 @@ async function boot() {
 }
 
 boot().catch( ( error ) => {
-	// EN: setStatus mirrors into the splash only while the splash has no
+	// setStatus mirrors into the splash only while the splash has no
 	//     'hidden' class, so a boot failure's message reaches the splash
 	//     phase line; surface it on the splash mark too so a failed boot
 	//     does not leave a visitor staring at "Starting WordPress 0.71".
