@@ -21,18 +21,33 @@ import { repoRoot } from './paths.mjs';
  *     root as its working directory, so the relative paths inside the Compose
  *     files (`./src`, `./cli`) resolve correctly regardless of the caller's
  *     own cwd.
+ *
+ *     `extraEnv` is merged onto the inherited environment before the child is
+ *     spawned. 071-env uses it to pass `WP_PORT` / `DB_PORT` / `PHP_VERSION`,
+ *     which `docker-compose.yml` reads through variable substitution. Because
+ *     each of those also has a `:-default` in the Compose file, omitting them
+ *     (a plain `docker compose up`) still works.
+ *
  * JA: 与えられた引数ベクタで `docker` を実行する。stdio を継承し、ユーザーが
  *     Compose の出力を直接見られるようにする。子プロセスはリポジトリルートを
  *     作業ディレクトリとして実行されるため、Compose ファイル内の相対パス
  *     (`./src`・`./cli`) は呼び出し元の cwd によらず正しく解決される。
  *
+ *     `extraEnv` は子プロセス起動前に継承された環境にマージされる。071-env は
+ *     これを使って `WP_PORT` / `DB_PORT` / `PHP_VERSION` を渡し、
+ *     `docker-compose.yml` が変数置換で読み取る。これらは Compose ファイル内に
+ *     `:-default` も持つため、省略しても (素の `docker compose up` でも) 動作
+ *     する。
+ *
  * @param {string[]} args The argument vector for the `docker` binary.
+ * @param {Record<string,string>} extraEnv Variables merged onto the env.
  * @returns {number} the `docker` process exit code (1 if it could not start).
  */
-export function runDocker( args ) {
+export function runDocker( args, extraEnv = {} ) {
 	const result = spawnSync( 'docker', args, {
 		stdio: 'inherit',
 		cwd: repoRoot,
+		env: { ...process.env, ...extraEnv },
 	} );
 
 	if ( result.error ) {

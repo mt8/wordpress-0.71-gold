@@ -1,16 +1,34 @@
 # EN: Local development environment for WordPress 0.71-gold (PHP 8.3 + MySQL 8).
 #     Start : docker compose up -d --build
 #     Browse: http://localhost:8080
+#
+#     The host ports and the PHP version use Compose variable substitution with
+#     defaults (`${VAR:-default}`), so a plain `docker compose up` is unchanged
+#     while 071-env can override them from `.071-env.json` by passing WP_PORT /
+#     DB_PORT / PHP_VERSION in the environment. Compose appends port lists
+#     across `-f` files, so a layered override file cannot change a port --
+#     variable substitution is the correct mechanism.
 # JA: WordPress 0.71-gold のローカル開発環境 (PHP 8.3 + MySQL 8)。
 #     起動    : docker compose up -d --build
 #     アクセス: http://localhost:8080
+#
+#     ホストポートと PHP バージョンは既定値付きの Compose 変数置換
+#     (`${VAR:-default}`) を使う。素の `docker compose up` は変わらず、071-env
+#     は環境に WP_PORT / DB_PORT / PHP_VERSION を渡して `.071-env.json` から
+#     上書きできる。Compose は `-f` ファイル間でポートのリストを追記するため、
+#     重ねた上書きファイルではポートを変更できない -- 変数置換が正しい仕組み。
 services:
-  # EN: Apache + PHP 8.3 web server, built from the local Dockerfile.
-  # JA: ローカルの Dockerfile からビルドする Apache + PHP 8.3 Web サーバー。
+  # EN: Apache + PHP web server, built from the local Dockerfile.
+  # JA: ローカルの Dockerfile からビルドする Apache + PHP Web サーバー。
   web:
-    build: .
+    build:
+      context: .
+      # EN: Forward the PHP version to the Dockerfile's PHP_VERSION build ARG.
+      # JA: PHP バージョンを Dockerfile の PHP_VERSION ビルド ARG へ渡す。
+      args:
+        PHP_VERSION: "${PHP_VERSION:-8.3}"
     ports:
-      - "8080:80"
+      - "${WP_PORT:-8080}:80"
     volumes:
       # EN: Mount the WordPress source as the Apache document root.
       # JA: WordPress のソースを Apache のドキュメントルートにマウントする。
@@ -28,7 +46,7 @@ services:
       MYSQL_PASSWORD: pass
       MYSQL_ROOT_PASSWORD: rootpass
     ports:
-      - "3306:3306"
+      - "${DB_PORT:-3306}:3306"
     volumes:
       # EN: Named volume so database contents persist across container restarts.
       # JA: 名前付きボリュームにより、コンテナ再起動後も DB の内容を永続化する。
