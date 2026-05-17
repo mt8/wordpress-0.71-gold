@@ -182,11 +182,16 @@ of the SQLite file in the browser:
   (a new post, an edit, a new category) the new bytes are persisted. A
   front-page view or an asset request leaves the database untouched and
   triggers no storage write.
-- **Reset.** The toolbar's *Reset database* button (and
-  `window.__071now.reset()`) clears the persistent store and the in-VFS
-  file, then reloads. The next boot finds nothing persisted, so the boot
-  shim seeds a fresh database — the playground is back to its clean
-  seeded state.
+- **Reset.** The toolbar's *Reset* button (and `window.__071now.reset()`)
+  is a full environment reset (Issue #144). In one action it clears
+  *every* piece of the playground's persistent and cached state — the
+  persisted SQLite database and uploaded-media stores and the in-VFS
+  database file, the service worker registration and every Cache API
+  cache it or php-wasm populated, and the `sessionStorage` /
+  `localStorage` the playground sets — then reloads. The post-reload boot
+  re-registers the service worker, re-boots php-wasm, the boot shim
+  re-seeds a fresh database and the virtual filesystem starts empty: the
+  playground comes back exactly as a brand-new first visit.
 
 `src/` is untouched: the persistence layer, the boot-time restore and
 the reset all live under `tools/playground/`.
@@ -420,8 +425,10 @@ The spec files cover the playground's end-to-end flows:
   page.
 - `persistence.spec.js` — a post created through the admin survives a
   full page reload (the SQLite database is restored from OPFS /
-  IndexedDB), and the reset control returns the playground to its fresh
-  seeded state.
+  IndexedDB), and the reset control is a full environment reset
+  (Issue #144): planted Cache API and Web Storage state is asserted
+  cleared and the playground returns to its fresh first-visit seeded
+  state.
 - `image-upload.spec.js` — an image uploaded through `b2upload.php` is
   stored and served from the VFS, survives a reload, and is cleared by
   a reset.

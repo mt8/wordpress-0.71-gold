@@ -215,6 +215,95 @@ async function registerServiceWorker() {
 }
 
 /**
+ * Unregister every service worker registered for this origin scope.
+ *
+ * Part of the full reset (Issue #144). The playground's reset has to
+ * leave no service worker behind: the next boot must re-register it from
+ * scratch, exactly as a first visit does. unregister() does not stop a
+ * worker that is currently controlling the page, but it removes the
+ * registration so the post-reload boot starts clean -- registerServiceWorker()
+ * then installs and activates a fresh worker.
+ *
+ * @return {Promise<void>}
+ */
+async function unregisterServiceWorkers() {
+	if ( ! ( 'serviceWorker' in navigator ) ) {
+		return;
+	}
+	const registrations = await navigator.serviceWorker.getRegistrations();
+	await Promise.all(
+		registrations.map( ( registration ) => registration.unregister() )
+	);
+}
+
+/**
+ * Delete every Cache API cache for this origin.
+ *
+ * Part of the full reset (Issue #144). The service worker and php-wasm
+ * may populate the Cache API -- the coi-serviceworker app-shell rebuild
+ * and php-wasm's runtime-asset caching both can. A full reset must clear
+ * those caches so the next boot re-fetches and re-caches everything, the
+ * way a first visit does.
+ *
+ * @return {Promise<void>}
+ */
+async function clearCacheStorage() {
+	if ( typeof caches === 'undefined' ) {
+		return;
+	}
+	const keys = await caches.keys();
+	await Promise.all( keys.map( ( key ) => caches.delete( key ) ) );
+}
+
+/**
+ * Clear the sessionStorage / localStorage the playground sets.
+ *
+ * Part of the full reset (Issue #144). The playground keeps a small
+ * amount of Web Storage -- the cross-origin isolation first-visit reload
+ * guard (COI_RELOAD_GUARD). A first visit finds none of it, so a full
+ * reset clears it. The whole of each store is cleared: the playground
+ * owns its origin, so nothing else is expected there, and clearing both
+ * stores guarantees no stale flag survives the reload.
+ */
+function clearWebStorage() {
+	try {
+		sessionStorage.clear();
+	} catch {
+		// EN: Web Storage can be unavailable (a privacy mode) -- the
+		//     reset proceeds regardless.
+	}
+	try {
+		localStorage.clear();
+	} catch {
+		// EN: As above -- ignore an unavailable store.
+	}
+}
+
+/**
+ * Clear every piece of the playground's persistent and cached state and
+ * reload to a brand-new first-visit state (Issue #144).
+ *
+ * The caller (resetPlayground) has already cleared the persisted SQLite
+ * database and uploaded-media stores. This finishes the full reset by
+ * clearing the rest -- the service worker registration, the Cache API
+ * caches it or php-wasm populated, and the session/local storage -- and
+ * then reloads the page. The post-reload boot therefore re-registers the
+ * service worker, re-boots php-wasm, re-seeds a fresh database and starts
+ * with an empty virtual filesystem: indistinguishable from a first visit.
+ *
+ * Each clear step is independent; a failure in one is swallowed so the
+ * others and the reload still run -- a reset must not get stuck.
+ *
+ * @return {Promise<void>}
+ */
+async function clearAllStateAndReload() {
+	await unregisterServiceWorkers().catch( () => {} );
+	await clearCacheStorage().catch( () => {} );
+	clearWebStorage();
+	location.reload();
+}
+
+/**
  * Boot php-wasm and mount the overlaid WordPress 0.71 tree.
  *
  * @return {Promise<{php: PHP, requestHandler: PHPRequestHandler}>} The
@@ -754,18 +843,26 @@ async function boot() {
 	blogEl.src = frontPageUrl;
 
 	/**
-	 * Reset the playground to a fresh seeded state (Issue #122, #124).
+	 * Reset the playground to a brand-new first-visit state (Issue
+	 * #122, #124; full environment reset since Issue #144).
 	 *
-	 * Clears the persistent database store and the in-VFS database file,
-	 * and the persistent media store too (Issue #124), then reloads the
-	 * page. The next boot finds nothing persisted, so the boot shim seeds
-	 * a fresh database -- the playground is back to its clean state and
-	 * every post, category and uploaded image added through the admin is
-	 * gone.
+	 * Earlier this cleared only the persisted database and uploaded
+	 * media -- a database reset. State that survived the reload (the
+	 * registered service worker and any Cache API caches it or
+	 * php-wasm populated, and the sessionStorage / localStorage the
+	 * playground sets) made it less than a full reset. This now clears
+	 * every piece of the playground's persistent and cached state in
+	 * one action, then reloads, so the next boot is indistinguishable
+	 * from a first visit: the service worker re-registers, php-wasm
+	 * re-boots, the boot shim re-seeds a fresh database, and the
+	 * in-browser virtual filesystem starts empty.
 	 *
 	 * @return {Promise<void>}
 	 */
-	async function resetDatabase() {
+	async function resetPlayground() {
+		// EN: Clear the persisted SQLite database and uploaded-media
+		//     stores, and drop the in-VFS database file so the current
+		//     php-wasm instance holds no stale content either.
 		await persistence.clear();
 		await mediaPersistence.clear();
 		if ( php.fileExists( DB_PATH ) ) {
@@ -773,13 +870,17 @@ async function boot() {
 		}
 		lastSavedDb = null;
 		lastSavedMedia = {};
-		location.reload();
+
+		// EN: Clear the service worker, the Cache API caches and the
+		//     session/local storage, then reload to a pristine
+		//     first-visit state (Issue #144).
+		await clearAllStateAndReload();
 	}
 
 	resetButtonEl.addEventListener( 'click', () => {
 		resetButtonEl.disabled = true;
-		setStatus( 'resetting to a fresh seeded database…' );
-		resetDatabase().catch( ( error ) => {
+		setStatus( 'resetting the playground to a fresh first visit…' );
+		resetPlayground().catch( ( error ) => {
 			resetButtonEl.disabled = false;
 			setStatus( `reset failed: ${ error && error.message }`, 'err' );
 		} );
@@ -819,11 +920,13 @@ async function boot() {
 		 */
 		persist: persistIfChanged,
 		/**
-		 * Reset the playground to a fresh seeded state.
+		 * Reset the playground to a brand-new first-visit state -- clear
+		 * every piece of persistent and cached state and reload (Issue
+		 * #144).
 		 *
 		 * @return {Promise<void>}
 		 */
-		reset: resetDatabase,
+		reset: resetPlayground,
 	};
 
 	if ( frontPage.httpStatusCode === 200 ) {
