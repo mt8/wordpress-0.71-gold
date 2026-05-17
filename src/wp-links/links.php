@@ -329,8 +329,7 @@ function get_links_withrating(
  */
 function get_linkcatname( $id = 0 ) {
 	global $tablelinkcategories, $wpdb;
-	// EN: Cast the category id to int -- it is used unquoted in SQL (WHERE cat_id=$id).
-	// JA: カテゴリ ID を整数にキャスト -- SQL でクォート無し(WHERE cat_id=$id)で使われる。
+	// Cast the category id to int -- it is used unquoted in SQL (WHERE cat_id=$id).
 	$id       = (int) $id;
 	$cat_name = 'noname';
 	$cat_name = $wpdb->get_var( "SELECT cat_name FROM $tablelinkcategories WHERE cat_id=$id" );
@@ -344,8 +343,7 @@ function get_linkcatname( $id = 0 ) {
  */
 function get_autotoggle( $id = 0 ) {
 	global $tablelinkcategories, $wpdb;
-	// EN: Cast the category id to int -- it is used unquoted in SQL (WHERE cat_id=$id).
-	// JA: カテゴリ ID を整数にキャスト -- SQL でクォート無し(WHERE cat_id=$id)で使われる。
+	// Cast the category id to int -- it is used unquoted in SQL (WHERE cat_id=$id).
 	$id          = (int) $id;
 	$auto_toggle = $wpdb->get_var( "SELECT auto_toggle FROM $tablelinkcategories WHERE cat_id=$id" );
 	if ( '' == $auto_toggle ) {

@@ -293,10 +293,8 @@ function convert_bbcode( $content ) {
 
 function convert_bbcode_email( $content ) {
 	global $use_bbcode;
-	// EN: The /e preg_replace modifier was removed in PHP 7.0; it now returns
-	//     null, which wiped $content. Use preg_replace_callback instead.
-	// JA: preg_replace の /e 修飾子は PHP 7.0 で廃止され、現在は null を返すため
-	//     $content が消えていた。preg_replace_callback を使う。
+	// The /e preg_replace modifier was removed in PHP 7.0; it now returns
+	// null, which wiped $content. Use preg_replace_callback instead.
 	$content = preg_replace_callback(
 		'#\[email](.+?)\[/email]#is',
 		function ( $m ) {
@@ -331,10 +329,8 @@ function convert_smilies( $content ) {
 
 function antispambot( $emailaddy, $mailto = 0 ) {
 	$emailNOSPAMaddy = '';
-	// EN: cast the seed to int; an implicit float-to-int conversion is a
-	//     deprecation in PHP 8.1+ ("loses precision").
-	// JA: シードを int にキャストする。暗黙の float→int 変換は PHP 8.1 以降
-	//     非推奨(「精度が失われる」)。
+	// cast the seed to int; an implicit float-to-int conversion is a
+	// deprecation in PHP 8.1+ ("loses precision").
 	srand( (int) ( (float) microtime() * 1000000 ) );
 	for ( $i = 0; $i < strlen( $emailaddy ); $i = $i + 1 ) {
 		$j = floor( rand( 0, 1 + $mailto ) );
@@ -434,8 +430,7 @@ function get_currentuserinfo() {
 
 function get_userdata( $userid ) {
 	global $wpdb, $querycount, $cache_userdata, $use_cache, $tableusers;
-	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $userid).
-	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $userid)で使われる。
+	// Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $userid).
 	$userid = (int) $userid;
 	if ( ( empty( $cache_userdata[ $userid ] ) ) || ( ! $use_cache ) ) {
 		$user = $wpdb->get_row( "SELECT * FROM $tableusers WHERE ID = $userid" );
@@ -488,8 +483,7 @@ function get_userid( $user_login ) {
 
 function get_usernumposts( $userid ) {
 	global $tableposts, $tablecomments, $querycount, $wpdb;
-	// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE post_author = $userid).
-	// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE post_author = $userid)で使われる。
+	// Cast the user id to int -- it is used unquoted in SQL (WHERE post_author = $userid).
 	$userid = (int) $userid;
 	++$querycount;
 	return $wpdb->get_var( "SELECT COUNT(*) FROM $tableposts WHERE post_author = $userid" );
@@ -509,15 +503,12 @@ function get_settings( $setting ) {
 
 function get_postdata( $postid ) {
 	global $tableusers, $tablesettings, $tablecategories, $tableposts, $tablecomments, $querycount, $wpdb;
-	// EN: Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $postid).
-	// JA: 投稿 ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $postid)で使われる。
+	// Cast the post id to int -- it is used unquoted in SQL (WHERE ID = $postid).
 	$postid = (int) $postid;
 	$post   = $wpdb->get_row( "SELECT * FROM $tableposts WHERE ID = $postid" );
 	++$querycount;
-	// EN: a non-existent post id yields a null row; return false so
-	//     callers do not read properties on null.
-	// JA: 存在しない投稿 ID では行が null になる。null への
-	//     プロパティアクセスを避けるため false を返す。
+	// a non-existent post id yields a null row; return false so
+	// callers do not read properties on null.
 	if ( ! $post ) {
 		return false;
 	}
@@ -875,44 +866,33 @@ function balanceTags( $text, $is_comment = 0 ) {
 }
 
 
-// EN: dbconnect() is provided here as a safe no-op. The database
-//     connection is already established by the global $wpdb (wpdb)
-//     instance created in wp-db.php; legacy callers expecting a
-//     dbconnect() function therefore do not raise a fatal error.
-// JA: dbconnect() は安全な空関数として提供する。DB 接続は wp-db.php で
-//     生成されるグローバル $wpdb (wpdb) インスタンスが既に確立して
-//     いるため、dbconnect() 関数を期待するレガシーな呼び出しがあっても
-//     致命的エラーにはならない。
+// dbconnect() is provided here as a safe no-op. The database
+// connection is already established by the global $wpdb (wpdb)
+// instance created in wp-db.php; legacy callers expecting a
+// dbconnect() function therefore do not raise a fatal error.
 function dbconnect() {
 	// no-op: connection handled by the global $wpdb instance
 }
 
 // ---------------------------------------------------------------------------
 // CSRF protection (Issue #33).
-// EN: WordPress 0.71 has no PHP sessions, so the CSRF token is derived from the
-//     admin authentication cookie 'wordpresspass'. A cross-site attacker cannot
-//     read that cookie, so cannot compute a valid token, so cannot forge a
-//     state-changing request. A distinct $action string scopes each token to
-//     one operation.
-// JA: WordPress 0.71 には PHP セッションが無いため、CSRF トークンは管理者の
-//     認証クッキー 'wordpresspass' から生成する。クロスサイトの攻撃者はその
-//     クッキーを読めないため、正しいトークンを計算できず、状態変更リクエストを
-//     偽造できない。$action 文字列ごとにトークンを操作単位へ限定する。
+// WordPress 0.71 has no PHP sessions, so the CSRF token is derived from the
+// admin authentication cookie 'wordpresspass'. A cross-site attacker cannot
+// read that cookie, so cannot compute a valid token, so cannot forge a
+// state-changing request. A distinct $action string scopes each token to
+// one operation.
 function b2_csrf_token( $action = 'global' ) {
-	// EN: Build a token from the action name and the auth cookie value.
-	// JA: アクション名と認証クッキーの値からトークンを生成する。
+	// Build a token from the action name and the auth cookie value.
 	$seed = isset( $_COOKIE['wordpresspass'] ) ? $_COOKIE['wordpresspass'] : '';
 	return substr( md5( $action . '|' . $seed . '|b2-csrf-v1' ), 0, 20 );
 }
 
-// EN: Print a hidden form input carrying the token for a POST form.
-// JA: POST フォーム用に、トークンを保持する隠し入力欄を出力する。
+// Print a hidden form input carrying the token for a POST form.
 function b2_csrf_field( $action = 'global' ) {
 	echo '<input type="hidden" name="_b2csrf" value="' . b2_csrf_token( $action ) . '" />';
 }
 
-// EN: Verify the submitted token; abort the request if it is missing or wrong.
-// JA: 送信されたトークンを検証する。欠落または不一致ならリクエストを中止する。
+// Verify the submitted token; abort the request if it is missing or wrong.
 function b2_csrf_check( $action = 'global' ) {
 	$given = isset( $_REQUEST['_b2csrf'] ) ? $_REQUEST['_b2csrf'] : '';
 	if ( '' === $given || b2_csrf_token( $action ) !== $given ) {

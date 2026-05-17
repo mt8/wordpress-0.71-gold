@@ -100,10 +100,8 @@ function single_month_title( $prefix = '', $display = true ) {
 	global $m, $month;
 	if ( ! empty( $m ) ) {
 		$my_year = substr( $m, 0, 4 );
-		// EN: a year-only archive ($m = 'YYYY') has no month part, so
-		//     substr() yields '' and $month[''] misses; default to ''.
-		// JA: 年のみの archive($m='YYYY')は月が無く substr() が '' を返し
-		//     $month[''] が外れるため、'' を既定値にする。
+		// a year-only archive ($m = 'YYYY') has no month part, so
+		// substr() yields '' and $month[''] misses; default to ''.
 		$my_month = $month[ substr( $m, 4, 2 ) ] ?? '';
 		if ( $display ) {
 			echo $prefix . $my_month . $prefix . $my_year;
@@ -356,8 +354,7 @@ function the_author_msn() {
 }
 
 function the_author_posts() {
-	// EN: $post is needed for $post->post_author but was missing from globals.
-	// JA: $post->post_author に必要な $post が global 宣言から漏れていた。
+	// $post is needed for $post->post_author but was missing from globals.
 	global $id, $postdata, $post;
 	$posts = get_usernumposts( $post->post_author );
 	echo $posts;
@@ -888,10 +885,8 @@ function get_the_category() {
 
 function get_the_category_by_ID( $cat_ID ) {
 	global $tablecategories, $querycount, $cache_categories, $use_cache, $wpdb;
-	// EN: use empty() so an uninitialised $cache_categories cache does not
-	//     warn (matches the sibling get_the_category()).
-	// JA: $cache_categories キャッシュ未初期化時に警告が出ないよう empty()
-	//     を使う(姉妹関数 get_the_category() に合わせる)。
+	// use empty() so an uninitialised $cache_categories cache does not
+	// warn (matches the sibling get_the_category()).
 	if ( ( empty( $cache_categories[ $cat_ID ] ) ) or ( ! $use_cache ) ) {
 		$cat_name = $wpdb->get_var( "SELECT cat_name FROM $tablecategories WHERE cat_ID = '$cat_ID'" );
 		++$querycount;
@@ -1114,10 +1109,8 @@ function apply_filters( $tag, $string ) {
 	global $b2_filter;
 	if ( isset( $b2_filter['all'] ) ) {
 		$b2_filter['all'] = ( is_string( $b2_filter['all'] ) ) ? array( $b2_filter['all'] ) : $b2_filter['all'];
-		// EN: $b2_filter[$tag] may be unset/null; PHP 8's array_merge() rejects
-		//     a non-array argument with a TypeError, so coerce it to an array.
-		// JA: $b2_filter[$tag] は未設定/null のことがある。PHP 8 の array_merge()
-		//     は非配列引数を TypeError とするため、配列へ変換する。
+		// $b2_filter[$tag] may be unset/null; PHP 8's array_merge() rejects
+		// a non-array argument with a TypeError, so coerce it to an array.
 		$b2_filter[ $tag ] = array_merge( $b2_filter['all'], (array) ( $b2_filter[ $tag ] ?? array() ) );
 		$b2_filter[ $tag ] = array_unique( $b2_filter[ $tag ] );
 	}

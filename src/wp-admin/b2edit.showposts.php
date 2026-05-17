@@ -160,12 +160,9 @@ if ( 'ASC' == $i ) {
 		++$querycount;
 		$arc_result = mysqli_query( $wpdb->dbh, $arc_sql );
 		if ( ! $arc_result ) {
-			// EN: Information-disclosure fix (Issue #37). The original code echoed
-			//     the full SQL plus mysqli_error() to the page; keep the technical
-			//     detail in the server log only and show a generic message.
-			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
-			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
-			//     メッセージを表示する。
+			// Information-disclosure fix (Issue #37). The original code echoed
+			// the full SQL plus mysqli_error() to the page; keep the technical
+			// detail in the server log only and show a generic message.
 			error_log( 'b2edit.showposts.php SQL error: ' . mysqli_error( $wpdb->dbh ) . ' -- query: ' . $arc_sql );
 			die( 'A database error occurred.' );
 		}
@@ -183,12 +180,9 @@ if ( 'ASC' == $i ) {
 		++$querycount;
 		$arc_result = mysqli_query( $wpdb->dbh, $arc_sql );
 		if ( ! $arc_result ) {
-			// EN: Information-disclosure fix (Issue #37). The original code echoed
-			//     the full SQL plus mysqli_error() to the page; keep the technical
-			//     detail in the server log only and show a generic message.
-			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
-			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
-			//     メッセージを表示する。
+			// Information-disclosure fix (Issue #37). The original code echoed
+			// the full SQL plus mysqli_error() to the page; keep the technical
+			// detail in the server log only and show a generic message.
 			error_log( 'b2edit.showposts.php SQL error: ' . mysqli_error( $wpdb->dbh ) . ' -- query: ' . $arc_sql );
 			die( 'A database error occurred.' );
 		}
@@ -212,12 +206,9 @@ if ( 'ASC' == $i ) {
 		++$querycount;
 		$arc_result = mysqli_query( $wpdb->dbh, $arc_sql );
 		if ( ! $arc_result ) {
-			// EN: Information-disclosure fix (Issue #37). The original code echoed
-			//     the full SQL plus mysqli_error() to the page; keep the technical
-			//     detail in the server log only and show a generic message.
-			// JA: 情報漏洩の修正(Issue #37)。元のコードは SQL 全文と mysqli_error()
-			//     をページに出力していた。技術的詳細はサーバログのみに残し、汎用
-			//     メッセージを表示する。
+			// Information-disclosure fix (Issue #37). The original code echoed
+			// the full SQL plus mysqli_error() to the page; keep the technical
+			// detail in the server log only and show a generic message.
 			error_log( 'b2edit.showposts.php SQL error: ' . mysqli_error( $wpdb->dbh ) . ' -- query: ' . $arc_sql );
 			die( 'A database error occurred.' );
 		}

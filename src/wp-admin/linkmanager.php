@@ -47,17 +47,12 @@ $_GET    = add_magic_quotes( $_GET );
 $_POST   = add_magic_quotes( $_POST );
 $_COOKIE = add_magic_quotes( $_COOKIE );
 
-// EN: Information-disclosure fix (Issue #37). On a failed query, the original
-//     code printed mysqli_error() -- and sometimes the full SQL text -- to the
-//     browser, leaking the database schema and the exact queries. This helper
-//     writes the technical detail to the server error log only and shows the
-//     visitor a generic message, so nothing query/schema-specific reaches the
-//     page output.
-// JA: 情報漏洩の修正(Issue #37)。元のコードはクエリ失敗時に mysqli_error()
-//     を、場合によっては SQL 全文をブラウザに出力し、データベースのスキーマと
-//     クエリそのものを漏らしていた。本ヘルパは技術的詳細をサーバのエラー
-//     ログにのみ書き出し、訪問者には汎用メッセージを表示することで、クエリや
-//     スキーマに固有の情報がページ出力に出ないようにする。
+// Information-disclosure fix (Issue #37). On a failed query, the original
+// code printed mysqli_error() -- and sometimes the full SQL text -- to the
+// browser, leaking the database schema and the exact queries. This helper
+// writes the technical detail to the server error log only and shows the
+// visitor a generic message, so nothing query/schema-specific reaches the
+// page output.
 function linkmanager_db_error( $dbh, $sql ) {
 	error_log( 'linkmanager.php SQL error: ' . mysqli_error( $dbh ) . ' -- query: ' . $sql );
 	die( 'A database error occurred.' );
@@ -81,16 +76,11 @@ $b2varstoreset = array(
 	'rating',
 	'rel',
 );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -115,8 +105,7 @@ switch ( $action ) {
 		$standalone = 1;
 		include_once 'b2header.php';
 
-		// EN: CSRF check -- reject a forged request to add a link.
-		// JA: CSRF チェック -- リンク追加リクエストの偽造を拒否する。
+		// CSRF check -- reject a forged request to add a link.
 		b2_csrf_check( 'link-add' );
 
 		$link_url         = $_POST['linkurl'];
@@ -170,12 +159,10 @@ switch ( $action ) {
 			$standalone = 1;
 			include_once 'b2header.php';
 
-			// EN: CSRF check -- reject a forged request to save an edited link.
-			// JA: CSRF チェック -- リンク編集保存リクエストの偽造を拒否する。
+			// CSRF check -- reject a forged request to save an edited link.
 			b2_csrf_check( 'link-edit' );
 
-			// EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id=$link_id).
-			// JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id=$link_id)で使われる。
+			// Cast the link id to int -- it is used unquoted in SQL (WHERE link_id=$link_id).
 			$link_id          = (int) $_POST['link_id'];
 			$link_url         = $_POST['linkurl'];
 			$link_name        = $_POST['name'];
@@ -219,12 +206,10 @@ switch ( $action ) {
 		$standalone = 1;
 		include_once 'b2header.php';
 
-		// EN: CSRF check -- reject a forged request to delete a link.
-		// JA: CSRF チェック -- リンク削除リクエストの偽造を拒否する。
+		// CSRF check -- reject a forged request to delete a link.
 		b2_csrf_check( 'link-list' );
 
-		// EN: Cast the link id to int -- it reaches SQL (WHERE link_id = '$link_id').
-		// JA: リンク ID を整数にキャスト -- SQL(WHERE link_id = '$link_id')に渡る。
+		// Cast the link id to int -- it reaches SQL (WHERE link_id = '$link_id').
 		$link_id = (int) $_POST['link_id'];
 
 		if ( $user_level < $minadminlevel ) {
@@ -256,10 +241,8 @@ switch ( $action ) {
 			die( "You have no right to edit the links for this blog.<br />Ask for a promotion to your <a href=\"mailto:$admin_email\">blog admin</a>. :)" );
 		}
 
-		// EN: Cast the link id to int -- $link_id comes from $_GET/$_POST (via
-		//     $b2varstoreset) and is used unquoted in SQL (WHERE link_id = $link_id).
-		// JA: リンク ID を整数にキャスト -- $link_id は $_GET/$_POST 由来($b2varstoreset
-		//     経由)で、SQL でクォート無し(WHERE link_id = $link_id)で使われる。
+		// Cast the link id to int -- $link_id comes from $_GET/$_POST (via
+		// $b2varstoreset) and is used unquoted in SQL (WHERE link_id = $link_id).
 		$link_id = (int) $link_id;
 		$sql     = 'SELECT link_url, link_name, link_image, link_target, link_description, link_visible, link_category AS cat_id, link_rating, link_rel ' .
 		" FROM $tablelinks " .
@@ -286,8 +269,7 @@ switch ( $action ) {
 	<table width="95%" cellpadding="5" cellspacing="0" border="0"><form name="editlink" method="post">
 	<input type="hidden" name="action" value="editlink" />
 		<?php
-		// EN: CSRF token for the link-edit save submit (verified in linkmanager.php).
-		// JA: リンク編集保存の送信用 CSRF トークン(linkmanager.php で検証)。
+		// CSRF token for the link-edit save submit (verified in linkmanager.php).
 		b2_csrf_field( 'link-edit' );
 		?>
 	<input type="hidden" name="link_id" value="<?php echo $link_id; ?>" />
@@ -536,10 +518,8 @@ switch ( $action ) {
 	<input type="hidden" name="link_id" value="" />
 	<input type="hidden" name="action" value="" />
 			<?php
-			// EN: CSRF token for the per-row Delete submit of the link list
-			//     (verified in linkmanager.php's Delete case).
-			// JA: リンク一覧の行ごとの削除送信用 CSRF トークン
-			//     (linkmanager.php の Delete ケースで検証)。
+			// CSRF token for the per-row Delete submit of the link list
+			// (verified in linkmanager.php's Delete case).
 			b2_csrf_field( 'link-list' );
 			?>
 	<input type="hidden" name="order_by" value="<?php echo $order_by; ?>" />
@@ -623,8 +603,7 @@ LINKS;
 	<form name="addlink" method="post">
 	<input type="hidden" name="action" value="Add" />
 		<?php
-		// EN: CSRF token for the add-link submit (verified in linkmanager.php).
-		// JA: リンク追加の送信用 CSRF トークン(linkmanager.php で検証)。
+		// CSRF token for the add-link submit (verified in linkmanager.php).
 		b2_csrf_field( 'link-add' );
 		?>
 	<tr><td colspan="2"><b>Add</b> a link:</td></tr>

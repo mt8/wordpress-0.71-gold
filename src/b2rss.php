@@ -11,7 +11,7 @@ if ( ! isset( $rss_excerpt_length ) || ( 1 == $rss_encoded_html ) ) {
 	$rss_excerpt_length = 0; }
 ?>
 <?php echo '<?xml version="1.0"?' . '>'; ?>
-<!-- EN: version removed from the generator string (Issue #37). JA: generator 文字列からバージョンを除去(Issue #37)。 -->
+<!-- version removed from the generator string (Issue #37). -->
 <!-- generator="wordpress" -->
 <rss version="0.92">
 	<channel>

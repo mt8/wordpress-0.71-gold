@@ -20,16 +20,11 @@ $_POST   = add_magic_quotes( $_POST );
 $_COOKIE = add_magic_quotes( $_COOKIE );
 
 $b2varstoreset = array( 'action' );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -108,12 +103,9 @@ switch ( $action ) {
 	$user_domain  = gethostbyaddr( $_SERVER['REMOTE_ADDR'] );
 	$user_browser = $_SERVER['HTTP_USER_AGENT'];
 
-	// EN: Issue #34 -- store a bcrypt hash of the password, never the plaintext.
-	//     password_hash() output is ASCII-safe, so addslashes() is applied for
-	//     SQL safety just like the other fields.
-	// JA: Issue #34 -- パスワードは平文ではなく bcrypt ハッシュで保存する。
-	//     password_hash() の出力は ASCII セーフなので、他のフィールドと同様に
-	//     SQL 対策として addslashes() を適用する。
+	// Issue #34 -- store a bcrypt hash of the password, never the plaintext.
+	// password_hash() output is ASCII-safe, so addslashes() is applied for
+	// SQL safety just like the other fields.
 	$user_pass_hash = password_hash( $pass1, PASSWORD_DEFAULT );
 
 	$user_login     = addslashes( $user_login );

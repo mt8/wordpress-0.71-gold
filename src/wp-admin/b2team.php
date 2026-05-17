@@ -3,16 +3,11 @@ $title = 'Team management';
 /* <Team> */
 
 $b2varstoreset = array( 'action', 'standalone', 'redirect', 'profile' );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -34,16 +29,12 @@ switch ( $action ) {
 		$standalone = 1;
 		require_once 'b2header.php';
 
-		// EN: CSRF check -- reject a forged GET request to change a user level.
-		// JA: CSRF チェック -- ユーザーレベル変更の GET リクエストの偽造を拒否する。
+		// CSRF check -- reject a forged GET request to change a user level.
 		b2_csrf_check( 'promote-user' );
 
-		// EN: Minimum-level gate -- the promote/demote links are only shown to
-		//     level >= 2 users in the UI; enforce the same here so a low-level
-		//     user cannot bypass it by crafting the URL directly.
-		// JA: 最低レベルゲート -- 昇格/降格リンクは UI 上 level >= 2 のユーザー
-		//     にのみ表示される。URL を直接組み立てる回避を防ぐため同条件を
-		//     ここでも強制する。
+		// Minimum-level gate -- the promote/demote links are only shown to
+		// level >= 2 users in the UI; enforce the same here so a low-level
+		// user cannot bypass it by crafting the URL directly.
 		if ( $user_level < 2 ) {
 			die( 'You are not allowed to change user levels.' );
 		}
@@ -52,8 +43,7 @@ switch ( $action ) {
 			header( 'Location: b2team.php' );
 		}
 
-		// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $id).
-		// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $id)で使われる。
+		// Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $id).
 		$id   = (int) $_GET['id'];
 		$prom = $_GET['prom'];
 
@@ -79,24 +69,18 @@ switch ( $action ) {
 		$standalone = 1;
 		require_once 'b2header.php';
 
-		// EN: CSRF check -- reject a forged GET request to delete a user.
-		// JA: CSRF チェック -- ユーザー削除の GET リクエストの偽造を拒否する。
+		// CSRF check -- reject a forged GET request to delete a user.
 		b2_csrf_check( 'delete-user' );
 
-		// EN: Minimum-level gate -- the delete link is only shown to level > 3
-		//     users in the UI; enforce the same here so a low-level user cannot
-		//     bypass it by crafting the URL directly.
-		// JA: 最低レベルゲート -- 削除リンクは UI 上 level > 3 のユーザーにのみ
-		//     表示される。URL を直接組み立てる回避を防ぐため同条件を
-		//     ここでも強制する。
+		// Minimum-level gate -- the delete link is only shown to level > 3
+		// users in the UI; enforce the same here so a low-level user cannot
+		// bypass it by crafting the URL directly.
 		if ( $user_level <= 3 ) {
 			die( 'You are not allowed to delete users.' );
 		}
 
-		// EN: Cast the user id to int -- it is used unquoted in SQL
-		//     (WHERE ID = $id / WHERE post_author = $id).
-		// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し
-		//     (WHERE ID = $id / WHERE post_author = $id)で使われる。
+		// Cast the user id to int -- it is used unquoted in SQL
+		// (WHERE ID = $id / WHERE post_author = $id).
 		$id = (int) $_GET['id'];
 
 		if ( ! $id ) {
@@ -162,8 +146,7 @@ switch ( $action ) {
 			}
 			echo "</td>\n";
 			echo "<td $bg2>" . $user_data->user_level;
-			// EN: Append the CSRF token to the promote/demote links (verified by b2team.php).
-			// JA: 昇格/降格リンクに CSRF トークンを付与する(b2team.php で検証)。
+			// Append the CSRF token to the promote/demote links (verified by b2team.php).
 			if ( ( $user_level >= 2 ) and ( $user_level > ( $user_data->user_level + 1 ) ) ) {
 				echo ' <a href="b2team.php?action=promote&id=' . $user_data->ID . '&prom=up&_b2csrf=' . b2_csrf_token( 'promote-user' ) . '">+</a> ';
 			}
@@ -219,8 +202,7 @@ switch ( $action ) {
 				}
 				echo "</td>\n";
 				echo "<td $bg1>" . $user_data->user_level;
-				// EN: Append the CSRF token to the promote/delete links (verified by b2team.php).
-				// JA: 昇格/削除リンクに CSRF トークンを付与する(b2team.php で検証)。
+				// Append the CSRF token to the promote/delete links (verified by b2team.php).
 				if ( $user_level >= 2 ) {
 					echo ' <a href="b2team.php?action=promote&id=' . $user_data->ID . '&prom=up&_b2csrf=' . b2_csrf_token( 'promote-user' ) . '">+</a> ';
 				}

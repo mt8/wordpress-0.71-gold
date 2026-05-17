@@ -7,7 +7,7 @@ if ( ! isset( $rss_language ) ) {
 	$rss_language = 'en'; }
 ?>
 <?php echo '<?xml version="1.0" encoding="UTF-8"?' . '>'; ?>
-<!-- EN: version removed from the generator string (Issue #37). JA: generator 文字列からバージョンを除去(Issue #37)。 -->
+<!-- version removed from the generator string (Issue #37). -->
 <!-- generator="wordpress" -->
 <rdf:RDF
 	xmlns="http://purl.org/rss/1.0/"
@@ -26,7 +26,7 @@ if ( ! isset( $rss_language ) ) {
 	<dc:language><?php echo $rss_language; ?></dc:language>
 	<dc:date><?php echo gmdate( 'Y-m-d\TH:i:s' ); ?></dc:date>
 	<dc:creator><?php echo $admin_email; ?></dc:creator>
-	<admin:generatorAgent rdf:resource="http://wordpress.org/"/><!-- EN: version (?v=) removed (Issue #37). JA: バージョン(?v=)を除去(Issue #37)。 -->
+	<admin:generatorAgent rdf:resource="http://wordpress.org/"/><!-- version (?v=) removed (Issue #37). -->
 	<admin:errorReportsTo rdf:resource="mailto:<?php echo $admin_email; ?>"/>
 	<sy:updatePeriod>hourly</sy:updatePeriod>
 	<sy:updateFrequency>1</sy:updateFrequency>

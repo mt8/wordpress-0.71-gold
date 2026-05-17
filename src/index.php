@@ -9,13 +9,13 @@ require $abspath . 'wp-links/links.php';
 	<title><?php bloginfo( 'name' ); ?><?php single_post_title( ' :: ' ); ?><?php single_cat_title( ' :: ' ); ?><?php single_month_title( ' :: ' ); ?></title>
 	
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-	<meta name="generator" content="WordPress" /> <!-- EN: version removed (Issue #37) so the exact release is not disclosed publicly. JA: バージョンを除去(Issue #37) - 正確なリリースを公開しないため。 -->
+	<meta name="generator" content="WordPress" /> <!-- version removed (Issue #37) so the exact release is not disclosed publicly. -->
 
 	<style type="text/css" media="screen">
 		@import url( <?php echo $siteurl; ?>/layout2b.css );
 	</style>
 
-	<?php /* EN: Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. JA: ブロックライブラリのフロント用 CSS(Issue #94) - post_content のレイアウト系ブロック(カラム・グループ等)をブロックエディタと一貫して描画するため。 */ ?>
+	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. */ ?>
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
 
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />

@@ -2,8 +2,7 @@
 require '../b2config.php';
 
 
-// EN: $HTTP_GET_VARS was removed in PHP 5.4; use the $_GET superglobal.
-// JA: $HTTP_GET_VARS は PHP 5.4 で廃止。$_GET スーパーグローバルを使う。
+// $HTTP_GET_VARS was removed in PHP 5.4; use the $_GET superglobal.
 $step = $_GET['step'] ?? null;
 if ( ! $step ) {
 	$step = 0;
@@ -231,9 +230,8 @@ CREATE TABLE $tablecategories (
 <p>Categories are up and running...</p>
 
 		<?php
-		// EN: The comment feature was removed in Issue #44; the b2comments table is
-		//     no longer created.
-		// JA: コメント機能は Issue #44 で撤去した。b2comments テーブルは作成しない。
+		// The comment feature was removed in Issue #44; the b2comments table is
+		// no longer created.
 
 		// $query = "DROP TABLE IF EXISTS $tablesettings";
 		// $q = mysqli_query($wpdb->dbh, $query) or mysql_doh("doh, can't drop the table \"$tablesettings\" in the database.");

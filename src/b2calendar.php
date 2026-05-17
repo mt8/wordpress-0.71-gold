@@ -103,9 +103,8 @@ if ( 1 == $ak_use_arrows ) {
 		$ak_previous_month_link = $ak_previous_month_active;
 	}
 
-	// EN: mktime() with no arguments was removed in PHP 8.0; time() is the
-	//     equivalent "current timestamp".
-	// JA: 引数なしの mktime() は PHP 8.0 で廃止。time() が等価の現在時刻。
+	// mktime() with no arguments was removed in PHP 8.0; time() is the
+	// equivalent "current timestamp".
 	if ( mktime( 0, 0, 0, $ak_next_month, 1, $ak_next_year ) > time() ) {
 		$ak_next_month_link = $ak_next_month_dim;
 	} else {

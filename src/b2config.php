@@ -21,10 +21,8 @@ $admin_email = 'you@example.com';
 
 // ** MySQL settings **
 
-// EN: guard the defines so b2config.php can be processed more than once
-//     (some admin pages include it twice) without a redefinition warning.
-// JA: 一部の管理画面は b2config.php を二重に読み込むため、再定義警告が
-//     出ないよう define をガードする。
+// guard the defines so b2config.php can be processed more than once
+// (some admin pages include it twice) without a redefinition warning.
 if ( ! defined( 'DB_NAME' ) ) {
 	define( 'DB_NAME', 'b2' );       // The name of the database
 }
@@ -171,12 +169,9 @@ $use_weblogsping = 0;
 
 // ** Cafelog.com ping **
 
-// EN: Cafelog ping settings. The XML-RPC ping helpers that consumed these
-//     were removed in Issue #44; the variables are kept (disabled) as
-//     harmless config so any legacy reference still resolves.
-// JA: Cafelog ping 設定。これらを参照していた XML-RPC ping ヘルパーは
-//     Issue #44 で撤去した。変数は無害な設定として(無効のまま)残し、
-//     レガシーな参照があっても解決できるようにする。
+// Cafelog ping settings. The XML-RPC ping helpers that consumed these
+// were removed in Issue #44; the variables are kept (disabled) as
+// harmless config so any legacy reference still resolves.
 $use_cafelogping = 0;
 $cafelogID       = '';
 
