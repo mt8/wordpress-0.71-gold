@@ -158,7 +158,24 @@ real 0.71 schema, translated by the same code the live blog uses.
   does not hit them — but `$wpdb->dbh` is now a `PDO`, not a `mysqli`
   handle, so those paths would fatal. The full build must either route
   them through the `wpdb` methods or have the overlay also cover them.
-- **Image upload** — explicitly out of scope per Issue #108.
+- **Image upload — resolved in the full build, step 5 (Issue #124).**
+  The spike left WordPress 0.71's image upload out of scope. 0.71's
+  classic admin has an upload page (`wp-admin/b2upload.php`) that writes
+  uploaded files to `$fileupload_realpath` (`wp-content/uploads/`); in
+  the playground that path is inside the php-wasm virtual filesystem.
+  Step 5 of the full build makes it work. The service worker already
+  forwards non-GET requests, so the upload form's
+  `multipart/form-data` POST reaches php-wasm with its body and
+  `content-type` intact, and php-wasm's SAPI parses it into `$_FILES`.
+  `src/main.js` rewrites `$fileupload_realpath` (in the in-VFS copy of
+  `b2config.php` only) to `wp-content/uploads` under the document root,
+  and the boot shim creates that directory, so `b2upload.php`'s
+  `move_uploaded_file()` writes the image into the VFS and the
+  static-file handler serves it. The uploaded-media tree is persisted
+  in the browser (`tools/playground/src/media-persistence.js`) — OPFS or
+  IndexedDB, the counterpart of the database persistence layer — so an
+  uploaded image survives a reload / tab close, and the reset clears the
+  persisted media alongside the database.
 - **Persistence — resolved in the full build, step 4 (Issue #122).**
   The spike's SQLite database lived only in the php-wasm virtual
   filesystem and was discarded when the tab closed, so the boot shim
@@ -381,7 +398,24 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
   ハンドルではなく `PDO` であり、それらの経路は致命的エラーになる。
   本格実装はそれらを `wpdb` メソッド経由にするか、オーバーレイで併せて
   対応する必要がある。
-- **画像アップロード** — Issue #108 で明示的に対象外。
+- **画像アップロード — 本格実装のステップ 5(Issue #124)で解決。**
+  スパイクは WordPress 0.71 の画像アップロードを対象外とした。0.71 の
+  従来型管理画面にはアップロードページ(`wp-admin/b2upload.php`)があり、
+  アップロードファイルを `$fileupload_realpath`(`wp-content/uploads/`)
+  へ書き込む。playground ではそのパスは php-wasm 仮想ファイルシステム上
+  にある。本格実装のステップ 5 はこれを動かす。サービスワーカーは既に
+  非 GET 要求を転送するため、アップロードフォームの
+  `multipart/form-data` POST はボディと `content-type` を保ったまま
+  php-wasm へ届き、php-wasm の SAPI がそれを `$_FILES` へ解釈する。
+  `src/main.js` は `$fileupload_realpath` を(VFS 内の `b2config.php`
+  コピーに対してのみ)ドキュメントルート配下の `wp-content/uploads` へ
+  書き換え、起動シムがそのディレクトリを作成するため、`b2upload.php` の
+  `move_uploaded_file()` が画像を VFS へ書き込み、静的ファイルハンドラ
+  がそれを配信する。アップロードメディアツリーはブラウザ内に永続化される
+  (`tools/playground/src/media-persistence.js`)— OPFS または IndexedDB、
+  データベース永続化層の対応物 — ため、アップロード画像はリロード / タブ
+  を閉じても残り、リセットは永続化メディアをデータベースと併せてクリア
+  する。
 - **永続化 — 本格実装のステップ 4（Issue #122）で解決。**
   スパイクの SQLite データベースは php-wasm 仮想ファイルシステム上に
   しか存在せず、タブを閉じると失われたため、起動シムは php-wasm

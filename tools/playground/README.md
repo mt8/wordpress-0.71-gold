@@ -17,6 +17,9 @@ already logged in, and a post can be created, edited and a category
 managed through it, with the change reflected on the front page.
 Step 4 (Issue #122) **persists the SQLite database** in the browser, so
 content created through the admin survives a page reload / tab close.
+Step 5 (Issue #124) makes **image upload** work — an image uploaded
+through the classic admin's `b2upload.php` is stored in the php-wasm
+VFS, served on the blog, and persisted so it survives a reload too.
 
 The spike's findings, including the chosen database approach and the
 remaining work for a full `071-now` build, are in
@@ -143,6 +146,43 @@ of the SQLite file in the browser:
 `src/` is untouched: the persistence layer, the boot-time restore and
 the reset all live under `tools/playground/`.
 
+## Image upload
+
+WordPress 0.71's classic admin has an upload page
+(`wp-admin/b2upload.php`) that writes uploaded images to
+`$fileupload_realpath` — `wp-content/uploads/`. Step 5 (Issue #124)
+makes it work in the playground and persists the uploaded images.
+
+- **The upload reaches php-wasm.** `b2upload.php`'s form is a
+  `multipart/form-data` POST. The service worker already forwards
+  non-GET requests; the multipart body is buffered as a `Uint8Array`
+  and forwarded with its `content-type` header (boundary included)
+  intact, so php-wasm's SAPI parses it into `$_POST` / `$_FILES` and
+  `move_uploaded_file()` writes the image into the VFS — no change to
+  `sw.js` is needed.
+- **Uploads write inside the VFS.** `b2config.php` hard-codes
+  `$fileupload_realpath` at the Docker document root
+  (`/var/www/html/wp-content/uploads`), a path absent from the
+  in-browser VFS. `src/main.js` rewrites it, in the in-VFS copy of
+  `b2config.php` only, to `wp-content/uploads` under the document root,
+  and the boot shim (`db/boot.php`) creates that directory so
+  `b2upload.php`'s `realpath()` check and `move_uploaded_file()`
+  succeed. `$fileupload_url` is derived from `$siteurl`, already
+  rewritten to the scoped path, so an uploaded image's URL is a scoped
+  same-origin path the service worker intercepts and the php-wasm
+  static-file handler serves from the VFS.
+- **Uploaded images persist.** `src/media-persistence.js` is the media
+  counterpart of `src/persistence.js`: it stores the whole
+  `wp-content/uploads/` tree as a path → bytes map, in OPFS (a
+  dedicated sub-directory) or IndexedDB (one keyed map). `src/main.js`
+  restores it into the VFS before the first request and saves it back
+  after any request that changed the tree, exactly as it does for the
+  database. The reset control clears this store alongside the database.
+
+`src/` is never touched — the `b2config.php` rewrite, the uploads
+directory creation, the media persistence layer and the reset all live
+under `tools/playground/`.
+
 ## Layout
 
 ```
@@ -155,6 +195,7 @@ tools/playground/
   src/
     main.js               boots @php-wasm/web, wires the SW bridge
     persistence.js        persists the SQLite database (OPFS / IndexedDB)
+    media-persistence.js  persists the uploaded-media tree (OPFS / IndexedDB)
     wp-files.js           build-time bundle of the overlaid WP 0.71 tree
   db/                     the 071-now database layer (overlaid into WP)
     wp-db.php             SQLite-backed reimplementation of 0.71's wpdb
@@ -184,7 +225,10 @@ blog is served through the service worker: the front page renders with
 its CSS, and a visitor can click through to a post page and a category
 page. It then exercises the admin — opening it logged in, creating and
 editing a post and adding a category through the admin's own forms, and
-confirming each change on the front page. Finally it checks persistence
+confirming each change on the front page. It then checks persistence
 — creating a post, reloading the page and asserting the post is still
-present, then exercising the reset — with no console errors. It writes
+present, then exercising the reset. Finally it checks image upload —
+uploading an image through `b2upload.php`, asserting it is stored and
+served from the VFS, reloading and asserting it survived, then
+asserting the reset clears it — with no console errors. It writes
 `test/071-now-frontpage.png` and `test/071-now-admin.png`.
