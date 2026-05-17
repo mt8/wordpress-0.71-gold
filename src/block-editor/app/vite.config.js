@@ -11,6 +11,67 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+
+/**
+ * EN: Emit `@wordpress/block-library`'s FRONT-END stylesheet as a standalone,
+ *     stably named CSS file in the build output (Issue #94).
+ *
+ *     The editor bundle already imports the block-library styles, so layout
+ *     blocks (columns, group, ...) look right INSIDE the editor. But the
+ *     WordPress 0.71 front end (src/index.php) only loads layout2b.css and has
+ *     no rule for `.wp-block-columns` etc., so a Columns block stored in
+ *     post_content renders as unstyled stacked divs.
+ *
+ *     This plugin copies `@wordpress/block-library/build-style/style.css`
+ *     (the front-end stylesheet -- NOT editor.css, which is editor chrome)
+ *     verbatim into the build output dir as `block-library.css`, a fixed
+ *     filename. A `<link>` in src/index.php points at that file, so the front
+ *     end and the exported static site render layout blocks consistently.
+ *
+ *     A fixed name (no content hash) is used deliberately: src/index.php is a
+ *     hand-written PHP file with a hard-coded path and has no manifest lookup.
+ * JA: `@wordpress/block-library` の「フロント用」スタイルシートを、安定した
+ *     固定名の単独 CSS ファイルとしてビルド成果物へ出力する(Issue #94)。
+ *
+ *     エディタバンドルはブロックライブラリのスタイルを既に取り込むため、
+ *     レイアウト系ブロック(カラム・グループ等)はエディタ「内」では正しく
+ *     見える。しかし WordPress 0.71 のフロントエンド(src/index.php)は
+ *     layout2b.css しか読み込まず `.wp-block-columns` 等の規則を持たないため、
+ *     post_content に保存されたカラムブロックは無装飾の縦積み div になる。
+ *
+ *     本プラグインは `@wordpress/block-library/build-style/style.css`
+ *     (フロント用スタイルシート -- エディタ用 editor.css ではない)を
+ *     そのままビルド成果物へ固定名 `block-library.css` でコピーする。
+ *     src/index.php の `<link>` がそのファイルを指し、フロントエンドと
+ *     書き出した静的サイトがレイアウトブロックを一貫して描画する。
+ *
+ *     固定名(コンテンツハッシュなし)は意図的である: src/index.php は手書きの
+ *     PHP ファイルでパスをハードコードしており、マニフェスト参照を持たない。
+ *
+ * @return {import('vite').Plugin} The Vite plugin.
+ */
+function emitBlockLibraryFrontEndCss() {
+	// EN: The front-end stylesheet shipped by @wordpress/block-library.
+	// JA: @wordpress/block-library が同梱するフロント用スタイルシート。
+	const source = fileURLToPath(
+		new URL(
+			'./node_modules/@wordpress/block-library/build-style/style.css',
+			import.meta.url
+		)
+	);
+
+	return {
+		name: 'emit-block-library-front-end-css',
+		generateBundle() {
+			this.emitFile( {
+				type: 'asset',
+				fileName: 'block-library.css',
+				source: readFileSync( source, 'utf8' ),
+			} );
+		},
+	};
+}
 
 /**
  * EN: Repair the Safari-only `::selection` hack that the CSS minifier breaks.
@@ -95,7 +156,7 @@ function repairSelectionHack() {
 }
 
 export default defineConfig( {
-	plugins: [ react(), repairSelectionHack() ],
+	plugins: [ react(), repairSelectionHack(), emitBlockLibraryFrontEndCss() ],
 	define: {
 		// EN: @wordpress/* packages branch on process.env.NODE_ENV; provide it.
 		// JA: @wordpress/* は process.env.NODE_ENV で分岐するため供給する。

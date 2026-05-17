@@ -25,6 +25,18 @@ import '@wordpress/block-editor/build-style/style.css';
 import '@wordpress/block-editor/build-style/content.css';
 import '@wordpress/block-library/build-style/style.css';
 import '@wordpress/block-library/build-style/editor.css';
+// EN: The 0.71 theme stylesheet (src/layout2b.css), the same one src/index.php
+//     loads on the front end. The editor is non-iframed, so importing it here
+//     applies it to the editor canvas -- the editor and the front end then
+//     share both layout2b.css and the block-library CSS, so authored content
+//     looks the same in the editor preview and on the published page
+//     (Issue #94).
+// JA: 0.71 のテーマスタイルシート(src/layout2b.css)。src/index.php がフロント
+//     エンドで読み込むものと同一。エディタは iframe 化されていないため、ここで
+//     取り込むとエディタキャンバスに適用される。これでエディタとフロントエンド
+//     が layout2b.css とブロックライブラリ CSS の両方を共有し、執筆した内容が
+//     エディタプレビューと公開ページで同じに見える(Issue #94)。
+import '../../../layout2b.css';
 
 import { Editor } from './Editor.jsx';
 import './app.css';

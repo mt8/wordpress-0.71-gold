@@ -14,7 +14,10 @@ require $abspath . 'wp-links/links.php';
 	<style type="text/css" media="screen">
 		@import url( <?php echo $siteurl; ?>/layout2b.css );
 	</style>
-	
+
+	<?php /* EN: Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. JA: ブロックライブラリのフロント用 CSS(Issue #94) - post_content のレイアウト系ブロック(カラム・グループ等)をブロックエディタと一貫して描画するため。 */ ?>
+	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
+
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
 	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo( 'rdf_url' ); ?>" />
 	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo( 'rss2_url' ); ?>" />
