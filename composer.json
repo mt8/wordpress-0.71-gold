@@ -7,13 +7,18 @@
         "squizlabs/php_codesniffer": "^3.7",
         "phpstan/phpstan": "^2.0",
         "wp-coding-standards/wpcs": "^3.1",
-        "phpunit/phpunit": "^12.5"
+        "phpunit/phpunit": "^12.5",
+        "behat/behat": "^3.31"
     },
     "scripts": {
         "phpcs": "phpcs",
         "phpstan": "phpstan analyse --memory-limit=1G",
         "test": "phpunit",
+        "behat": "bash cli/tests/run-behat.sh",
         "static-export": "php bin/static-export.php"
+    },
+    "scripts-descriptions": {
+        "behat": "Run the 071-cli Behat functional test suite (starts a dedicated test database; see cli/README.md)."
     },
     "config": {
         "allow-plugins": {

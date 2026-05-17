@@ -123,6 +123,28 @@ it **is** included in the `phpcs` / `phpstan` scan (unlike
 `src/block-editor/api/`, which is excluded as experimental). This is settled
 in the Phase 1 Issue.
 
+### 3.7 Functional test suite (Behat)
+
+`071-cli` has a Behat functional test suite, the 0.71 equivalent of wp-cli's
+own Behat tests. The Gherkin feature files live under `cli/features/`, one per
+command group plus `cli.feature` for the entry point; they cover every verb,
+every `--format` variant, `--fields`, and the error cases. A PHP
+`FeatureContext` (`cli/features/bootstrap/FeatureContext.php`) runs the `071`
+CLI as a child process and asserts on its STDOUT / STDERR / exit code.
+
+**Database isolation.** The suite never touches the developer's `b2`
+database. `cli/tests/docker-compose.yml` is a **separate Docker Compose
+project** (`071-cli-test`) running its own MySQL 8 on host port **3307** with
+a database named `b2_test`. A `@BeforeScenario` hook reseeds that database
+from `cli/tests/fixtures.sql` (the WordPress 0.71 schema from
+`wp-admin/wp-install.php`, plus a fixed minimal fixture set) before every
+scenario, so each scenario starts from an identical, known state.
+
+Run it with `composer behat` (which starts the test database, waits for it to
+become healthy, then runs Behat). The `cli/php` PHP stays in the
+`phpcs` / `phpstan` scope; the Behat PHP under `cli/features/` and `cli/tests/`
+is test code, outside that scope. See `cli/README.md`.
+
 ## 4. `071-env` (`/env`)
 
 A Node CLI that wraps the existing Docker Compose environment — parity with
@@ -353,6 +375,29 @@ $ 071 post list --fields=ID,post_title,post_status
 `/cli` 配下の新しい PHP は使い捨ての試作ではなく保守されるツールであるため、
 `phpcs` / `phpstan` のスキャン対象に**含める**（実験的として除外している
 `src/block-editor/api/` とは異なる）。これは Phase 1 の Issue で確定する。
+
+### 3.7 機能テストスイート（Behat）
+
+`071-cli` には Behat の機能テストスイートがある。wp-cli 自身の Behat
+テストの 0.71 版である。Gherkin の feature ファイルは `cli/features/` 配下に
+置き、コマンドグループごとに 1 ファイルとエントリポイント用の
+`cli.feature` を持つ。すべての動詞、すべての `--format` バリアント、
+`--fields`、エラーケースをカバーする。PHP の `FeatureContext`
+（`cli/features/bootstrap/FeatureContext.php`）は `071` CLI を子プロセスとして
+実行し、その STDOUT / STDERR / 終了コードに対してアサートする。
+
+**データベース分離。** スイートは開発者の `b2` データベースに決して触れない。
+`cli/tests/docker-compose.yml` は**別の Docker Compose プロジェクト**
+（`071-cli-test`）であり、独自の MySQL 8 をホストポート **3307** で実行し、
+`b2_test` という名前のデータベースを持つ。`@BeforeScenario` フックが各
+シナリオの前に `cli/tests/fixtures.sql`（`wp-admin/wp-install.php` 由来の
+WordPress 0.71 スキーマと、固定の最小フィクスチャ集合）からそのデータ
+ベースを再投入するため、各シナリオは同一の既知の状態から開始する。
+
+実行は `composer behat`（テストデータベースを起動し、healthy になるのを
+待ってから Behat を実行する）。`cli/php` の PHP は `phpcs` / `phpstan` の
+対象のまま。`cli/features/` と `cli/tests/` 配下の Behat の PHP はテスト
+コードであり、その対象外である。`cli/README.md` を参照。
 
 ## 4. `071-env`（`/env`）
 

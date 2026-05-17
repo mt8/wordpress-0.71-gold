@@ -1,0 +1,46 @@
+# EN: Dedicated MySQL 8 database for the 071-cli Behat functional test suite.
+#     This is a SEPARATE Docker Compose project from the repository root
+#     docker-compose.yml: it uses its own project name (071-cli-test), its own
+#     named volume, and publishes MySQL on host port 3307 -- so the developer's
+#     own stack on 3306 and its `b2` database are never touched. The Behat
+#     suite seeds the WordPress 0.71 schema into the `b2_test` database here and
+#     resets it between scenarios.
+#     Start : docker compose -p 071-cli-test -f cli/tests/docker-compose.yml up -d
+#     Stop  : docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+# JA: 071-cli の Behat 機能テストスイート専用の MySQL 8 データベース。
+#     これはリポジトリ直下の docker-compose.yml とは別の Docker Compose
+#     プロジェクトである: 独自のプロジェクト名 (071-cli-test)、独自の名前付き
+#     ボリュームを使い、MySQL をホストのポート 3307 で公開する -- そのため
+#     開発者自身の 3306 上のスタックとその `b2` データベースには一切触れない。
+#     Behat スイートはここの `b2_test` データベースに WordPress 0.71 のスキーマを
+#     投入し、シナリオごとにリセットする。
+#     起動: docker compose -p 071-cli-test -f cli/tests/docker-compose.yml up -d
+#     停止: docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+services:
+  # EN: MySQL 8 -- same engine version as the repository root stack so the
+  #     071-cli tool runs against an identical database server.
+  # JA: MySQL 8 -- リポジトリ直下のスタックと同じエンジンバージョンであり、
+  #     071-cli ツールは同一のデータベースサーバに対して動作する。
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: b2_test
+      MYSQL_USER: user
+      MYSQL_PASSWORD: pass
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      # EN: Host port 3307 -- distinct from the developer stack's 3306.
+      # JA: ホストポート 3307 -- 開発スタックの 3306 とは別。
+      - "3307:3306"
+    healthcheck:
+      # EN: Behat waits on this health check before seeding the schema.
+      # JA: Behat はスキーマ投入の前にこのヘルスチェックを待つ。
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  # EN: Named volume scoped to the 071-cli-test project; removed by `down -v`.
+  # JA: 071-cli-test プロジェクトに紐づく名前付きボリューム。`down -v` で削除。
+  db-test-data:
