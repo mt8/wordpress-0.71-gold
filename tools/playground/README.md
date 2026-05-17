@@ -15,9 +15,9 @@ remaining work for a full `071-now` build, are in
 ## How it works
 
 1. `scripts/build-overlay.mjs` snapshots `src/` (WordPress 0.71) into
-   `playground/wp/` and overlays the 071-now SQLite database layer onto
-   that copy. **`src/` itself is never modified** — the overlay only
-   touches the generated, git-ignored `playground/wp/` directory.
+   `tools/playground/wp/` and overlays the 071-now SQLite database layer
+   onto that copy. **`src/` itself is never modified** — the overlay only
+   touches the generated, git-ignored `tools/playground/wp/` directory.
 2. Vite bundles the browser app and the WordPress 0.71 tree.
 3. At boot the app writes the tree into the php-wasm virtual filesystem,
    registers the 071-now boot shim as `auto_prepend_file`, and issues an
@@ -28,7 +28,7 @@ remaining work for a full `071-now` build, are in
 ## Layout
 
 ```
-playground/
+tools/playground/
   package.json
   index.html              host page
   vite.config.js

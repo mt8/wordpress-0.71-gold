@@ -2,7 +2,7 @@
 
 A wp-env-style environment manager for WordPress 0.71 (b2/cafelog). It wraps
 the repository's existing Docker Compose environment -- it does not replace it.
-See the design in [`docs/071-tooling.md`](../docs/071-tooling.md) section 4.
+See the design in [`docs/071-tooling.md`](../../docs/071-tooling.md) section 4.
 
 ---
 
@@ -39,14 +39,14 @@ regardless of the caller's current working directory.
 ## How `run cli` reaches the container
 
 Only `./src` is mounted into the `web` container, and `071-cli`'s PHP lives in
-`/cli` -- outside the Apache document root, intentionally, so the CLI is not
-web-served. `071-env` bridges this with a Compose **override file**,
-[`docker-compose.071.yml`](docker-compose.071.yml), which bind-mounts `./cli`
-read-only into the container at `/opt/071-cli`. Every `071-env` Compose call
-passes both files:
+`/tools/cli` -- outside the Apache document root, intentionally, so the CLI is
+not web-served. `071-env` bridges this with a Compose **override file**,
+[`docker-compose.071.yml`](docker-compose.071.yml), which bind-mounts
+`./tools/cli` read-only into the container at `/opt/071-cli`. Every `071-env`
+Compose call passes both files:
 
 ```
-docker compose -f docker-compose.yml -f env/docker-compose.071.yml …
+docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 So `071-env run cli post list` becomes:
@@ -116,15 +116,15 @@ How each field is applied:
   failing `beforeDestroy` aborts the destroy.
 
 A plain `docker compose up` without `071-env` still works exactly as before
--- all defaults are preserved. See [`docs/071-tooling.md`](../docs/071-tooling.md)
+-- all defaults are preserved. See [`docs/071-tooling.md`](../../docs/071-tooling.md)
 section 4.4.
 
 ## Package structure
 
 ```
-env/
+tools/env/
   package.json            name "071-env", bin { "071-env": "bin/071-env.mjs" }
-  docker-compose.071.yml  Compose override: bind-mounts cli/ at /opt/071-cli
+  docker-compose.071.yml  Compose override: bind-mounts tools/cli/ at /opt/071-cli
   bin/071-env.mjs         Node CLI entry point (thin wrapper around src/main.mjs)
   src/
     cli.mjs               argument / command parsing and help text (pure)
@@ -162,7 +162,7 @@ lifecycle-hook dispatch.
 
 ```
 npm run test:env        # from the repository root
-npm test                # from env/
+npm test                # from tools/env/
 ```
 
 ---
@@ -171,7 +171,7 @@ npm test                # from env/
 
 WordPress 0.71 (b2/cafelog) 向けの wp-env 風環境マネージャ。リポジトリの既存
 Docker Compose 環境をラップする -- 置き換えはしない。設計は
-[`docs/071-tooling.md`](../docs/071-tooling.md) セクション 4 を参照。
+[`docs/071-tooling.md`](../../docs/071-tooling.md) セクション 4 を参照。
 
 ---
 
@@ -207,15 +207,15 @@ Docker Compose 環境をラップする -- 置き換えはしない。設計は
 
 ## `run cli` がコンテナへ到達する仕組み
 
-`web` コンテナにマウントされるのは `./src` のみで、`071-cli` の PHP は `/cli`
--- Apache ドキュメントルートの外 -- に置かれる（CLI を Web 配信させないための
-意図的な配置）。`071-env` はこれを Compose の**オーバーライドファイル**
-[`docker-compose.071.yml`](docker-compose.071.yml) で橋渡しする。これは
-`./cli` を読み取り専用でコンテナ内 `/opt/071-cli` にバインドマウントする。
-`071-env` の各 Compose 呼び出しは両ファイルを渡す:
+`web` コンテナにマウントされるのは `./src` のみで、`071-cli` の PHP は
+`/tools/cli` -- Apache ドキュメントルートの外 -- に置かれる（CLI を Web
+配信させないための意図的な配置）。`071-env` はこれを Compose の
+**オーバーライドファイル** [`docker-compose.071.yml`](docker-compose.071.yml)
+で橋渡しする。これは `./tools/cli` を読み取り専用でコンテナ内 `/opt/071-cli`
+にバインドマウントする。`071-env` の各 Compose 呼び出しは両ファイルを渡す:
 
 ```
-docker compose -f docker-compose.yml -f env/docker-compose.071.yml …
+docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 そのため `071-env run cli post list` は次のようになる:
@@ -284,15 +284,15 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   destroy を中止する。
 
 `071-env` を介さない素の `docker compose up` も以前とまったく同じく動作する
--- すべての既定値が保持される。[`docs/071-tooling.md`](../docs/071-tooling.md)
+-- すべての既定値が保持される。[`docs/071-tooling.md`](../../docs/071-tooling.md)
 セクション 4.4 を参照。
 
 ## パッケージ構成
 
 ```
-env/
+tools/env/
   package.json            name "071-env"、bin { "071-env": "bin/071-env.mjs" }
-  docker-compose.071.yml  Compose オーバーライド: cli/ を /opt/071-cli にバインドマウント
+  docker-compose.071.yml  Compose オーバーライド: tools/cli/ を /opt/071-cli にバインドマウント
   bin/071-env.mjs         Node CLI エントリポイント（src/main.mjs の薄いラッパ）
   src/
     cli.mjs               引数 / コマンドの解析とヘルプテキスト（純粋）
@@ -330,5 +330,5 @@ env/
 
 ```
 npm run test:env        # リポジトリルートから
-npm test                # env/ から
+npm test                # tools/env/ から
 ```

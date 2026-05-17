@@ -1,7 +1,7 @@
 # 071-cli
 
 A wp-cli-style command-line interface for WordPress 0.71 (b2/cafelog). See the
-design in [`docs/071-tooling.md`](../docs/071-tooling.md) sections 2 and 3.
+design in [`docs/071-tooling.md`](../../docs/071-tooling.md) sections 2 and 3.
 
 ---
 
@@ -31,7 +31,7 @@ Global flags: `--format=table|json|csv|count|ids` (default `table`),
 equivalent of wp-cli's own Behat tests.
 
 ```
-cli/
+tools/cli/
   features/
     cli.feature            entry point: usage, help, unknown group, bad --format
     post.feature           post group: list/get/create/update/delete, formats, errors
@@ -54,11 +54,11 @@ cli/
 
 The suite **never touches the developer's `b2` database**. The test database
 is a **separate Docker Compose project** (`071-cli-test`, defined in
-`cli/tests/docker-compose.yml`): its own MySQL 8 container on host port
+`tools/cli/tests/docker-compose.yml`): its own MySQL 8 container on host port
 **3307**, its own named volume, and a database named `b2_test`. The
 developer's stack on 3306 and its `b2` data are left completely alone.
 
-`FeatureContext` reseeds `b2_test` from `cli/tests/fixtures.sql` in a
+`FeatureContext` reseeds `b2_test` from `tools/cli/tests/fixtures.sql` in a
 `@BeforeScenario` hook -- so every scenario starts from an identical, known
 state, and write commands (`create` / `update` / `delete` / `set` /
 non-SELECT `db query`) cannot leak between scenarios. `fixtures.sql` carries
@@ -79,18 +79,18 @@ composer behat
 ```
 
 This starts the dedicated test database (`docker compose -p 071-cli-test -f
-cli/tests/docker-compose.yml up -d`), waits for it to become healthy, then
+tools/cli/tests/docker-compose.yml up -d`), waits for it to become healthy, then
 runs Behat. The test database is left running afterwards so repeated runs are
 fast. To stop and remove it:
 
 ```
-docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml down -v
 ```
 
 To run a single feature, pass it through:
 
 ```
-composer behat -- cli/features/post.feature
+composer behat -- tools/cli/features/post.feature
 ```
 
 ### Connection overrides
@@ -134,7 +134,7 @@ The test-database connection defaults to `127.0.0.1:3307` / `b2_test` /
 wp-cli 自身の Behat テストの 0.71 版である。
 
 ```
-cli/
+tools/cli/
   features/
     cli.feature            エントリポイント: 使い方・ヘルプ・未知のグループ・不正な --format
     post.feature           post グループ: list/get/create/update/delete・形式・エラー
@@ -157,12 +157,12 @@ cli/
 
 スイートは**開発者の `b2` データベースに決して触れない**。テストデータ
 ベースは**別の Docker Compose プロジェクト**（`071-cli-test`、
-`cli/tests/docker-compose.yml` で定義）である: 独自の MySQL 8 コンテナを
+`tools/cli/tests/docker-compose.yml` で定義）である: 独自の MySQL 8 コンテナを
 ホストポート **3307** で実行し、独自の名前付きボリュームと `b2_test` という
 名前のデータベースを持つ。開発者の 3306 上のスタックとその `b2` データには
 一切触れない。
 
-`FeatureContext` は `@BeforeScenario` フックで `cli/tests/fixtures.sql` から
+`FeatureContext` は `@BeforeScenario` フックで `tools/cli/tests/fixtures.sql` から
 `b2_test` を再投入する -- そのため各シナリオは同一の既知の状態から開始し、
 書き込みコマンド（`create` / `update` / `delete` / `set` / SELECT 以外の
 `db query`）がシナリオ間で漏れることはない。`fixtures.sql` は WordPress
@@ -183,18 +183,18 @@ composer behat
 ```
 
 これは専用のテストデータベース（`docker compose -p 071-cli-test -f
-cli/tests/docker-compose.yml up -d`）を起動し、healthy になるのを待ってから
+tools/cli/tests/docker-compose.yml up -d`）を起動し、healthy になるのを待ってから
 Behat を実行する。テストデータベースはその後も起動したままにし、繰り返しの
 実行を高速にする。停止して削除するには:
 
 ```
-docker compose -p 071-cli-test -f cli/tests/docker-compose.yml down -v
+docker compose -p 071-cli-test -f tools/cli/tests/docker-compose.yml down -v
 ```
 
 単一の feature を実行するには引数で渡す:
 
 ```
-composer behat -- cli/features/post.feature
+composer behat -- tools/cli/features/post.feature
 ```
 
 ### 接続の上書き
