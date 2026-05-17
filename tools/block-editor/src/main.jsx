@@ -36,7 +36,7 @@ import '@wordpress/block-library/build-style/editor.css';
 //     取り込むとエディタキャンバスに適用される。これでエディタとフロントエンド
 //     が layout2b.css とブロックライブラリ CSS の両方を共有し、執筆した内容が
 //     エディタプレビューと公開ページで同じに見える(Issue #94)。
-import '../../../layout2b.css';
+import '../../../src/layout2b.css';
 
 import { Editor } from './Editor.jsx';
 import './app.css';
