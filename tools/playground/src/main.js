@@ -38,6 +38,7 @@ import { loadWebRuntime } from '@php-wasm/web';
 import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal';
 import { wpFiles } from './wp-files.js';
 import { DatabasePersistence } from './persistence.js';
+import { MediaPersistence } from './media-persistence.js';
 
 // EN: Document root inside the php-wasm virtual filesystem.
 const DOCROOT = '/wordpress';
@@ -47,6 +48,15 @@ const DOCROOT = '/wordpress';
 //     boot shim seeds and reads the database at this path, and this app
 //     loads the persisted bytes into it and saves them back from it.
 const DB_PATH = '/tmp/071-now.sqlite';
+
+// EN: The uploaded-media directory inside the php-wasm virtual
+//     filesystem. WordPress 0.71's wp-admin/b2upload.php writes uploaded
+//     images to $fileupload_realpath; the in-VFS copy of b2config.php is
+//     rewritten so that path is this directory (see bootPhpWasm), under
+//     the document root so the static-file handler can serve the images.
+//     The boot shim creates this directory, and this app persists and
+//     restores its contents (Issue #124).
+const UPLOADS_DIR = `${ DOCROOT }/wp-content/uploads`;
 
 // EN: The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
 //     absolute asset URLs and internal links against it.
@@ -158,6 +168,24 @@ async function bootPhpWasm() {
 		"$abspath    = getenv( 'DOCUMENT_ROOT' ) . $relpath . '/';",
 		"$abspath    = getenv( 'DOCUMENT_ROOT' ) . '/';"
 	);
+
+	// EN: Point WordPress 0.71's image-upload directory at the php-wasm
+	//     virtual filesystem (Issue #124). b2config.php hard-codes
+	//     $fileupload_realpath at the Docker document root
+	//     (/var/www/html/wp-content/uploads), a path that does not exist
+	//     in the in-browser VFS -- so wp-admin/b2upload.php's
+	//     move_uploaded_file() / realpath() would fail. Rewrite it to the
+	//     uploads directory under DOCROOT (the boot shim creates that
+	//     directory). $fileupload_url is derived from $siteurl, which is
+	//     already rewritten to the scoped path above, so an uploaded
+	//     image's URL is a scoped same-origin path the service worker
+	//     intercepts and the static-file handler serves from the VFS.
+	//     Like the other rewrites here this touches only the in-VFS copy
+	//     -- src/ and the on-disk overlay are never modified.
+	config = config.replace(
+		"$fileupload_realpath = '/var/www/html/wp-content/uploads';",
+		`$fileupload_realpath = '${ UPLOADS_DIR }';`
+	);
 	php.writeFile( configPath, config );
 
 	// EN: Register the 071-now boot shim as the auto_prepend_file so the
@@ -210,6 +238,105 @@ async function restorePersistedDatabase( php, persistence ) {
 	//     writing the restored database file into it.
 	php.mkdirTree( DB_PATH.slice( 0, DB_PATH.lastIndexOf( '/' ) ) );
 	php.writeFile( DB_PATH, bytes );
+	return true;
+}
+
+/**
+ * Restore a persisted uploaded-media tree into the php-wasm filesystem.
+ *
+ * Called once, before the first request is served. WordPress 0.71's
+ * wp-admin/b2upload.php writes uploaded images under UPLOADS_DIR; this
+ * writes any media persisted on an earlier visit back into that directory
+ * so an uploaded image is on disk before the blog renders it. When
+ * nothing is persisted (a first run, or after a reset) the directory is
+ * left empty.
+ *
+ * @param {PHP}              php         The php-wasm instance.
+ * @param {MediaPersistence} persistence The media persistence handle.
+ * @return {Promise<number>} The number of media files restored.
+ */
+async function restorePersistedMedia( php, persistence ) {
+	const tree = await persistence.load();
+	if ( ! tree ) {
+		return 0;
+	}
+	for ( const [ relativePath, bytes ] of Object.entries( tree ) ) {
+		const destination = `${ UPLOADS_DIR }/${ relativePath }`;
+		php.mkdirTree( destination.slice( 0, destination.lastIndexOf( '/' ) ) );
+		php.writeFile( destination, bytes );
+	}
+	return Object.keys( tree ).length;
+}
+
+/**
+ * Read the uploaded-media tree from the php-wasm filesystem.
+ *
+ * Walks UPLOADS_DIR recursively and returns a relative-path -> bytes map,
+ * the shape MediaPersistence stores. The bytes are copied out of the
+ * php-wasm heap (readFileAsBuffer may return a view backed by the shared
+ * WASM memory) so a later PHP write cannot mutate them.
+ *
+ * @param {PHP} php The php-wasm instance.
+ * @return {Object<string,Uint8Array>} The relative-path -> bytes map
+ *                                     (empty when nothing is uploaded).
+ */
+function readMediaTree( php ) {
+	const tree = {};
+	if ( ! php.isDir( UPLOADS_DIR ) ) {
+		return tree;
+	}
+
+	/**
+	 * Recurse into one directory of the uploads tree.
+	 *
+	 * @param {string} absoluteDir Absolute directory path in the VFS.
+	 * @param {string} prefix      Path prefix relative to UPLOADS_DIR.
+	 */
+	const walk = ( absoluteDir, prefix ) => {
+		for ( const name of php.listFiles( absoluteDir ) ) {
+			// EN: listFiles includes the '.'/'..' entries on some
+			//     emscripten builds; skip them so the walk terminates.
+			if ( name === '.' || name === '..' ) {
+				continue;
+			}
+			const absolute = `${ absoluteDir }/${ name }`;
+			const relative = prefix ? `${ prefix }/${ name }` : name;
+			if ( php.isDir( absolute ) ) {
+				walk( absolute, relative );
+			} else {
+				tree[ relative ] = new Uint8Array(
+					php.readFileAsBuffer( absolute )
+				);
+			}
+		}
+	};
+
+	walk( UPLOADS_DIR, '' );
+	return tree;
+}
+
+/**
+ * Whether two uploaded-media trees hold identical content.
+ *
+ * Used to skip persisting the media when a request did not change it --
+ * only an upload through wp-admin/b2upload.php adds or changes a file, so
+ * a front-page view or an asset request leaves the tree untouched.
+ *
+ * @param {Object<string,Uint8Array>} a First media tree.
+ * @param {Object<string,Uint8Array>} b Second media tree.
+ * @return {boolean} True when both hold the same files, byte-for-byte.
+ */
+function mediaTreesEqual( a, b ) {
+	const aKeys = Object.keys( a );
+	const bKeys = Object.keys( b );
+	if ( aKeys.length !== bKeys.length ) {
+		return false;
+	}
+	for ( const key of aKeys ) {
+		if ( ! bytesEqual( a[ key ], b[ key ] ) ) {
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -311,10 +438,25 @@ async function boot() {
 	const persistence = new DatabasePersistence();
 	const restored = await restorePersistedDatabase( php, persistence );
 
+	// EN: Persist the uploaded-media tree in the browser (Issue #124).
+	//     WordPress 0.71's wp-admin/b2upload.php writes uploaded images
+	//     under UPLOADS_DIR; the media persistence layer (the counterpart
+	//     of the database one above) restores any media persisted on an
+	//     earlier visit into that directory before the first request, so
+	//     an uploaded image is on disk when the blog renders it, and saves
+	//     it back after every request that adds or changes a file. A first
+	//     run, or a boot after a reset, finds nothing persisted.
+	const mediaPersistence = new MediaPersistence();
+	const mediaRestored = await restorePersistedMedia( php, mediaPersistence );
+
 	// EN: The last database snapshot written to the persistent store.
 	//     A request is persisted only when it changed the database, so a
 	//     front-page view or an asset request triggers no storage write.
 	let lastSavedDb = restored ? readDatabaseBytes( php ) : null;
+
+	// EN: The last uploaded-media tree written to the persistent store,
+	//     compared the same way so only an upload triggers a storage write.
+	let lastSavedMedia = readMediaTree( php );
 
 	/**
 	 * Persist the SQLite database if the latest request changed it.
@@ -323,11 +465,20 @@ async function boot() {
 	 */
 	async function persistIfChanged() {
 		const current = readDatabaseBytes( php );
-		if ( ! current || bytesEqual( current, lastSavedDb ) ) {
-			return;
+		if ( current && ! bytesEqual( current, lastSavedDb ) ) {
+			await persistence.save( current );
+			lastSavedDb = current;
 		}
-		await persistence.save( current );
-		lastSavedDb = current;
+
+		// EN: Persist the uploaded-media tree the same way -- an upload
+		//     through the admin adds a file under UPLOADS_DIR, and that
+		//     new tree is written to the media store so the image
+		//     survives a reload the way the database does.
+		const currentMedia = readMediaTree( php );
+		if ( ! mediaTreesEqual( currentMedia, lastSavedMedia ) ) {
+			await mediaPersistence.save( currentMedia );
+			lastSavedMedia = currentMedia;
+		}
 	}
 
 	// EN: The service worker forwards every scoped blog request here.
@@ -381,22 +532,25 @@ async function boot() {
 	blogEl.src = frontPageUrl;
 
 	/**
-	 * Reset the playground to a fresh seeded database (Issue #122).
+	 * Reset the playground to a fresh seeded state (Issue #122, #124).
 	 *
-	 * Clears the persistent store and the in-VFS database file, then
-	 * reloads the page. The next boot finds nothing persisted, so the
-	 * boot shim seeds a fresh database -- the playground is back to its
-	 * clean state and every post or category added through the admin is
+	 * Clears the persistent database store and the in-VFS database file,
+	 * and the persistent media store too (Issue #124), then reloads the
+	 * page. The next boot finds nothing persisted, so the boot shim seeds
+	 * a fresh database -- the playground is back to its clean state and
+	 * every post, category and uploaded image added through the admin is
 	 * gone.
 	 *
 	 * @return {Promise<void>}
 	 */
 	async function resetDatabase() {
 		await persistence.clear();
+		await mediaPersistence.clear();
 		if ( php.fileExists( DB_PATH ) ) {
 			php.unlink( DB_PATH );
 		}
 		lastSavedDb = null;
+		lastSavedMedia = {};
 		location.reload();
 	}
 
@@ -420,6 +574,11 @@ async function boot() {
 		html: frontPage.text,
 		persistenceBackend: persistence.backend,
 		databaseRestored: restored,
+		// EN: The number of uploaded-media files restored from the
+		//     persistent store at boot (Issue #124). The verifier reads
+		//     this after a reload to confirm an uploaded image was
+		//     restored, and after a reset to confirm it was cleared.
+		mediaRestoredCount: mediaRestored,
 		/**
 		 * Fetch a path from the in-browser WordPress 0.71 install.
 		 *
@@ -428,17 +587,17 @@ async function boot() {
 		 */
 		get: ( url ) => requestHandler.request( { url } ),
 		/**
-		 * Persist the database now if it has changed.
+		 * Persist the database and uploaded media now if they changed.
 		 *
-		 * Each request already persists the database when it changed it;
-		 * this lets a caller force-flush before a reload, used by the
-		 * headless verifier so its assertions never race the save.
+		 * Each request already persists them when it changed them; this
+		 * lets a caller force-flush before a reload, used by the headless
+		 * verifier so its assertions never race the save.
 		 *
 		 * @return {Promise<void>}
 		 */
 		persist: persistIfChanged,
 		/**
-		 * Reset the playground to a fresh seeded database.
+		 * Reset the playground to a fresh seeded state.
 		 *
 		 * @return {Promise<void>}
 		 */
@@ -447,7 +606,7 @@ async function boot() {
 
 	if ( frontPage.httpStatusCode === 200 ) {
 		setStatus(
-			`WordPress 0.71 served in-browser; database persisted via ${ persistence.backend }.`,
+			`WordPress 0.71 served in-browser; database and uploads persisted via ${ persistence.backend }.`,
 			'ok'
 		);
 	}

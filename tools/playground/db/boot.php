@@ -68,6 +68,22 @@ if ( ! file_exists( WP071_DB_PATH ) ) {
 	require __DIR__ . '/071-now-seed.php';
 }
 
+// EN: Ensure the image-upload directory exists (Issue #124). WordPress
+//     0.71's wp-admin/b2upload.php writes uploaded images to
+//     $fileupload_realpath and, before writing, calls
+//     realpath( $fileupload_realpath ) to verify the destination -- a
+//     check that returns false when the directory is absent, aborting the
+//     upload. The app rewrites $fileupload_realpath in the in-VFS
+//     b2config.php to wp-content/uploads under the document root; create
+//     that directory here so the upload page can write into it. This boot
+//     shim runs before every request, so the directory is in place even
+//     on a fresh php-wasm instance whose virtual filesystem starts empty.
+$wp071_uploads_dir = dirname( __DIR__ ) . '/wp-content/uploads';
+if ( ! is_dir( $wp071_uploads_dir ) ) {
+	@mkdir( $wp071_uploads_dir, 0755, true );
+}
+unset( $wp071_uploads_dir );
+
 // EN: The mysqli compat helpers (wp071_db_query / wp071_db_fetch_* /
 //     wp071_db_error). A few 0.71 functions call mysqli_*( $wpdb->dbh,
 //     ... ) directly; the overlay builder rewrites those sites to these
