@@ -1,14 +1,26 @@
 <?xml version="1.0"?>
 <!--
   EN: phpcs ruleset for WordPress 0.71-gold. Runs the WordPress-Core coding
-      standard (WPCS) against src/.
+      standard (WPCS) against src/ and the 071-cli tool under cli/php/.
   JA: WordPress 0.71-gold の phpcs ルールセット。WordPress-Core コーディング
-      標準(WPCS)を src/ に対して実行する。
+      標準(WPCS)を src/ と cli/php/ 配下の 071-cli ツールに対して実行する。
 -->
 <ruleset name="wordpress-0.71-gold">
     <description>WordPress-Core coding standard (WPCS) check.</description>
 
     <file>src</file>
+
+    <!-- EN: 071-cli (cli/php/, Issue #106) is a maintained tool, not a
+              throwaway prototype, so its PHP is included in this WPCS pass,
+              unlike the experimental src/block-editor/api/ above. This is
+              settled in docs/071-tooling.md section 3.6. The Node shim and
+              package.json under cli/ are not PHP and are not matched here.
+         JA: 071-cli(cli/php/、Issue #106)は使い捨ての試作ではなく保守される
+              ツールであるため、その PHP を本 WPCS チェックに含める。上記の
+              実験的な src/block-editor/api/ とは異なる。これは
+              docs/071-tooling.md セクション 3.6 で確定している。cli/ 配下の
+              Node シムと package.json は PHP ではないため対象外。 -->
+    <file>cli/php</file>
 
     <!-- EN: WordPress coding style. b2vars.php is a mixed cp1252 / UTF-8 file
               whose byte-significant translation tables would be corrupted by

@@ -8,6 +8,14 @@ parameters:
     level: 0
     paths:
         - src
+        # EN: 071-cli (cli/php/, Issue #106) is a maintained tool, so its PHP
+        #     is analysed here -- unlike the experimental src/block-editor/api/
+        #     excluded below. Settled in docs/071-tooling.md section 3.6.
+        # JA: 071-cli(cli/php/、Issue #106)は保守されるツールであるため、その
+        #     PHP をここで解析する -- 下記で除外する実験的な
+        #     src/block-editor/api/ とは異なる。docs/071-tooling.md
+        #     セクション 3.6 で確定している。
+        - cli/php
     # EN: The block editor (src/block-editor/, Issue #65 / #76) is a
     #     clearly-labelled experimental proof-of-concept -- a custom
     #     @wordpress/block-editor React app on a thin modern JSON backend,
