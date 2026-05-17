@@ -309,10 +309,39 @@ tractable and is what makes `071-now` realistic.
 
 ### 5.3 Plan
 
-Phase 3 begins with a **feasibility spike**: get php-wasm to render 0.71's
+Phase 3 began with a **feasibility spike**: get php-wasm to render 0.71's
 front page against a SQLite-backed database seeded with one post, before
-committing to the full build. Image upload and the full admin are out of
-scope for the spike.
+committing to the full build (the spike's findings are in
+`docs/071-now-spike.md`). The full build then followed in six steps.
+
+### 5.4 Status — built
+
+`071-now` is **built**, no longer a spike. `/tools/playground` runs
+WordPress 0.71 entirely in the browser — PHP 8.3 compiled to WebAssembly
+via `@php-wasm/web`, reading from an in-browser SQLite database, with no
+MySQL server and no web server. The full build was delivered in six
+steps under umbrella Issue #104:
+
+1. **Service-worker serving** (#117) — the in-browser blog is served
+   through a request-routing service worker, so it loads its own CSS and
+   is fully navigable.
+2. **PHP-8.3-only bundle** (#119) — a Vite plugin trims the php-wasm
+   bundle to the PHP 8.3 runtime alone (40 MB, down from ~290 MB).
+3. **The working admin** (#121) — the WordPress 0.71 admin (`wp-admin/`)
+   works: it opens already logged in, and a post can be created, edited
+   and a category managed through it.
+4. **Persisted database** (#123) — the SQLite database is persisted in
+   the browser (OPFS / IndexedDB), so content created through the admin
+   survives a reload, with a reset control.
+5. **Image upload** (#125) — an image uploaded through the classic
+   admin's `b2upload.php` is stored, served and persisted.
+6. **Final polish** (#126) — a fresh playground opens on a small seeded
+   demo blog (several posts across a couple of categories), a loading
+   splash covers the php-wasm boot, and the host page frames the
+   playground and links back to the repository.
+
+The package, its layout and the `npm run build` / `dev` / `preview` /
+`verify` workflow are documented in `tools/playground/README.md`.
 
 ## 6. Phasing
 
@@ -646,10 +675,39 @@ SQLite データベースと MySQL→SQLite 変換層で解決している。
 
 ### 5.3 計画
 
-Phase 3 は**実現可能性検証（feasibility spike）**から始める: 本格実装に
+Phase 3 は**実現可能性検証（feasibility spike）**から始めた: 本格実装に
 踏み切る前に、投稿 1 件を投入した SQLite ベースの DB に対して php-wasm が
-0.71 のフロントページを描画できることを確認する。画像アップロードと管理
-画面全体は spike の対象外とする。
+0.71 のフロントページを描画できることを確認した（検証結果は
+`docs/071-now-spike.md`）。その後、本格実装を 6 ステップで進めた。
+
+### 5.4 状況 — 実装済み
+
+`071-now` は **実装済み**であり、スパイクではない。`/tools/playground` は
+WordPress 0.71 を完全にブラウザ内で動かす — `@php-wasm/web` 経由で
+WebAssembly へコンパイルした PHP 8.3 が、ブラウザ内 SQLite データベースを
+読み、MySQL サーバーも Web サーバーも介さない。本格実装はアンブレラ
+Issue #104 の下で 6 ステップで実施した:
+
+1. **サービスワーカー配信**（#117）— ブラウザ内ブログをリクエスト
+   ルーティングのサービスワーカー経由で配信し、自身の CSS を読み込み
+   完全に遷移できるようにする。
+2. **PHP 8.3 のみのバンドル**（#119）— Vite プラグインが php-wasm
+   バンドルを PHP 8.3 ランタイムのみへ絞る（約 290 MB から 40 MB へ）。
+3. **動作する管理画面**（#121）— WordPress 0.71 の管理画面（`wp-admin/`）
+   が動作する: ログイン済みで開き、管理画面から投稿の作成・編集と
+   カテゴリーの管理ができる。
+4. **永続化データベース**（#123）— SQLite データベースをブラウザ内に
+   永続化し（OPFS / IndexedDB）、管理画面から作成した内容がリロードを
+   越えて残る。リセット操作付き。
+5. **画像アップロード**（#125）— 従来型管理画面の `b2upload.php` から
+   アップロードした画像が保存・配信・永続化される。
+6. **仕上げ**（#126）— 新規 playground は小さなシード済みデモブログ
+   （複数カテゴリーにまたがる数件の投稿）で開き、ローディング
+   スプラッシュが php-wasm の起動を覆い、ホストページが playground を
+   枠付けしリポジトリへリンクする。
+
+パッケージ・そのレイアウト・`npm run build` / `dev` / `preview` /
+`verify` のワークフローは `tools/playground/README.md` に記載している。
 
 ## 6. フェーズ
 

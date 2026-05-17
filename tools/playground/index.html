@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <!--
-  EN: 071-now host page (Issue #116, full build 1/6). Loads the browser
-      app that boots @php-wasm/web and serves WordPress 0.71 through a
-      service worker so the in-browser blog has its CSS and navigation.
-      The toolbar carries a reset control (Issue #122) that clears the
-      persisted SQLite database and returns the blog to its fresh seeded
-      state.
-  JA: 071-now ホストページ(Issue #116、フル実装 1/6)。@php-wasm/web を
-      起動し、サービスワーカー経由で WordPress 0.71 を配信するブラウザ
-      アプリを読み込む(ブラウザ内ブログに CSS と遷移が備わる)。ツール
-      バーには永続化された SQLite データベースをクリアしブログを新しい
-      シード済み状態へ戻すリセット操作(Issue #122)を備える。
+  EN: 071-now host page (Issue #116, full build 1/6; polished in Issue
+      #126, step 6/6). Loads the browser app that boots @php-wasm/web and
+      serves WordPress 0.71 through a service worker so the in-browser
+      blog has its CSS and navigation.
+      The chrome frames the playground -- a title bar stating this is
+      WordPress 0.71 (2003) running in the browser via WebAssembly PHP,
+      with a link back to the GitHub repository -- and carries the reset
+      control (Issue #122). A loading splash covers the php-wasm boot
+      (the ~40 MB PHP 8.3 runtime takes a few seconds) and is removed
+      once the blog is served (Issue #126).
+  JA: 071-now ホストページ(Issue #116、フル実装 1/6。Issue #126、
+      ステップ 6/6 で仕上げ)。@php-wasm/web を起動し、サービスワーカー
+      経由で WordPress 0.71 を配信するブラウザアプリを読み込む(ブラウザ
+      内ブログに CSS と遷移が備わる)。
+      クロームは playground を枠付けする — これがブラウザ内で WebAssembly
+      PHP により動作する WordPress 0.71(2003)である旨を示すタイトルバー
+      と GitHub リポジトリへのリンク — そしてリセット操作(Issue #122)を
+      備える。ローディングスプラッシュが php-wasm の起動(約 40 MB の
+      PHP 8.3 ランタイムは数秒かかる)を覆い、ブログ配信後に除去される
+      (Issue #126)。
 -->
 <html lang="en">
 	<head>
@@ -19,12 +28,30 @@
 		<title>071-now &mdash; browser-based WordPress 0.71</title>
 		<style>
 			html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+			body { display: flex; flex-direction: column; background: #f0f0f1; }
+
+			/*
+			 * EN: The chrome -- a slim title bar above the blog framing the
+			 *     playground and linking back to the repository.
+			 */
+			#chrome {
+				display: flex; align-items: baseline; gap: 10px;
+				flex-wrap: wrap;
+				padding: 8px 14px;
+				background: #1d2327; color: #f0f0f1;
+			}
+			#chrome strong { font-size: 14px; font-weight: 600; }
+			#chrome .tagline { font-size: 12px; color: #a7aaad; }
+			#chrome a { color: #72aee6; font-size: 12px; text-decoration: none; }
+			#chrome a:hover { text-decoration: underline; }
+			#chrome .spacer { flex: 1; }
+
 			#toolbar {
 				display: flex; align-items: center; gap: 12px;
-				background: #1d2327;
+				background: #2c3338;
 			}
 			#status {
-				flex: 1; padding: 6px 12px; font: 13px/1.5 monospace;
+				flex: 1; padding: 6px 14px; font: 12px/1.5 monospace;
 				color: #c3c4c7;
 			}
 			#toolbar.ok #status { color: #b8e6bf; }
@@ -32,24 +59,78 @@
 			#toolbar.ok { background: #00450c; }
 			#toolbar.err { background: #5c0000; }
 			#reset {
-				margin: 4px 10px; padding: 3px 12px; cursor: pointer;
+				margin: 4px 12px; padding: 3px 12px; cursor: pointer;
 				font: 12px/1.5 system-ui, sans-serif;
 				background: #2271b1; color: #fff;
 				border: 0; border-radius: 3px;
 			}
 			#reset:hover:not(:disabled) { background: #135e96; }
 			#reset:disabled { opacity: 0.5; cursor: default; }
-			#blog { width: 100%; height: calc(100% - 33px); border: 0; }
+
+			/*
+			 * EN: #stage holds the blog iframe and the loading splash; the
+			 *     splash sits on top until the blog is ready.
+			 */
+			#stage { position: relative; flex: 1; }
+			#blog {
+				position: absolute; inset: 0;
+				width: 100%; height: 100%; border: 0;
+			}
+
+			#splash {
+				position: absolute; inset: 0;
+				display: flex; flex-direction: column;
+				align-items: center; justify-content: center;
+				gap: 14px; padding: 24px; box-sizing: border-box;
+				text-align: center; background: #f0f0f1;
+				transition: opacity 0.3s ease;
+			}
+			#splash.hidden { opacity: 0; pointer-events: none; }
+			#splash .mark { font-size: 22px; font-weight: 600; color: #1d2327; }
+			#splash .sub { font-size: 13px; color: #50575e; max-width: 30em; }
+			#splash .spinner {
+				width: 34px; height: 34px;
+				border: 3px solid #c3c4c7;
+				border-top-color: #2271b1;
+				border-radius: 50%;
+				animation: spin 0.9s linear infinite;
+			}
+			#splash .phase { font: 12px/1.5 monospace; color: #787c82; }
+			@keyframes spin { to { transform: rotate(360deg); } }
+			@media (prefers-reduced-motion: reduce) {
+				#splash .spinner { animation-duration: 3s; }
+			}
 		</style>
 	</head>
 	<body>
 		<!--
+		  EN: The chrome states plainly what the playground is -- WordPress
+		      0.71 from 2003, running entirely in this browser tab on PHP
+		      compiled to WebAssembly -- and links back to the source
+		      repository so a visitor can find the project.
+		  JA: クロームは playground が何であるかを明示する — 2003 年の
+		      WordPress 0.71 が、WebAssembly へコンパイルされた PHP 上で
+		      このブラウザタブ内で完全に動作している — そして訪問者が
+		      プロジェクトを辿れるようソースリポジトリへリンクする。
+		-->
+		<header id="chrome">
+			<strong>071-now</strong>
+			<span class="tagline">
+				WordPress 0.71 (2003), running entirely in your browser via WebAssembly PHP
+			</span>
+			<span class="spacer"></span>
+			<a href="https://github.com/mt8/wordpress-0.71-gold" target="_blank" rel="noopener">
+				GitHub repository &#8599;
+			</a>
+		</header>
+		<!--
 		  EN: The toolbar holds the boot status line and the reset
-		      control. Reset clears the persisted SQLite database and
-		      reloads, returning the blog to its fresh seeded state.
+		      control. Reset clears the persisted SQLite database and the
+		      uploaded media, then reloads, returning the blog to its
+		      fresh seeded state.
 		  JA: ツールバーは起動ステータス行とリセット操作を持つ。リセットは
-		      永続化された SQLite データベースをクリアして再読み込みし、
-		      ブログを新しいシード済み状態へ戻す。
+		      永続化された SQLite データベースとアップロードメディアを
+		      クリアして再読み込みし、ブログを新しいシード済み状態へ戻す。
 		-->
 		<div id="toolbar">
 			<div id="status">071-now: booting php-wasm&hellip;</div>
@@ -57,14 +138,39 @@
 				Reset database
 			</button>
 		</div>
-		<!--
-		  EN: The blog is served through the service worker at a scoped
-		      same-origin path; src is set by src/main.js once php-wasm
-		      is up so the worker can intercept the navigation.
-		  JA: ブログはサービスワーカー経由でスコープ付き同一オリジンパスで
-		      配信される。src は php-wasm 起動後に src/main.js が設定する。
-		-->
-		<iframe id="blog" title="WordPress 0.71 (071-now)"></iframe>
+		<div id="stage">
+			<!--
+			  EN: The blog is served through the service worker at a scoped
+			      same-origin path; src is set by src/main.js once php-wasm
+			      is up so the worker can intercept the navigation.
+			  JA: ブログはサービスワーカー経由でスコープ付き同一オリジン
+			      パスで配信される。src は php-wasm 起動後に src/main.js が
+			      設定する。
+			-->
+			<iframe id="blog" title="WordPress 0.71 (071-now)"></iframe>
+			<!--
+			  EN: The loading splash. php-wasm's boot fetches and starts the
+			      ~40 MB PHP 8.3 WebAssembly runtime, which takes a few
+			      seconds; the splash covers the iframe (which is blank
+			      until the blog is served) and is faded out by src/main.js
+			      once the front page is ready.
+			  JA: ローディングスプラッシュ。php-wasm の起動は約 40 MB の
+			      PHP 8.3 WebAssembly ランタイムを取得・開始するため数秒
+			      かかる。スプラッシュは iframe(ブログ配信まで空白)を
+			      覆い、フロントページ準備完了後に src/main.js がフェード
+			      アウトさせる。
+			-->
+			<div id="splash">
+				<div class="spinner" aria-hidden="true"></div>
+				<div class="mark">Starting WordPress 0.71&hellip;</div>
+				<div class="sub">
+					Compiling PHP 8.3 to WebAssembly and booting a 2003-era
+					WordPress in your browser. This takes a few seconds on
+					the first visit.
+				</div>
+				<div class="phase" id="splash-phase">booting php-wasm&hellip;</div>
+			</div>
+		</div>
 		<script type="module" src="/src/main.js"></script>
 	</body>
 </html>

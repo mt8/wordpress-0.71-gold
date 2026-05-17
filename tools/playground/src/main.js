@@ -71,9 +71,18 @@ const SCOPE_PREFIX = `/scope:${ Math.random().toString( 36 ).slice( 2, 10 ) }`;
 const statusEl = document.getElementById( 'status' );
 const blogEl = document.getElementById( 'blog' );
 const resetButtonEl = document.getElementById( 'reset' );
+const splashEl = document.getElementById( 'splash' );
+const splashPhaseEl = document.getElementById( 'splash-phase' );
 
 /**
- * Update the status line.
+ * Update the status line and, while the loading splash is still up, its
+ * phase line.
+ *
+ * php-wasm's boot fetches and starts the ~40 MB PHP 8.3 WebAssembly
+ * runtime, which takes a few seconds; index.html shows a loading splash
+ * over the (blank) blog iframe meanwhile. The same message that drives
+ * the toolbar status line is mirrored into the splash so a visitor sees
+ * the boot progressing rather than a frozen spinner (Issue #126).
  *
  * @param {string} message Status text.
  * @param {string} [kind]  '', 'ok' or 'err'.
@@ -83,6 +92,23 @@ function setStatus( message, kind = '' ) {
 	// EN: The ok / err colours live on the toolbar so the reset button
 	//     shares the status background.
 	statusEl.parentElement.className = kind;
+	// EN: Mirror the phase into the splash while it is still visible.
+	if ( splashPhaseEl && splashEl && ! splashEl.classList.contains( 'hidden' ) ) {
+		splashPhaseEl.textContent = message;
+	}
+}
+
+/**
+ * Fade out and remove the loading splash.
+ *
+ * Called once the blog iframe has actually rendered the front page, so
+ * the splash is replaced by the live blog rather than by a still-blank
+ * frame. Idempotent -- a second call (a later navigation) is a no-op.
+ */
+function hideSplash() {
+	if ( splashEl && ! splashEl.classList.contains( 'hidden' ) ) {
+		splashEl.classList.add( 'hidden' );
+	}
 }
 
 /**
@@ -528,7 +554,16 @@ async function boot() {
 	//     every asset request and link click inside it are intercepted
 	//     by the service worker and served through php-wasm -- so the
 	//     blog loads its own CSS and is fully navigable.
+	//
+	//     The loading splash (index.html) is removed once the iframe has
+	//     actually loaded the front page, so the splash is replaced by
+	//     the live blog rather than by a still-blank frame (Issue #126).
+	//     A fallback timer hides it regardless after a few seconds, so a
+	//     missed load event can never leave the splash stuck over a
+	//     rendered blog.
 	const frontPageUrl = SCOPE_PREFIX + '/index.php';
+	blogEl.addEventListener( 'load', hideSplash, { once: true } );
+	setTimeout( hideSplash, 4000 );
 	blogEl.src = frontPageUrl;
 
 	/**
@@ -613,7 +648,15 @@ async function boot() {
 }
 
 boot().catch( ( error ) => {
+	// EN: setStatus mirrors into the splash only while the splash has no
+	//     'hidden' class, so a boot failure's message reaches the splash
+	//     phase line; surface it on the splash mark too so a failed boot
+	//     does not leave a visitor staring at "Starting WordPress 0.71".
 	setStatus( `boot failed: ${ error && error.message }`, 'err' );
+	const splashMarkEl = splashEl && splashEl.querySelector( '.mark' );
+	if ( splashMarkEl ) {
+		splashMarkEl.textContent = 'WordPress 0.71 failed to start';
+	}
 	// eslint-disable-next-line no-console
 	console.error( '[071-now]', error );
 } );
