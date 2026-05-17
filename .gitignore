@@ -18,10 +18,14 @@ test-results/
 playwright-report/
 /playwright/.cache/
 
-# Block editor (src/block-editor/), Issue #65 / #76 / ブロックエディタ
+# Block editor, Issue #65 / #76 / #158 / ブロックエディタ
 # EN: npm dependencies and the bundled build output are artifacts, not source.
+#     The build source lives in tools/block-editor/; the build output is
+#     written into src/block-editor/assets/, served by Apache.
 # JA: npm の依存関係とバンドルされたビルド成果物は成果物でありソースではない。
-/src/block-editor/app/node_modules/
+#     ビルドソースは tools/block-editor/ にあり、ビルド出力は Apache が配信する
+#     src/block-editor/assets/ へ書き出される。
+/tools/block-editor/node_modules/
 /src/block-editor/assets/
 
 # 071-env local config and generated overrides / 071-env のローカル設定と生成物
