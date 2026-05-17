@@ -11,6 +11,7 @@ It began as the **feasibility spike** of Issue #108 (a proof of concept
 that rendered the front page) and is now being grown into a usable
 browser-based blog. Step 1 of that full build (Issue #116) serves the
 blog through a **service worker** so it has its CSS and is navigable.
+Step 2 (Issue #118) trims the php-wasm bundle to PHP 8.3 only.
 
 The spike's findings, including the chosen database approach and the
 remaining work for a full `071-now` build, are in
@@ -51,6 +52,26 @@ same-origin and scoped. The service worker intercepts exactly those
 scoped requests, leaving the app shell and the `.wasm`/`.data` runtime
 assets to the network. `src/` and the on-disk overlay are untouched —
 only the in-memory php-wasm copy of `b2config.php` is rewritten.
+
+## Trimming the php-wasm bundle to PHP 8.3
+
+`@php-wasm/web` depends on one package per PHP version it supports
+(`@php-wasm/web-5-2` … `@php-wasm/web-8-5`), and its
+`getPHPLoaderModule` / `getIntlExtensionPath` functions are a `switch`
+whose every case is a static `await import('@php-wasm/web-<v>')`.
+Rollup resolves every one of those literal-string imports at build
+time, so a plain build ships all eight PHP runtimes — roughly 290 MB
+of `.wasm`. 071-now boots `@php-wasm/web` with `'8.3'` only, so the
+other seven cases are dead branches.
+
+`vite.config.js` carries a `071-now-trim-php-wasm-versions` plugin that
+resolves every `@php-wasm/web-<v>` package other than the PHP 8.3 one
+to an inert stub module. The stub re-exports the same surface
+(`getPHPLoaderModule`, `getIntlExtensionPath`, `jspi`) so the named
+imports in `@php-wasm/web` still resolve, but it carries no `.wasm`
+import — so Rollup never pulls those runtimes into the build. The
+build then emits only the PHP 8.3 `.wasm` files (the asyncify and JSPI
+flavors, selected at runtime by browser feature detection).
 
 ## Layout
 
