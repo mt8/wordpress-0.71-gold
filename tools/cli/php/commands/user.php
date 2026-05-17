@@ -2,15 +2,10 @@
 /**
  * 071-cli -- `user` command group.
  *
- * EN: Manage WordPress 0.71 users in the b2users table.
+ * Manage WordPress 0.71 users in the b2users table.
  *     Verbs: list | get <id> | create | update <id> | delete <id>.
  *     The `user_pass` column stores the password as plain text in 0.71; the
  *     CLI sets it verbatim, matching the 2003-era behaviour.
- * JA: WordPress 0.71 のユーザー(b2users テーブル)を管理する。
- *     動詞: list | get <id> | create | update <id> | delete <id>。
- *     0.71 では `user_pass` カラムはパスワードを平文で保持する。CLI はそれを
- *     そのまま設定し、2003 年当時の挙動に合わせる。
- *
  * @package 071-cli
  */
 

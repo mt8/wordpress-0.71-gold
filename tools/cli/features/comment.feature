@@ -1,9 +1,6 @@
-# EN: Functional coverage of the `071 comment` command group: list / get /
+# Functional coverage of the `071 comment` command group: list / get /
 #     delete (0.71's comment group has no create or update verb), --format
 #     variants, and the comment-specific error cases.
-# JA: `071 comment` コマンドグループの機能カバレッジ: list / get / delete
-#     (0.71 の comment グループに create や update 動詞は無い)、--format
-#     バリアント、コメント固有のエラーケース。
 Feature: The comment command group
   In order to manage WordPress 0.71 comments
   As a 071-cli user

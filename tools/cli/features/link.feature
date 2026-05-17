@@ -1,11 +1,7 @@
-# EN: Functional coverage of the `071 link` command group: list / get /
+# Functional coverage of the `071 link` command group: list / get /
 #     create / delete (0.71's link group has no update verb), --format
 #     variants, --fields, and the link-specific error cases (the two required
 #     fields --link_url and --link_name).
-# JA: `071 link` コマンドグループの機能カバレッジ: list / get / create /
-#     delete(0.71 の link グループに update 動詞は無い)、--format バリアント、
-#     --fields、リンク固有のエラーケース(必須フィールド --link_url と
-#     --link_name)。
 Feature: The link command group
   In order to manage the WordPress 0.71 blogroll
   As a 071-cli user

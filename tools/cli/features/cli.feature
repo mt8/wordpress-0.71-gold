@@ -1,11 +1,7 @@
-# EN: Functional coverage of the 071-cli entry point itself: top-level usage /
+# Functional coverage of the 071-cli entry point itself: top-level usage /
 #     help, the unknown-command-group error, an unknown --format value, and the
 #     per-group help verb. The per-group verb and field error cases live in the
 #     individual command-group feature files.
-# JA: 071-cli エントリポイント自体の機能カバレッジ: トップレベルの使い方 /
-#     ヘルプ、未知のコマンドグループのエラー、未知の --format 値、グループ
-#     ごとの help 動詞。グループごとの動詞・フィールドのエラーケースは個別の
-#     コマンドグループ feature ファイルにある。
 Feature: The 071-cli entry point
   In order to discover and correctly invoke 071-cli
   As a 071-cli user

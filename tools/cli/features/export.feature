@@ -1,4 +1,4 @@
-# EN: Functional coverage of the `071 export` command group: run / help. The
+# Functional coverage of the `071 export` command group: run / help. The
 #     `export` command crawls a running WordPress 0.71 blog over HTTP and
 #     writes a self-contained static HTML site; unlike the other groups it does
 #     not touch the database. A full export run needs a running blog and is not
@@ -7,15 +7,6 @@
 #     and the unreachable-blog failure (a `--blog-url` pointed at a dead port).
 #     The full export run is verified manually against the running Docker
 #     environment; see docs/static-export.md.
-# JA: `071 export` コマンドグループの機能カバレッジ: run / help。`export`
-#     コマンドは稼働中の WordPress 0.71 ブログを HTTP でクロールし、自己完結
-#     した静的 HTML サイトを書き出す。他のグループと異なりデータベースには
-#     触れない。完全な書き出し実行は稼働中のブログを必要とし、本データベース
-#     専用の Behat ハーネス内では再現できないため、本 feature は決定的な
-#     表面 -- ヘルプテキスト、未知の動詞エラー、到達不能ブログの失敗
-#     (`--blog-url` を死んだポートへ向ける) -- をカバーする。完全な書き出し
-#     実行は稼働中の Docker 環境に対して手動で検証する。docs/static-export.md
-#     を参照。
 Feature: The export command group
   In order to publish WordPress 0.71 as a safe static site
   As a 071-cli user

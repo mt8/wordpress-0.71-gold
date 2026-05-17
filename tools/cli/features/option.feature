@@ -1,11 +1,7 @@
-# EN: Functional coverage of the `071 option` command group: list / get /
+# Functional coverage of the `071 option` command group: list / get /
 #     set. 0.71 stores its settings as the columns of a single b2settings row
 #     (ID = 1), so each column is one "option" name. Covers --format variants
 #     for `list` and the option-specific error cases.
-# JA: `071 option` コマンドグループの機能カバレッジ: list / get / set。
-#     0.71 は設定を単一の b2settings 行(ID = 1)のカラムとして保持するため、
-#     各カラムが 1 つの「オプション」名となる。`list` の --format バリアントと
-#     オプション固有のエラーケースをカバーする。
 Feature: The option command group
   In order to manage WordPress 0.71 blog settings
   As a 071-cli user
