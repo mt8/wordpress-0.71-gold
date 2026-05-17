@@ -113,3 +113,170 @@
 	padding: 2rem;
 	font-family: -apple-system, system-ui, sans-serif;
 }
+
+/*
+ * EN: Responsive header for narrow viewports (a phone, ~390px wide).
+ *
+ *     The desktop header is a single non-wrapping row, so on a phone its
+ *     controls overflow the viewport: the "Back to wp-admin" link breaks word
+ *     by word, the badge collides with the overview button and the save
+ *     button runs off the edge.
+ *
+ *     These rules, guarded by a max-width media query, only apply below 782px
+ *     (WordPress's own "small" breakpoint); the desktop header is untouched.
+ *     The toolbar is allowed to wrap onto multiple rows, the link text is kept
+ *     on one line, and the save button's label may wrap inside the button --
+ *     so every header control stays readable and within the viewport.
+ * JA: 狭幅ビューポート(スマホ、幅 ~390px)向けレスポンシブヘッダー。
+ *
+ *     デスクトップのヘッダーは折り返さない 1 行のため、スマホでは操作子が
+ *     ビューポートからはみ出す: 「Back to wp-admin」リンクが単語ごとに
+ *     改行され、バッジが概観ボタンに重なり、保存ボタンが端からはみ出す。
+ *
+ *     これらの規則は max-width メディアクエリで囲い、782px(WordPress 自身の
+ *     「小」ブレークポイント)未満でのみ適用する。デスクトップのヘッダーは
+ *     そのまま。ツールバーを複数行へ折り返せるようにし、リンクテキストを
+ *     1 行に保ち、保存ボタンのラベルはボタン内で折り返せるようにする --
+ *     これでヘッダーの各操作子が読め、ビューポート内に収まる。
+ */
+@media ( max-width: 782px ) {
+	.be-toolbar {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+		padding: 0.5rem 0.75rem;
+	}
+
+	.be-toolbar-left,
+	.be-toolbar-right {
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+
+	/*
+	 * EN: The right-hand group (front-end link + save button) takes a full
+	 *     row of its own and aligns its controls to the start so the save
+	 *     button no longer overflows the viewport edge.
+	 * JA: 右側グループ(フロントエンドリンク + 保存ボタン)を独立した 1 行
+	 *     にし、操作子を先頭寄せにする。保存ボタンがビューポート端から
+	 *     はみ出さなくなる。
+	 */
+	.be-toolbar-right {
+		flex-basis: 100%;
+		justify-content: flex-start;
+	}
+
+	/*
+	 * EN: Keep the link text on one line -- without this the toolbar's
+	 *     narrow space breaks "Back to wp-admin" word by word.
+	 * JA: リンクテキストを 1 行に保つ -- これが無いと狭いツールバーで
+	 *     「Back to wp-admin」が単語ごとに改行される。
+	 */
+	.be-toolbar .be-link {
+		white-space: nowrap;
+	}
+
+	/*
+	 * EN: Let the save button's label wrap inside the button instead of
+	 *     pushing the button past the viewport edge.
+	 * JA: 保存ボタンのラベルをボタン内で折り返させ、ボタンが
+	 *     ビューポート端を越えて押し出されないようにする。
+	 */
+	.be-toolbar-right .components-button.is-primary {
+		height: auto;
+		min-height: 36px;
+		white-space: normal;
+		text-align: left;
+	}
+}
+
+/*
+ * EN: Responsive editor body for narrow viewports (a phone, ~390px wide).
+ *
+ *     The desktop body is a three-column layout (Document Overview / canvas /
+ *     settings sidebar) with two fixed 280px side columns. At a phone width
+ *     those columns leave the canvas no room, so the regions overlap: the
+ *     canvas is crushed to zero width and its text wraps one letter per line,
+ *     and the Post-panel labels overlap their controls.
+ *
+ *     This media query (the same 782px breakpoint as the header rules above)
+ *     collapses the body into a single column -- the canvas first, then the
+ *     settings sidebar and the Document Overview panel stacked beneath it.
+ *     The two side columns drop their fixed 280px width and become full-width
+ *     auto-height blocks, so no region overlaps another and the canvas gets
+ *     the full viewport width. The desktop layout is untouched.
+ * JA: 狭幅ビューポート(スマホ、幅 ~390px)向けレスポンシブな本体。
+ *
+ *     デスクトップの本体は 3 カラムのレイアウト(ドキュメント概観 /
+ *     キャンバス / 設定サイドバー)で、両脇は固定 280px のカラム。スマホ幅
+ *     ではそのカラムがキャンバスの場所を奪い、各領域が重なる: キャンバスは
+ *     幅ゼロに潰れてテキストが 1 文字ずつ折り返し、Post パネルのラベルが
+ *     操作子に重なる。
+ *
+ *     このメディアクエリ(上のヘッダー規則と同じ 782px ブレークポイント)は
+ *     本体を 1 カラムに畳む -- まずキャンバス、その下に設定サイドバーと
+ *     ドキュメント概観パネルを段積みする。両脇のカラムは固定 280px 幅を
+ *     やめて全幅・自動高さのブロックになり、どの領域も重ならず、キャンバスは
+ *     ビューポートの全幅を得る。デスクトップのレイアウトはそのまま。
+ */
+@media ( max-width: 782px ) {
+	.be-title {
+		font-size: 1.4rem;
+		padding: 0.75rem 1rem;
+	}
+
+	.be-body {
+		flex-direction: column;
+	}
+
+	/*
+	 * EN: The canvas leads the stacked column (order: 1); the panels follow.
+	 *     min-height gives the canvas a usable editing area; the whole page
+	 *     -- not a nested scroll region -- scrolls on a phone.
+	 * JA: 段積みカラムの先頭にキャンバスを置き(order: 1)、パネルを続ける。
+	 *     min-height でキャンバスに使える編集領域を与える。スマホでは
+	 *     入れ子のスクロール領域ではなくページ全体がスクロールする。
+	 */
+	.be-canvas {
+		order: 1;
+		min-height: 50vh;
+	}
+
+	.be-sidebar {
+		order: 2;
+	}
+
+	.be-overview {
+		order: 3;
+	}
+
+	/*
+	 * EN: The two side columns drop their fixed 280px width and their side
+	 *     borders, becoming full-width blocks stacked under the canvas with a
+	 *     top divider; max-height keeps a long block outline from filling the
+	 *     screen.
+	 * JA: 両脇のカラムは固定 280px 幅と側面の枠線をやめ、上に区切り線を持つ
+	 *     全幅ブロックとしてキャンバスの下に段積みされる。max-height は長い
+	 *     ブロックアウトラインが画面を埋めるのを防ぐ。
+	 */
+	.be-overview,
+	.be-sidebar {
+		width: auto;
+		max-height: 60vh;
+		border-left: none;
+		border-right: none;
+		border-top: 1px solid #ddd;
+	}
+
+	/*
+	 * EN: Tighter canvas padding for the phone width, and let the writing
+	 *     flow grow with its content so the page scrolls as a whole rather
+	 *     than trapping the canvas in a short nested scroll box.
+	 * JA: スマホ幅向けにキャンバスの余白を詰め、書き込みフローを内容に
+	 *     合わせて伸ばす。キャンバスを短い入れ子のスクロールボックスに
+	 *     閉じ込めず、ページ全体でスクロールさせる。
+	 */
+	.be-canvas .block-editor-writing-flow {
+		padding: 1rem;
+		overflow: visible;
+	}
+}

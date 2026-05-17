@@ -174,6 +174,12 @@ Verified end to end against the Docker blog:
   `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
 - Cookie-based auth and the `b2edit.php`-equivalent ownership check.
+- **Responsive layout** — on a desktop the body is a three-column layout
+  (Document Overview / canvas / settings sidebar); below 782px the header
+  wraps onto multiple rows and the body collapses to a single column — the
+  canvas first, then the Document Overview and settings panels stacked at
+  full width — so the editor is usable on a phone. The mobile rules are
+  guarded by a media query in `src/app.css`; the desktop layout is unchanged.
 
 ## Limitations
 
