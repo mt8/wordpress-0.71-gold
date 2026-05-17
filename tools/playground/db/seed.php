@@ -1,10 +1,12 @@
 <?php
 // ==================================================================
-//  071-now database seed (Issue #108 feasibility spike).
+//  071-now database seed (Issue #108 feasibility spike; Issue #126).
 //
-//  Builds the WordPress 0.71 schema in a SQLite database and inserts
-//  one published post, the admin user, the General category and the
-//  b2settings row, so the 0.71 front page has something to render.
+//  Builds the WordPress 0.71 schema in a SQLite database and inserts a
+//  small demo blog -- the admin user, a handful of published posts
+//  across a couple of categories, the b2settings row -- so a fresh
+//  playground opens on a presentable WordPress 0.71 blog rather than a
+//  single placeholder post (Issue #126).
 //
 //  The schema mirrors src/wp-admin/wp-install.php; the DDL is fed
 //  through WP071_SqlTranslator so the exact MySQL DDL of 0.71 is what
@@ -127,9 +129,24 @@ foreach ( $ddl as $statement ) {
 	$pdo->exec( WP071_SqlTranslator::translate( $statement ) );
 }
 
-// EN: The General category (cat_ID 1) -- 0.71 stores the post category
-//     as an integer in b2posts.post_category.
-$pdo->exec( "INSERT INTO $tablecategories (cat_ID, cat_name) VALUES (1, 'General')" );
+// EN: The demo blog's categories. WordPress 0.71 stores a post's
+//     category as an integer in b2posts.post_category, and the front
+//     page renders each post's category name and a sidebar category
+//     list -- so a few categories show 0.71's real category rendering.
+//     cat_ID 1 stays 'General' (the 0.71 default) so any post created
+//     later through the admin still has a category to land in.
+$categories = array(
+	1 => 'General',
+	2 => 'Announcements',
+	3 => 'Notes from 2003',
+);
+$catStmt = $pdo->prepare(
+	"INSERT INTO $tablecategories (cat_ID, cat_name) VALUES (:id, :name)"
+);
+foreach ( $categories as $catId => $catName ) {
+	$catStmt->execute( array( ':id' => $catId, ':name' => $catName ) );
+}
+$catStmt = null;
 
 // EN: The b2settings row. what_to_show = 'posts' keeps the front page
 //     on the simple "latest N posts" path (blog.header.php), avoiding
@@ -147,30 +164,116 @@ $pdo->exec(
 	  VALUES (1, 'admin', '" . md5( 'spike' ) . "', 'admin', 'you@example.com', 10, 'nickname', '2003-05-27 00:00:01', '127.0.0.1', '127.0.0.1')"
 );
 
-// EN: One seeded published post. The spike's success criterion is this
-//     post's title and content appearing on the rendered front page.
-$now  = gmdate( 'Y-m-d H:i:s' );
-$stmt = $pdo->prepare(
+// EN: The demo blog's posts. A fresh playground shows a small,
+//     meaningful WordPress 0.71 blog -- several published posts across
+//     the categories above -- so a visitor sees 0.71's real post,
+//     category and author rendering rather than a single placeholder
+//     (Issue #126).
+//
+//     The front page lists posts newest-first and groups them under a
+//     date heading, so each post is given a distinct post_date a day
+//     apart. The newest post keeps the title and body the headless
+//     verifier and the spike's success criterion expect ('Hello world
+//     from 071-now' / 'in-browser SQLite database'), and is in the
+//     General category (cat_ID 1) so the verifier's front-page-to-post
+//     -to-category click-through stays on known content.
+//
+//     post_date is built backwards from one hour before "now": the
+//     newest post is an hour old and each later one is a day older.
+//     WordPress 0.71's front page only lists posts whose post_date is at
+//     or before the current time (blog.header.php: post_date <= now), so
+//     dating the newest post slightly in the past keeps it on the front
+//     page whatever the hour the playground is opened, while still
+//     reading as a few days of recent posts.
+$baseTime = time() - 3600;
+$posts    = array(
+	array(
+		'title'    => 'Hello world from 071-now',
+		'category' => 1,
+		'content'  => "Hello from 071-now! This WordPress 0.71 front page is being "
+			. "rendered by PHP compiled to WebAssembly, reading this post from "
+			. "an in-browser SQLite database. No MySQL server is involved -- "
+			. "the whole blog runs inside your browser tab.\n\n"
+			. "Everything below is a live WordPress 0.71 install from 2003. "
+			. "Click a post title to open it, or a category to filter the "
+			. "front page. The admin is one URL away at wp-admin/.",
+	),
+	array(
+		'title'    => 'A quick tour of the playground',
+		'category' => 2,
+		'content'  => "This is the 071-now playground -- WordPress 0.71 served "
+			. "entirely in the browser, the way wp-now and WordPress "
+			. "Playground serve modern WordPress.\n\n"
+			. "The toolbar above the blog has a Reset button: it clears the "
+			. "in-browser database and uploaded images and returns the blog "
+			. "to this fresh seeded state. Posts and images you create "
+			. "through the admin are saved in the browser and survive a "
+			. "reload until you reset.",
+	),
+	array(
+		'title'    => 'Writing posts in the classic admin',
+		'category' => 2,
+		'content'  => "WordPress 0.71's admin lives under wp-admin/. The "
+			. "playground opens it already logged in, so you can write a "
+			. "post, edit one, or add a category straight away.\n\n"
+			. "The post editor here is the 2003-era b2/cafelog interface "
+			. "WordPress grew out of -- a plain title field, a textarea for "
+			. "the body, and a category dropdown. No blocks, no widgets, no "
+			. "JavaScript editor.",
+	),
+	array(
+		'title'    => 'How the database works without MySQL',
+		'category' => 3,
+		'content'  => "WordPress 0.71 was written for MySQL, and there is no "
+			. "MySQL server in a browser. 071-now keeps the blog's data in "
+			. "an in-browser SQLite database instead.\n\n"
+			. "A small MySQL-to-SQLite translation layer rewrites 0.71's "
+			. "queries on the way through, and a SQLite-backed wpdb keeps "
+			. "the exact public surface 0.71 expects -- so the 2003 code "
+			. "runs unchanged against a database it was never written for.",
+	),
+	array(
+		'title'    => 'WordPress 0.71, twenty years on',
+		'category' => 3,
+		'content'  => "WordPress 0.71 shipped in 2003. It is tiny by modern "
+			. "standards -- a handful of PHP files, five database tables, "
+			. "and no plugins, themes or REST API.\n\n"
+			. "Seeing it run in a browser tab, on PHP 8.3 compiled to "
+			. "WebAssembly, is a small reminder of how far the project has "
+			. "come -- and of how much of WordPress was already recognisable "
+			. "at version 0.71.",
+	),
+);
+
+$postStmt = $pdo->prepare(
 	"INSERT INTO $tableposts
 	  (ID, post_author, post_date, post_content, post_title, post_category, post_excerpt, post_status, comment_status, ping_status, post_password)
-	  VALUES (1, 1, :d, :c, :t, 1, '', 'publish', 'open', 'open', '')"
+	  VALUES (:id, 1, :d, :c, :t, :cat, '', 'publish', 'open', 'open', '')"
 );
-$stmt->execute(
-	array(
-		':d' => $now,
-		':c' => "Hello from 071-now! This WordPress 0.71 front page is being rendered by PHP compiled to WebAssembly, reading this post from an in-browser SQLite database. No MySQL server is involved.",
-		':t' => 'Hello world from 071-now',
-	)
-);
+foreach ( $posts as $index => $post ) {
+	// EN: The newest post (index 0) is an hour old; each later entry is
+	//     a further day older, so the front page lists them newest-first.
+	$postDate = gmdate( 'Y-m-d H:i:s', $baseTime - ( $index * 86400 ) );
+	$postStmt->execute(
+		array(
+			':id'  => count( $posts ) - $index,
+			':d'   => $postDate,
+			':c'   => $post['content'],
+			':t'   => $post['title'],
+			':cat' => $post['category'],
+		)
+	);
+}
+$postStmt = null;
 
 // EN: Close the seed's SQLite connection. The blog's own wpdb opens its
 //     own connection moments later (b2config.php). A lingering write
 //     connection here would hold a lock and make the admin's first
-//     INSERT fail with "database is locked"; dropping the statement and
-//     the handle releases the file before wpdb takes over.
-$stmt = null;
-$pdo  = null;
+//     INSERT fail with "database is locked"; dropping the prepared
+//     statements above and the handle here releases the file before
+//     wpdb takes over.
+$pdo = null;
 
 // EN: No output here -- this file runs as an auto_prepend before the
 //     blog's own output. The seed result is visible in the rendered
-//     front page (the post appears) and in WP071_DB_PATH on disk.
+//     front page (the demo posts appear) and in WP071_DB_PATH on disk.
