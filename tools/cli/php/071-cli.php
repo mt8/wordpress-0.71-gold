@@ -92,6 +92,7 @@ function cli_print_usage(): void {
 		'  link      list | get <id> | create | delete <id>',
 		'  option    list | get <name> | set <name> <value>',
 		'  db        query <sql> | tables',
+		'  export    run',
 		'',
 		'Global flags:',
 		'  --format=table|json|csv|count|ids   output format (default: table)',
@@ -105,6 +106,7 @@ function cli_print_usage(): void {
 		'  071 post get 1 --format=json',
 		'  071 option get posts_per_page',
 		'  071 db query "SELECT COUNT(*) FROM b2posts"',
+		'  071 export',
 	);
 
 	fwrite( STDOUT, implode( "\n", $lines ) . "\n" );
@@ -131,7 +133,7 @@ function cli_main( array $argv ): int {
 		return 0;
 	}
 
-	$groups = array( 'post', 'user', 'category', 'comment', 'link', 'option', 'db' );
+	$groups = array( 'post', 'user', 'category', 'comment', 'link', 'option', 'db', 'export' );
 
 	if ( ! in_array( $group, $groups, true ) ) {
 		fwrite( STDERR, "Error: unknown command group '$group'.\n\n" );

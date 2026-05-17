@@ -20,10 +20,22 @@ design in [`docs/071-tooling.md`](../../docs/071-tooling.md) sections 2 and 3.
 | `link`     | `list` / `get <id>` / `create` / `delete <id>` |
 | `option`   | `list` / `get <name>` / `set <name> <value>` |
 | `db`       | `query <sql>` / `tables` |
+| `export`   | `run` (the default) |
 
 Global flags: `--format=table|json|csv|count|ids` (default `table`),
 `--fields=<a,b,c>`, `--path=<dir>`, `--dbhost` / `--dbname` / `--dbuser` /
 `--dbpass`, `--help`.
+
+### The `export` command
+
+`071 export` exports the running WordPress 0.71 blog to a self-contained
+static HTML site under `static-export/` -- the safe way to publish a 2003-era
+blog. Unlike the other groups it does **not** touch the database; it is a
+read-only HTTP crawl of the running blog. Its own flags are
+`--blog-url=<url>` (default `http://localhost:8080`) and `--out-dir=<dir>`
+(default `./static-export`); the `EXPORT_BLOG_URL` / `EXPORT_OUT_DIR`
+environment variables are also honoured. `composer static-export` is a thin
+alias for `071 export`. See [`docs/static-export.md`](../../docs/static-export.md).
 
 ## Functional test suite (Behat)
 
@@ -41,6 +53,7 @@ tools/cli/
     link.feature           link group: list/get/create/delete, formats, errors
     option.feature         option group: list/get/set, formats, errors
     db.feature             db group: query/tables, formats, errors
+    export.feature         export group: help, unknown verb, unreachable-blog error
     bootstrap/
       FeatureContext.php   Gherkin steps: runs the 071 CLI, captures
                            STDOUT/STDERR/exit code, reseeds the test database
@@ -123,10 +136,22 @@ The test-database connection defaults to `127.0.0.1:3307` / `b2_test` /
 | `link`     | `list` / `get <id>` / `create` / `delete <id>` |
 | `option`   | `list` / `get <name>` / `set <name> <value>` |
 | `db`       | `query <sql>` / `tables` |
+| `export`   | `run`（既定） |
 
 グローバルフラグ: `--format=table|json|csv|count|ids`（既定 `table`）・
 `--fields=<a,b,c>`・`--path=<dir>`・`--dbhost` / `--dbname` / `--dbuser` /
 `--dbpass`・`--help`。
+
+### `export` コマンド
+
+`071 export` は稼働中の WordPress 0.71 ブログを `static-export/` 配下の
+自己完結した静的 HTML サイトへ書き出す -- 2003 年当時のブログを安全に公開
+する方法である。他のグループと異なりデータベースには**触れない**。稼働中の
+ブログに対する読み取り専用の HTTP クロールである。固有のフラグは
+`--blog-url=<url>`（既定 `http://localhost:8080`）と `--out-dir=<dir>`
+（既定 `./static-export`）であり、`EXPORT_BLOG_URL` / `EXPORT_OUT_DIR`
+環境変数も尊重される。`composer static-export` は `071 export` の薄い
+エイリアスである。[`docs/static-export.md`](../../docs/static-export.md) を参照。
 
 ## 機能テストスイート（Behat）
 
@@ -144,6 +169,7 @@ tools/cli/
     link.feature           link グループ: list/get/create/delete・形式・エラー
     option.feature         option グループ: list/get/set・形式・エラー
     db.feature             db グループ: query/tables・形式・エラー
+    export.feature         export グループ: ヘルプ・未知の動詞・到達不能ブログのエラー
     bootstrap/
       FeatureContext.php   Gherkin ステップ: 071 CLI を実行し
                            STDOUT/STDERR/終了コードを捕捉し、テスト DB を再投入
