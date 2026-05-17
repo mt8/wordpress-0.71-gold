@@ -22,7 +22,14 @@
 //     src/ 自体は決して変更しない。Issue #108 に従い、本物の WordPress
 //     0.71 ソースとその MySQL / Docker 構成は動き続けねばならない。
 //     オーバーレイは生成物の(git 管理外の)tools/playground/wp/ だけを変える。
-import { cpSync, rmSync, mkdirSync, copyFileSync, existsSync } from 'node:fs';
+import {
+	cpSync,
+	rmSync,
+	mkdirSync,
+	copyFileSync,
+	writeFileSync,
+	existsSync,
+} from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -65,8 +72,36 @@ for ( const [ from, to ] of overlayFiles ) {
 	copyFileSync( join( dbDir, from ), join( wpDir, 'b2-include', to ) );
 }
 
+// EN: WordPress 0.71's front page (src/index.php) links the block-library
+//     front-end stylesheet at block-editor/assets/block-library.css. That
+//     file is a build artifact of the block-editor sub-project
+//     (src/block-editor/app/, Issue #94) and is absent from a plain
+//     checkout. Once the in-browser blog is served through the service
+//     worker (Issue #116) that <link> becomes a real same-origin request,
+//     so a missing file would surface as a 404 console error. The block
+//     editor is a later 071-now step; the seeded post is plain text and
+//     uses no layout blocks, so an empty placeholder is enough to keep the
+//     stylesheet reference resolvable. The placeholder lives only in the
+//     generated overlay -- src/ is untouched.
+const blockLibraryCss = join(
+	wpDir,
+	'block-editor',
+	'assets',
+	'block-library.css'
+);
+if ( ! existsSync( blockLibraryCss ) ) {
+	mkdirSync( dirname( blockLibraryCss ), { recursive: true } );
+	writeFileSync(
+		blockLibraryCss,
+		'/* 071-now placeholder: the block-library front-end stylesheet is\n' +
+			'   produced by the block-editor build (a later 071-now step). The\n' +
+			'   seeded post uses no layout blocks, so this file is empty. */\n'
+	);
+}
+
 console.log( '[071-now] overlay built at tools/playground/wp/' );
 console.log( '[071-now]   b2-include/wp-db.php               <- SQLite-backed wpdb' );
 console.log( '[071-now]   b2-include/071-now-sql-translator.php  <- MySQL->SQLite translator' );
 console.log( '[071-now]   b2-include/071-now-seed.php            <- database seed' );
 console.log( '[071-now]   b2-include/071-now-boot.php            <- auto_prepend boot shim' );
+console.log( '[071-now]   block-editor/assets/block-library.css  <- placeholder (block editor is a later step)' );
