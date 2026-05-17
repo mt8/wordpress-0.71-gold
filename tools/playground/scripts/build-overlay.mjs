@@ -28,6 +28,7 @@ import {
 	mkdirSync,
 	copyFileSync,
 	writeFileSync,
+	readFileSync,
 	existsSync,
 } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -66,10 +67,110 @@ const overlayFiles = [
 	[ 'sql-translator.php', '071-now-sql-translator.php' ],
 	[ 'seed.php', '071-now-seed.php' ],
 	[ 'boot.php', '071-now-boot.php' ],
+	[ 'mysqli-compat.php', '071-now-mysqli-compat.php' ],
 ];
 
 for ( const [ from, to ] of overlayFiles ) {
 	copyFileSync( join( dbDir, from ), join( wpDir, 'b2-include', to ) );
+}
+
+// EN: Resolve the direct mysqli_*( $wpdb->dbh, ... ) call sites.
+//
+//     A few WordPress 0.71 functions bypass the wpdb methods and call
+//     the procedural mysqli_* built-ins directly on $wpdb->dbh, then
+//     walk the result with mysqli_fetch_object() / mysqli_fetch_array()
+//     / mysqli_fetch_row() / mysqli_num_rows() and read errors with
+//     mysqli_error() / mysqli_errno(). Under the 071-now SQLite-backed
+//     wpdb, $wpdb->dbh is a PDO -- not a mysqli handle -- so those calls
+//     would fatal. The mysqli extension is compiled into php-wasm, so
+//     the built-ins cannot be redeclared in userland; the call sites
+//     are rewritten instead, to the 071-now mysqli compat helpers (see
+//     tools/playground/db/mysqli-compat.php).
+//
+//     The rewrite runs only on the in-browser copy under
+//     tools/playground/wp/; src/ is never touched. It is applied to
+//     every file that issues a query on $wpdb->dbh -- enumerated from
+//     0.71's source -- so no $wpdb->dbh path can fatal on the PDO
+//     handle. b2register.php is deliberately absent: it opens its own
+//     mysqli connection ($id), not $wpdb->dbh, and is not part of the
+//     SQLite-backed blog.
+// JA: 直接の mysqli_*( $wpdb->dbh, ... ) 呼び出し箇所を解消する。
+//     一部の 0.71 関数は wpdb メソッドを介さず $wpdb->dbh に対して
+//     手続き型 mysqli_* 組み込み関数を直接呼ぶ。SQLite ベースの wpdb
+//     では $wpdb->dbh は PDO であり致命的エラーになる。組み込み関数は
+//     再宣言できないため、呼び出し箇所を 071-now の mysqli 互換
+//     ヘルパーへ書き換える。書き換えは tools/playground/wp/ のコピー
+//     にのみ適用し、src/ には触れない。
+const mysqliRewriteTargets = [
+	'b2-include/b2functions.php',
+	'b2-include/b2template.functions.php',
+	'wp-admin/b2header.php',
+	'wp-admin/b2sidebar.php',
+	'wp-admin/b2edit.showposts.php',
+	'wp-admin/b2categories.php',
+	'wp-admin/linkcategories.php',
+	'wp-admin/b2options.php',
+	'wp-admin/b2profile.php',
+	'wp-admin/linkmanager.php',
+	'wp-admin/wp-install.php',
+	'wp-admin/b2-2-wp.php',
+];
+
+/**
+ * EN: Rewrite the direct mysqli_* call sites in one file's text to the
+ *     071-now mysqli compat helpers.
+ * JA: 1 ファイルのテキスト中の直接の mysqli_* 呼び出し箇所を 071-now の
+ *     mysqli 互換ヘルパーへ書き換える。
+ *
+ * @param {string} php The PHP source of an affected file.
+ * @return {string} The source with the mysqli_* sites rewritten.
+ */
+function rewriteMysqliCallSites( php ) {
+	return (
+		php
+			// EN: mysqli_query( $wpdb->dbh, X ) -> wp071_db_query( X ).
+			//     A leading @ (error suppression) is preserved. Only the
+			//     "$wpdb->dbh," first argument is consumed; X and the
+			//     closing paren are left intact.
+			.replace(
+				/(@?)mysqli_query\(\s*\$wpdb->dbh\s*,\s*/g,
+				'$1wp071_db_query( '
+			)
+			// EN: mysqli_error() / mysqli_errno() on the connection handle
+			//     -> wp071_db_error(). 0.71 passes either $wpdb->dbh or a
+			//     parameter that holds it (linkmanager.php's $dbh).
+			.replace(
+				/mysqli_err(?:or|no)\(\s*\$[\w>-]+\s*\)/g,
+				'wp071_db_error()'
+			)
+			// EN: The result-walking built-ins -> the cursor helpers. In
+			//     these files every such call walks a $wpdb->dbh result.
+			.replace( /mysqli_fetch_object\(/g, 'wp071_db_fetch_object(' )
+			.replace( /mysqli_fetch_array\(/g, 'wp071_db_fetch_array(' )
+			.replace( /mysqli_fetch_row\(/g, 'wp071_db_fetch_row(' )
+			.replace( /mysqli_num_rows\(/g, 'wp071_db_num_rows(' )
+	);
+}
+
+for ( const relativePath of mysqliRewriteTargets ) {
+	const filePath = join( wpDir, relativePath );
+	if ( ! existsSync( filePath ) ) {
+		console.error( `[071-now] mysqli rewrite target missing: ${ relativePath }` );
+		process.exit( 1 );
+	}
+	const original = readFileSync( filePath, 'utf8' );
+	const rewritten = rewriteMysqliCallSites( original );
+	if ( rewritten !== original ) {
+		writeFileSync( filePath, rewritten );
+	}
+	// EN: A target that still mentions mysqli_ on $wpdb->dbh would fatal
+	//     in php-wasm; fail the build so a regression is caught here.
+	if ( /mysqli_\w+\(\s*\$wpdb->dbh/.test( rewritten ) ) {
+		console.error(
+			`[071-now] unrewritten mysqli_*( $wpdb->dbh ) call in ${ relativePath }`
+		);
+		process.exit( 1 );
+	}
 }
 
 // EN: WordPress 0.71's front page (src/index.php) links the block-library
@@ -100,8 +201,12 @@ if ( ! existsSync( blockLibraryCss ) ) {
 }
 
 console.log( '[071-now] overlay built at tools/playground/wp/' );
-console.log( '[071-now]   b2-include/wp-db.php               <- SQLite-backed wpdb' );
+console.log( '[071-now]   b2-include/wp-db.php                   <- SQLite-backed wpdb' );
 console.log( '[071-now]   b2-include/071-now-sql-translator.php  <- MySQL->SQLite translator' );
 console.log( '[071-now]   b2-include/071-now-seed.php            <- database seed' );
 console.log( '[071-now]   b2-include/071-now-boot.php            <- auto_prepend boot shim' );
+console.log( '[071-now]   b2-include/071-now-mysqli-compat.php   <- mysqli compat helpers' );
+console.log(
+	`[071-now]   ${ mysqliRewriteTargets.length } files rewritten      <- direct mysqli_*( $wpdb->dbh ) call sites`
+);
 console.log( '[071-now]   block-editor/assets/block-library.css  <- placeholder (block editor is a later step)' );

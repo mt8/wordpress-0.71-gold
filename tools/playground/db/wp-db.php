@@ -33,6 +33,95 @@
 	require_once __DIR__ . '/071-now-sql-translator.php';
 
 /**
+ * A result-set cursor mimicking the mysqli_result handle.
+ *
+ * WordPress 0.71's wpdb methods are enough for almost every query, but a
+ * few admin functions call mysqli_query() directly on $wpdb->dbh and
+ * then walk the result with mysqli_fetch_object() / mysqli_fetch_array()
+ * / mysqli_num_rows(). Under the SQLite-backed wpdb $wpdb->dbh is a PDO,
+ * not a mysqli handle, so those procedural calls would fatal.
+ *
+ * The 071-now overlay rewrites those call sites (see
+ * scripts/build-overlay.mjs) to wpdb::db_query(), which returns one of
+ * these cursors. It exposes fetch_object() / fetch_array() / fetch_row()
+ * / num_rows() so the rewritten code walks the result set unchanged in
+ * spirit -- the same row shapes the mysqli_* calls produced.
+ */
+class WP071_DbResult {
+
+	/**
+	 * The fetched rows as stdClass objects.
+	 *
+	 * @var array
+	 */
+	private $rows;
+
+	/**
+	 * The zero-based cursor position for the fetch_* iterators.
+	 *
+	 * @var int
+	 */
+	private $cursor = 0;
+
+	/**
+	 * @param array $rows Result rows as stdClass objects.
+	 */
+	public function __construct( $rows ) {
+		$this->rows = array_values( $rows );
+	}
+
+	/**
+	 * Return the next row as a stdClass object, or false at the end.
+	 *
+	 * Mirrors mysqli_fetch_object().
+	 *
+	 * @return object|false
+	 */
+	public function fetch_object() {
+		if ( ! isset( $this->rows[ $this->cursor ] ) ) {
+			return false;
+		}
+		return $this->rows[ $this->cursor++ ];
+	}
+
+	/**
+	 * Return the next row as an associative array, or false at the end.
+	 *
+	 * Mirrors mysqli_fetch_array() in associative mode -- enough for the
+	 * 0.71 admin, which reads archive rows by column name.
+	 *
+	 * @return array|false
+	 */
+	public function fetch_array() {
+		$row = $this->fetch_object();
+		return ( false === $row ) ? false : get_object_vars( $row );
+	}
+
+	/**
+	 * Return the next row as a numerically-indexed array, or false.
+	 *
+	 * Mirrors mysqli_fetch_row().
+	 *
+	 * @return array|false
+	 */
+	public function fetch_row() {
+		$row = $this->fetch_object();
+		return ( false === $row ) ? false : array_values( get_object_vars( $row ) );
+	}
+
+	/**
+	 * The number of rows in the result set.
+	 *
+	 * Mirrors mysqli_num_rows().
+	 *
+	 * @return int
+	 */
+	public function num_rows() {
+		return count( $this->rows );
+	}
+}
+
+/**
  * SQLite-backed reimplementation of WordPress 0.71's ezSQL wpdb class.
  *
  * Keeps the original public API so the rest of WordPress 0.71 is
@@ -50,10 +139,17 @@ class wpdb {
 	public $insert_id;
 	public $func_call;
 
+	// EN: The message of the most recent failed query. db_error() returns
+	//     it for the call sites the overlay rewrites away from
+	//     mysqli_error( $wpdb->dbh ).
+	public $last_error = '';
+
 	// EN: The PDO handle. Named "dbh" because a few 0.71 call sites read
-	//     $wpdb->dbh directly (get_lastpostdate, dropdown_cats); those
-	//     paths are not on the front page but the property is kept so a
-	//     reference still resolves.
+	//     $wpdb->dbh directly (get_lastpostdate, dropdown_cats, the admin
+	//     pages). Those direct mysqli_*( $wpdb->dbh, ... ) sites are
+	//     rewritten by the 071-now overlay (scripts/build-overlay.mjs) to
+	//     go through db_query() / db_error() below; the property is still
+	//     kept so any remaining reference resolves.
 	public $dbh;
 
 	/**
@@ -78,6 +174,13 @@ class wpdb {
 			$this->dbh = new PDO( 'sqlite:' . $path );
 			$this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 			$this->dbh->exec( 'PRAGMA foreign_keys = ON' );
+			// EN: The 071-now boot shim opens its own short-lived SQLite
+			//     connections (the seed, the auto-login lookup) just
+			//     before this one. They are closed promptly, but a busy
+			//     timeout makes the admin's first write wait briefly for
+			//     the lock instead of failing outright with "database is
+			//     locked" should any overlap remain.
+			$this->dbh->setAttribute( PDO::ATTR_TIMEOUT, 5 );
 		} catch ( Exception $e ) {
 			$this->print_error( 'SQLite connection failed: ' . $e->getMessage() );
 		}
@@ -113,10 +216,11 @@ class wpdb {
 	 */
 	public function print_error( $str = '' ) {
 		global $EZSQL_ERROR;
-		$EZSQL_ERROR[] = array(
+		$EZSQL_ERROR[]    = array(
 			'query'     => $this->last_query,
 			'error_str' => $str,
 		);
+		$this->last_error = (string) $str;
 		if ( $this->show_errors ) {
 			print "<ol id='error'>
 				<li><strong>SQL/DB Error --</strong></li>
@@ -148,6 +252,7 @@ class wpdb {
 		$this->last_result = null;
 		$this->col_info    = null;
 		$this->last_query  = null;
+		$this->last_error  = '';
 	}
 
 	/**
@@ -322,6 +427,53 @@ class wpdb {
 			}
 			return $this->col_info[ $col_offset ]->{$info_type};
 		}
+	}
+
+	/**
+	 * Run a query in place of a direct mysqli_query( $wpdb->dbh, ... ).
+	 *
+	 * A few WordPress 0.71 functions bypass the wpdb methods and call
+	 * mysqli_query() directly on the connection handle. Under the
+	 * SQLite-backed wpdb $wpdb->dbh is a PDO, so those calls would fatal.
+	 * The 071-now overlay (scripts/build-overlay.mjs) rewrites every such
+	 * site to this method, which runs the query through the same
+	 * translate-and-execute path query() uses and returns a result the
+	 * rewritten fetch_* / num_rows calls can walk.
+	 *
+	 * @param string $query MySQL-dialect SQL emitted by WordPress 0.71.
+	 * @return WP071_DbResult|bool A cursor for a SELECT, true for a
+	 *                             successful write, false on failure.
+	 */
+	public function db_query( $query ) {
+		$ok = $this->query( $query );
+
+		$is_write = (bool) preg_match(
+			'/^\s*(insert|update|delete|replace|create|drop|alter)\b/i',
+			(string) $query
+		);
+		if ( $is_write ) {
+			return $ok;
+		}
+
+		// EN: query() returns false for a SELECT that matched no rows; the
+		//     mysqli_* call sites still expect a walkable (empty) result,
+		//     so wrap last_result -- which query() left as an array -- and
+		//     only report failure when the query itself errored.
+		if ( ! $ok && '' !== $this->last_error ) {
+			return false;
+		}
+		return new WP071_DbResult( is_array( $this->last_result ) ? $this->last_result : array() );
+	}
+
+	/**
+	 * The message of the most recent failed query.
+	 *
+	 * Replaces mysqli_error( $wpdb->dbh ) at the rewritten call sites.
+	 *
+	 * @return string
+	 */
+	public function db_error() {
+		return $this->last_error;
 	}
 }
 

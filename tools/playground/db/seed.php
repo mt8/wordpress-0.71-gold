@@ -152,6 +152,14 @@ $stmt->execute(
 	)
 );
 
+// EN: Close the seed's SQLite connection. The blog's own wpdb opens its
+//     own connection moments later (b2config.php). A lingering write
+//     connection here would hold a lock and make the admin's first
+//     INSERT fail with "database is locked"; dropping the statement and
+//     the handle releases the file before wpdb takes over.
+$stmt = null;
+$pdo  = null;
+
 // EN: No output here -- this file runs as an auto_prepend before the
 //     blog's own output. The seed result is visible in the rendered
 //     front page (the post appears) and in WP071_DB_PATH on disk.
