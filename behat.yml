@@ -1,0 +1,17 @@
+# EN: Behat configuration for the 071-cli functional test suite. Modelled on
+#     wp-cli's own behat.yml: a single `default` profile, a FeatureContext that
+#     runs the 071 CLI and captures its STDOUT / STDERR / exit code, and the
+#     Gherkin feature files under cli/features/. See cli/README.md.
+# JA: 071-cli の機能テストスイート向けの Behat 設定。wp-cli 自身の behat.yml に
+#     倣う: 単一の `default` プロファイル、071 CLI を実行し STDOUT / STDERR /
+#     終了コードを捕捉する FeatureContext、cli/features/ 配下の Gherkin
+#     feature ファイル。cli/README.md を参照。
+default:
+  suites:
+    default:
+      paths:
+        - '%paths.base%/cli/features'
+      contexts:
+        - FeatureContext
+  autoload:
+    '': '%paths.base%/cli/features/bootstrap'
