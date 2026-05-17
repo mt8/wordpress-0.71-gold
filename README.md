@@ -112,8 +112,8 @@ A PHPUnit suite (**94 tests**) covers the unit-testable parts of the
 
 ```sh
 # 1. Start the local Docker blog
-docker compose up -d
-docker compose ps          # confirm web + db are Up
+npx 071-env start
+npx 071-env status         # confirm web + db are Up
 
 # 2. Install the Node tooling (first run only)
 npm install
@@ -137,12 +137,12 @@ be running first. See `docs/php83-migration.md` (Issue #60) for details.
 ## Publishing safely (static export)
 
 ```sh
-071 export                 # or: composer static-export
+npx 071 export             # or: composer static-export
 ```
 
 WordPress 0.71 must never be exposed to the public internet as a running
 PHP application. The intended workflow is: write posts in the **local**
-environment, export the site to **static HTML** with `071 export` (the
+environment, export the site to **static HTML** with `npx 071 export` (the
 `export` command group of `071-cli`), and upload only the static files to a
 public server — which then runs no PHP and no database, so the 2003 codebase
 is never exposed. `composer static-export` is a thin alias for `071 export`.
@@ -159,7 +159,7 @@ experiment; see `docs/gutenberg-investigation.md`.
 Build the editor once:
 
 ```sh
-cd src/block-editor/app
+cd tools/block-editor
 npm install
 npm run build
 ```
@@ -174,12 +174,12 @@ front end keeps rendering the post normally.
 
 | Path | Contents |
 |------|----------|
-| `src/` | The WordPress 0.71-gold source — the actual modified codebase. |
+| `src/` | The WordPress 0.71-gold source — the actual modified codebase. `src/block-editor/` holds the runtime block editor PHP (`api/`) and its built assets (`assets/`). |
 | `tests/phpunit/` | PHPUnit unit tests (`tests/`) and support classes (`includes/`). |
 | `tests/e2e/` | Playwright E2E specs and test-data helpers. |
 | `docs/` | Documentation. |
-| `tools/` | 0.71-specific tooling packages — `071-cli` (`tools/cli`, includes the static export), `071-env`, `071-now`. |
-| `Dockerfile`, `docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. |
+| `tools/` | 0.71-specific tooling — `071-cli` (`tools/cli`, includes the static export), `071-env` (`tools/env`), `071-now` (`tools/playground`), and the block editor build source (`tools/block-editor`). |
+| `tools/env/Dockerfile`, `tools/env/docker-compose.yml` | Local PHP 8.3 + MySQL 8 environment. |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | Static-analysis configuration. |
 | `composer.json` | PHP dev tooling (phpcs / WPCS / PHPStan / PHPUnit). |
 | `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node tooling — Playwright E2E and the husky/lint-staged pre-commit hook. |
@@ -329,8 +329,8 @@ PHPUnit スイート(**94 テスト**)が、2003 年当時のコードのうち�
 
 ```sh
 # 1. ローカル Docker ブログを起動
-docker compose up -d
-docker compose ps          # web と db が Up か確認
+npx 071-env start
+npx 071-env status         # web と db が Up か確認
 
 # 2. Node ツールを導入 (初回のみ)
 npm install
@@ -354,12 +354,12 @@ Playwright の E2E スイート(`tests/e2e/`)が、稼働中の Docker ブログ
 ## 安全な公開（静的書き出し）
 
 ```sh
-071 export                 # or: composer static-export
+npx 071 export             # or: composer static-export
 ```
 
 WordPress 0.71 を、稼働中の PHP アプリケーションとして公開インターネット
 へ晒してはならない。想定するワークフローは: **ローカル**環境で投稿を書き、
-`071 export`（`071-cli` の `export` コマンドグループ）でサイトを**静的 HTML**
+`npx 071 export`（`071-cli` の `export` コマンドグループ）でサイトを**静的 HTML**
 へ書き出し、静的ファイルだけを公開サーバーへアップロードする — 公開サーバーは
 PHP も DB も動かさないため、2003 年のコードベースが晒されることはない。
 `composer static-export` は `071 export` の薄いエイリアスである。詳細は
@@ -376,7 +376,7 @@ REST API は無いため、本エディタは範囲を限定した実験であ�
 エディタは最初に一度ビルドする:
 
 ```sh
-cd src/block-editor/app
+cd tools/block-editor
 npm install
 npm run build
 ```
@@ -392,12 +392,12 @@ npm run build
 
 | パス | 内容 |
 |------|------|
-| `src/` | WordPress 0.71-gold のソース(改修対象の本体)。 |
+| `src/` | WordPress 0.71-gold のソース(改修対象の本体)。`src/block-editor/` はランタイムのブロックエディタ PHP(`api/`)とビルド済みアセット(`assets/`)を保持する。 |
 | `tests/phpunit/` | PHPUnit 単体テスト(`tests/`)と補助クラス(`includes/`)。 |
 | `tests/e2e/` | Playwright E2E spec とテストデータヘルパー。 |
 | `docs/` | ドキュメント。 |
-| `tools/` | 0.71 専用のツールパッケージ — `071-cli`（`tools/cli`、静的書き出しを含む）・`071-env`・`071-now`。 |
-| `Dockerfile`, `docker-compose.yml` | ローカルの PHP 8.3 + MySQL 8 環境。 |
+| `tools/` | 0.71 専用のツール — `071-cli`（`tools/cli`、静的書き出しを含む）・`071-env`（`tools/env`）・`071-now`（`tools/playground`）・ブロックエディタのビルドソース（`tools/block-editor`）。 |
+| `tools/env/Dockerfile`, `tools/env/docker-compose.yml` | ローカルの PHP 8.3 + MySQL 8 環境。 |
 | `phpcs.xml.dist`, `phpstan.neon.dist` | 静的解析の設定。 |
 | `composer.json` | PHP 開発ツール(phpcs / WPCS / PHPStan / PHPUnit)。 |
 | `package.json`, `playwright.config.js`, `lint-staged.config.mjs`, `.husky/` | Node ツール — Playwright E2E と husky/lint-staged の pre-commit フック。 |
