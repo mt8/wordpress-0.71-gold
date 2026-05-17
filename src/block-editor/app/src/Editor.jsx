@@ -28,6 +28,7 @@ import {
 	BlockTools,
 	BlockInspector,
 	BlockBreadcrumb,
+	Inserter,
 	WritingFlow,
 	ObserveTyping,
 	// EN: ListView is exported under the __experimental name in this
@@ -47,7 +48,7 @@ import {
 	TabPanel,
 	Icon,
 } from '@wordpress/components';
-import { blockDefault, page } from '@wordpress/icons';
+import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
 /**
@@ -242,9 +243,13 @@ export function Editor( { config } ) {
 	const [ postCategory, setPostCategory ] = useState( 0 );
 	const [ categories, setCategories ] = useState( [] );
 
-	// EN: Toggle for the Document Overview (list-view) panel.
-	// JA: ドキュメント概観(リストビュー)パネルの表示切り替え。
-	const [ showOverview, setShowOverview ] = useState( true );
+	// EN: Toggle for the Document Overview (list-view) panel. It starts off,
+	//     matching the modern WordPress editor where the list view is hidden
+	//     until the user opens it from the header.
+	// JA: ドキュメント概観(リストビュー)パネルの表示切り替え。最新の
+	//     WordPress エディタに合わせ初期値はオフで、ユーザーがヘッダーから
+	//     開くまでリストビューは隠れている。
+	const [ showOverview, setShowOverview ] = useState( false );
 
 	// EN: Load the post once on mount. In Issue #96's new-post mode config.postId
 	//     is 0, and load.php answers with an empty post shape (blank title /
@@ -377,86 +382,134 @@ export function Editor( { config } ) {
 	} ) );
 
 	return (
-		<div className="be-app">
-			<header className="be-toolbar">
-				<div className="be-toolbar-left">
-					<a className="be-link" href={ config.adminUrl }>
-						← Back to wp-admin
-					</a>
-					<span className="be-badge">
-						{ isNew
-							? 'WordPress 0.71 — new post'
-							: `WordPress 0.71 — post #${ postId }` }
-					</span>
-					<Button
-						size="compact"
-						icon="menu"
-						label="Document Overview"
-						showTooltip
-						variant={ showOverview ? 'primary' : 'secondary' }
-						onClick={ () =>
-							setShowOverview( ( prev ) => ! prev )
-						}
-						aria-pressed={ showOverview }
-					/>
-				</div>
-				<div className="be-toolbar-right">
-					{ /* EN: A new post has no front-end URL until it is saved
-					       and an id is adopted; hide the link until then.
-					     JA: 新規投稿は保存して id を採用するまでフロントエンド
-					       URL を持たない。それまではリンクを隠す。 */ }
-					{ ! isNew && (
-						<a
-							className="be-link"
-							href={ frontEndUrl }
-							target="_blank"
-							rel="noreferrer"
-						>
-							View on 0.71 front end
-						</a>
-					) }
-					<Button
-						variant="primary"
-						onClick={ onSave }
-						isBusy={ status === 'saving' }
-						disabled={ status === 'saving' }
-					>
-						{ status === 'saving'
-							? 'Saving…'
-							: isNew
-								? 'Create post in WordPress 0.71'
-								: 'Save to WordPress 0.71' }
-					</Button>
-				</div>
-			</header>
+		// EN: ShortcutProvider / SlotFillProvider / BlockEditorProvider wrap
+		//     the whole .be-app -- header included -- so header controls have
+		//     the block editor store. The header's Inserter ("+" button)
+		//     needs that store, and so does BlockBreadcrumb at the bottom.
+		// JA: ShortcutProvider / SlotFillProvider / BlockEditorProvider が
+		//     .be-app 全体(ヘッダー含む)を包むため、ヘッダーの操作子が
+		//     ブロックエディタストアを得られる。ヘッダーの Inserter(「+」
+		//     ボタン)も下部の BlockBreadcrumb もそのストアを必要とする。
+		<ShortcutProvider>
+			<SlotFillProvider>
+				<BlockEditorProvider
+					value={ blocks }
+					onInput={ setBlocks }
+					onChange={ setBlocks }
+					settings={ EDITOR_SETTINGS }
+				>
+					<div className="be-app">
+						<header className="be-toolbar">
+							<div className="be-toolbar-left">
+								{ /* EN: The WordPress logo button -- the black
+								       W square at the top-left of the modern
+								       editor -- navigates back to wp-admin.
+								     JA: WordPress ロゴボタン -- 最新エディタ
+								       左上の黒い W の四角 -- は wp-admin へ
+								       戻る。 */ }
+								<Button
+									className="be-wp-logo"
+									icon={ wordpress }
+									iconSize={ 36 }
+									label="Back to wp-admin"
+									showTooltip
+									href={ config.adminUrl }
+								/>
+								{ /* EN: The "+" block inserter. Inserter's
+								       renderToggle replaces its default toggle
+								       with a clean "+" icon button; the
+								       inserter panel opens in a Popover.
+								     JA: 「+」ブロックインサーター。Inserter の
+								       renderToggle が既定のトグルを素の「+」
+								       アイコンボタンへ置き換える。インサー
+								       ターパネルは Popover で開く。 */ }
+								<Inserter
+									position="bottom right"
+									renderToggle={ ( {
+										onToggle,
+										disabled,
+										isOpen,
+									} ) => (
+										<Button
+											className="be-inserter-toggle"
+											icon={ plus }
+											label="Add block"
+											showTooltip
+											onClick={ onToggle }
+											disabled={ disabled }
+											aria-expanded={ isOpen }
+											aria-haspopup="true"
+										/>
+									) }
+								/>
+								{ /* EN: The hamburger / list-view button
+								       toggles the Document Overview panel.
+								     JA: ハンバーガー / リストビューボタンが
+								       Document Overview パネルを切り替える。 */ }
+								<Button
+									className="be-overview-toggle"
+									icon={ listView }
+									label="Document Overview"
+									showTooltip
+									isPressed={ showOverview }
+									onClick={ () =>
+										setShowOverview(
+											( prev ) => ! prev
+										)
+									}
+									aria-pressed={ showOverview }
+								/>
+								<span className="be-badge">
+									{ isNew
+										? 'WordPress 0.71 — new post'
+										: `WordPress 0.71 — post #${ postId }` }
+								</span>
+							</div>
+							<div className="be-toolbar-right">
+								{ /* EN: A new post has no front-end URL until it is saved
+								       and an id is adopted; hide the link until then.
+								     JA: 新規投稿は保存して id を採用するまでフロントエンド
+								       URL を持たない。それまではリンクを隠す。 */ }
+								{ ! isNew && (
+									<a
+										className="be-link"
+										href={ frontEndUrl }
+										target="_blank"
+										rel="noreferrer"
+									>
+										View on 0.71 front end
+									</a>
+								) }
+								<Button
+									variant="primary"
+									onClick={ onSave }
+									isBusy={ status === 'saving' }
+									disabled={ status === 'saving' }
+								>
+									{ status === 'saving'
+										? 'Saving…'
+										: isNew
+											? 'Create post in WordPress 0.71'
+											: 'Save to WordPress 0.71' }
+								</Button>
+							</div>
+						</header>
 
-			{ message && (
-				<div className="be-notice">
-					<Notice
-						status={ status === 'error' ? 'error' : 'success' }
-						isDismissible={ false }
-					>
-						{ message }
-					</Notice>
-				</div>
-			) }
+						{ message && (
+							<div className="be-notice">
+								<Notice
+									status={
+										status === 'error'
+											? 'error'
+											: 'success'
+									}
+									isDismissible={ false }
+								>
+									{ message }
+								</Notice>
+							</div>
+						) }
 
-			<input
-				className="be-title"
-				type="text"
-				value={ title }
-				placeholder="Post title"
-				onChange={ ( e ) => setTitle( e.target.value ) }
-			/>
-
-			<ShortcutProvider>
-				<SlotFillProvider>
-					<BlockEditorProvider
-						value={ blocks }
-						onInput={ setBlocks }
-						onChange={ setBlocks }
-						settings={ EDITOR_SETTINGS }
-					>
 						<div className="be-body">
 							{ showOverview && (
 								<aside className="be-overview">
@@ -471,6 +524,23 @@ export function Editor( { config } ) {
 							) }
 
 							<div className="be-canvas">
+								{ /* EN: The post title sits at the top of the
+								       content column, the width of the canvas
+								       -- above the writing flow, not spanning
+								       the Document Overview / settings columns.
+								     JA: 投稿タイトルはコンテンツカラムの上部、
+								       キャンバスの幅に置かれる -- writing flow
+								       の上で、Document Overview / 設定カラムに
+								       はまたがらない。 */ }
+								<input
+									className="be-title"
+									type="text"
+									value={ title }
+									placeholder="Post title"
+									onChange={ ( e ) =>
+										setTitle( e.target.value )
+									}
+								/>
 								{ /* EN: BlockTools renders the floating per-block
 								       toolbar (bold, alignment, ...) above the
 								       selected block; it needs Popover.Slot.
@@ -484,9 +554,6 @@ export function Editor( { config } ) {
 										</ObserveTyping>
 									</WritingFlow>
 								</BlockTools>
-								<div className="be-breadcrumb">
-									<BlockBreadcrumb />
-								</div>
 							</div>
 
 							<aside className="be-sidebar">
@@ -555,16 +622,30 @@ export function Editor( { config } ) {
 							</aside>
 						</div>
 
+						{ /* EN: BlockBreadcrumb sits after .be-body as a
+						       full-width bar pinned at the bottom of the
+						       editor. It stays inside BlockEditorProvider
+						       because BlockBreadcrumb needs the store.
+						     JA: BlockBreadcrumb は .be-body の後に、エディタ
+						       下部に固定された全幅バーとして置かれる。
+						       BlockBreadcrumb はストアを必要とするため
+						       BlockEditorProvider の内側のまま。 */ }
+						<div className="be-breadcrumb">
+							<BlockBreadcrumb />
+						</div>
+
 						{ /* EN: Popover.Slot must be rendered for block
-						       toolbars, dropdowns and inspector controls
-						       (which render into popovers) to appear.
-						     JA: ブロックツールバー・ドロップダウン・
-						       インスペクタ操作(ポップオーバーへ描画される)
-						       を表示するには Popover.Slot の描画が必須。 */ }
+						       toolbars, dropdowns, the inserter panel and
+						       inspector controls (which render into popovers)
+						       to appear.
+						     JA: ブロックツールバー・ドロップダウン・インサー
+						       ターパネル・インスペクタ操作(ポップオーバーへ
+						       描画される)を表示するには Popover.Slot の描画が
+						       必須。 */ }
 						<Popover.Slot />
-					</BlockEditorProvider>
-				</SlotFillProvider>
-			</ShortcutProvider>
-		</div>
+					</div>
+				</BlockEditorProvider>
+			</SlotFillProvider>
+		</ShortcutProvider>
 	);
 }
