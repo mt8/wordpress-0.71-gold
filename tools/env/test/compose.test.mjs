@@ -14,15 +14,17 @@ import {
 	composePrefix,
 	buildComposeArgs,
 	buildRunArgs,
+	projectDirArgs,
 	CLI_PHP_IN_CONTAINER,
 	WP_PATH_IN_CONTAINER,
 	WEB_SERVICE,
 } from '../src/compose.mjs';
-import { baseComposeFile, overrideComposeFile } from '../src/paths.mjs';
+import { baseComposeFile, overrideComposeFile, repoRoot } from '../src/paths.mjs';
 
-test( 'composePrefix: is `compose` followed by both Compose files', () => {
+test( 'composePrefix: is `compose`, the project directory, then both Compose files', () => {
 	assert.deepEqual( composePrefix(), [
 		'compose',
+		...projectDirArgs,
 		'-f',
 		baseComposeFile,
 		'-f',
@@ -30,13 +32,29 @@ test( 'composePrefix: is `compose` followed by both Compose files', () => {
 	] );
 } );
 
-test( 'composePrefix: the base file is the repo-root docker-compose.yml', () => {
+test( 'composePrefix: the base file is tools/env/docker-compose.yml', () => {
 	assert.match( baseComposeFile, /\/docker-compose\.yml$/ );
-	assert.doesNotMatch( baseComposeFile, /\/env\// );
+	assert.match( baseComposeFile, /\/env\/docker-compose\.yml$/ );
 } );
 
 test( 'composePrefix: the override file is env/docker-compose.071.yml', () => {
 	assert.match( overrideComposeFile, /\/env\/docker-compose\.071\.yml$/ );
+} );
+
+test( 'composePrefix: pins --project-directory to the repository root', () => {
+	// EN: The Compose files live in tools/env/ but their relative paths are
+	//     repo-root-relative, so the project directory must be the repo root.
+	// JA: Compose ファイルは tools/env/ にあるが相対パスはリポジトリルート
+	//     基準であるため、プロジェクトディレクトリはリポジトリルートでなければ
+	//     ならない。
+	assert.deepEqual( projectDirArgs, [ '--project-directory', repoRoot ] );
+	const prefix = composePrefix();
+	const idx = prefix.indexOf( '--project-directory' );
+	assert.notEqual( idx, -1 );
+	assert.equal( prefix[ idx + 1 ], repoRoot );
+	// EN: It comes before the -f files, as `docker compose` expects.
+	// JA: `docker compose` が期待するとおり、-f ファイルより前に置く。
+	assert.ok( idx < prefix.indexOf( '-f' ) );
 } );
 
 test( 'every Compose invocation passes both -f files', () => {
@@ -185,6 +203,7 @@ test( 'composePrefix: extra override files are appended after the cli/ override'
 	const prefix = composePrefix( [ '/repo/docker-compose.071-mappings.yml' ] );
 	assert.deepEqual( prefix, [
 		'compose',
+		...projectDirArgs,
 		'-f',
 		baseComposeFile,
 		'-f',

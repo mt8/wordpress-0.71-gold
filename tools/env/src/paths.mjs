@@ -34,8 +34,17 @@ export const envDir = dirname( here );
 /** EN: The repository root. JA: リポジトリルート。 */
 export const repoRoot = dirname( dirname( envDir ) );
 
-/** EN: The repository root docker-compose.yml. JA: リポジトリ直下の docker-compose.yml。 */
-export const baseComposeFile = join( repoRoot, 'docker-compose.yml' );
+/**
+ * EN: The base Compose file, tools/env/docker-compose.yml. Its in-file
+ *     relative paths are repository-root-relative, so 071-env runs Compose
+ *     with `--project-directory` pointing at the repository root (see
+ *     projectDirArgs in compose.mjs).
+ * JA: ベースの Compose ファイル tools/env/docker-compose.yml。ファイル内の
+ *     相対パスはリポジトリルート基準であるため、071-env は `--project-directory`
+ *     をリポジトリルートに向けて Compose を実行する (compose.mjs の
+ *     projectDirArgs を参照)。
+ */
+export const baseComposeFile = join( envDir, 'docker-compose.yml' );
 
 /**
  * EN: The 071-env Compose override file. It bind-mounts `tools/cli/` into the
