@@ -23,3 +23,11 @@ playwright-report/
 # JA: npm の依存関係とバンドルされたビルド成果物は成果物でありソースではない。
 /src/block-editor/app/node_modules/
 /src/block-editor/assets/
+
+# Uploaded media (src/wp-content/uploads/), Issue #93 / アップロード済みメディア
+# EN: Files uploaded through the block editor are user content, not source.
+#     The wp-content/uploads/YYYY/MM/ tree is created on demand by upload.php.
+# JA: ブロックエディタからアップロードされたファイルは利用者コンテンツであり
+#     ソースではない。wp-content/uploads/YYYY/MM/ のツリーは upload.php が
+#     必要時に作成する。
+/src/wp-content/uploads/
