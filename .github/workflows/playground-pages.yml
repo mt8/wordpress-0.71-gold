@@ -57,6 +57,13 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# Run the workflow's JavaScript actions on Node 24. GitHub deprecated the
+# Node 20 action runtime; this is GitHub's recommended opt-in and forces every
+# JS action (checkout, setup-node, the Pages actions) onto Node 24. It becomes
+# a harmless no-op once Node 24 is the runner default.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     name: Build the playground
