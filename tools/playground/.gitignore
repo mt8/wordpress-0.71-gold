@@ -8,5 +8,5 @@ wp/
 # JA: Vite のビルド成果物と検証成果物。
 dist/
 node_modules/
-test/071-now-frontpage.png
-test/071-now-admin.png
+test/071-now-frontpage-*.png
+test/071-now-admin-*.png
