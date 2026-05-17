@@ -10,6 +10,14 @@ An experimental project that takes the **oldest WordPress release —
 > explore running historical code on a current PHP/MySQL stack — it is
 > modernised just enough to run, not rewritten.
 
+## Try it in your browser
+
+[**▶ Launch the 071-now playground**](https://mt8.github.io/wordpress-0.71-gold/)
+— run WordPress 0.71 (2003) entirely in your browser, no install. PHP 8.3
+is compiled to WebAssembly and the database is in-browser SQLite, so nothing
+runs on a server. Deployed to GitHub Pages from `tools/playground/`; see the
+[`071-now`](tools/playground/README.md) package.
+
 ## Requirements
 
 - Docker (with Docker Compose v2)
@@ -191,6 +199,15 @@ License; this derivative work follows the same license.
 > なく、実運用のサイトや実データに使用してはいけません。目的は歴史的なコードを
 > 現行の PHP/MySQL 環境で動かす検証であり、動作する範囲で近代化しているのみ、
 > 全面的な書き直しはしていない。
+
+## ブラウザで試す
+
+[**▶ 071-now playground を起動**](https://mt8.github.io/wordpress-0.71-gold/)
+— WordPress 0.71(2003 年)をブラウザ内で完全に動かす。インストール不要。
+PHP 8.3 を WebAssembly へコンパイルし、データベースはブラウザ内 SQLite で
+あるため、サーバー側では何も動かない。`tools/playground/` から GitHub Pages
+へデプロイされている。詳細は [`071-now`](tools/playground/README.md)
+パッケージを参照。
 
 ## 必要環境
 
