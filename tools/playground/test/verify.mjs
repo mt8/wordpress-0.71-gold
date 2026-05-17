@@ -1,4 +1,4 @@
-// EN: 071-now headless verification (Issue #116, full build 1/6).
+// EN: 071-now headless verification (Issue #116, #120; full build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, opens it in headless Chromium, and asserts that the
@@ -7,20 +7,31 @@
 //     to a post page and a category page. A PNG screenshot is written
 //     for the record.
 //
+//     It then exercises the WordPress 0.71 admin (Issue #120): the
+//     admin opens already logged in (auto-login), a post is created and
+//     then edited through the admin's own forms, a category is added,
+//     and each change is confirmed on the front page.
+//
 //     This extends the feasibility spike's check (Issue #108, which
-//     only confirmed the front-page text rendered) with the two things
-//     the service-worker request handler unlocks -- styling and
-//     navigation -- the goal of this step.
-// JA: 071-now のヘッドレス検証(Issue #116、フル実装 1/6)。
+//     only confirmed the front-page text rendered) with the things the
+//     full build unlocks -- styling and navigation (the service worker,
+//     step 1) and the working admin (step 3).
+// JA: 071-now のヘッドレス検証(Issue #116・#120、フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、ヘッドレス
 //     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
 //     配信されることを検証する。フロントページが CSS 付きで描画され、
 //     訪問者が投稿ページとカテゴリーページへ辿れることを確認する。
 //
+//     続いて WordPress 0.71 の管理画面を動かす(Issue #120)。管理画面は
+//     ログイン済みで開き(自動ログイン)、管理画面自身のフォームから
+//     投稿を作成・編集し、カテゴリーを追加し、各変更をフロントページで
+//     確認する。
+//
 //     これは実現可能性検証(Issue #108、フロントページのテキスト描画のみ
-//     確認)を、サービスワーカーのリクエストハンドラが解放する 2 点 --
-//     スタイリングと遷移 -- で拡張したものである。
+//     確認)を、フル実装が解放するもの -- スタイリングと遷移(サービス
+//     ワーカー、ステップ 1)、および動作する管理画面(ステップ 3)--
+//     で拡張したものである。
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -102,6 +113,175 @@ async function waitForBlogFrame( page, match ) {
 		await new Promise( ( r ) => setTimeout( r, 250 ) );
 	}
 	throw new Error( 'blog iframe did not reach the expected scoped URL' );
+}
+
+/**
+ * Point the blog iframe at a scoped blog path and return the frame once
+ * it has loaded there.
+ *
+ * The blog is served under the per-boot scope segment the app picked
+ * (window.__071now.scopePrefix); a blog-relative path is resolved
+ * against it so the navigation goes through the service worker.
+ *
+ * @param {import('playwright').Page} page    The host page.
+ * @param {string}                   relPath Blog-relative path, e.g.
+ *                                            '/wp-admin/b2edit.php'.
+ * @return {Promise<import('playwright').Frame>} The blog frame.
+ */
+async function gotoBlog( page, relPath ) {
+	await page.evaluate( ( rel ) => {
+		const target = window.__071now.scopePrefix + rel;
+		document.getElementById( 'blog' ).src = target;
+	}, relPath );
+	const want = relPath.split( '?' )[ 0 ];
+	return waitForBlogFrame( page, ( url ) => url.includes( want ) );
+}
+
+/**
+ * Wait until the blog iframe shows a frame, at a URL matching the given
+ * predicate, whose body contains the expected text.
+ *
+ * A form submit / redirect leaves the iframe URL unchanged (b2edit.php
+ * posts to b2edit.php), so a URL check alone can match the pre-submit
+ * document. Asserting on the rendered text instead waits for the new
+ * page to actually be in place.
+ *
+ * @param {import('playwright').Page}  page         The host page.
+ * @param {(url: string) => boolean}   matchUrl     URL predicate.
+ * @param {string}                     expectedText Text the body must
+ *                                                  contain.
+ * @return {Promise<boolean>} True once the text is found, false on
+ *                            timeout.
+ */
+async function waitForBlogText( page, matchUrl, expectedText ) {
+	const deadline = Date.now() + 20000;
+	while ( Date.now() < deadline ) {
+		const frame = page
+			.frames()
+			.find(
+				( f ) => f.url().includes( '/scope:' ) && matchUrl( f.url() )
+			);
+		if ( frame ) {
+			const body = await frame
+				.evaluate( () =>
+					document.body ? document.body.innerText : ''
+				)
+				.catch( () => '' );
+			if ( body.includes( expectedText ) ) {
+				return true;
+			}
+		}
+		await new Promise( ( r ) => setTimeout( r, 250 ) );
+	}
+	return false;
+}
+
+/**
+ * Exercise the WordPress 0.71 admin in the playground (Issue #120).
+ *
+ * Opens the admin (which must already be logged in -- the auto-login),
+ * creates a post through the admin's own form, edits it, adds a
+ * category, and confirms each change on the front page. Every page is
+ * served through the service worker, the same path a real visitor's
+ * browser takes.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifyAdmin( page ) {
+	const CREATED_TITLE = '071-now admin smoke post';
+	const CREATED_BODY = 'Created through the WordPress 0.71 admin.';
+	const EDITED_TITLE = '071-now admin smoke post edited';
+	const NEW_CATEGORY = 'Playground Notes';
+
+	const isAdmin = ( url ) => url.includes( '/wp-admin/b2edit.php' );
+	const isCatAdmin = ( url ) => url.includes( '/wp-admin/b2categories.php' );
+	const isFront = ( url ) => url.endsWith( '/index.php' );
+
+	// EN: Open the post editor. Auto-login means it opens straight onto
+	//     the editor; without a logged-in user b2verifauth.php would
+	//     redirect to b2login.php, so reaching the post form at all is
+	//     the auto-login check.
+	const editFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+	await editFrame.waitForSelector( 'form[name="post"] #content', {
+		timeout: 15000,
+	} );
+	const adminReachable =
+		( await editFrame.locator( 'form[name="post"]' ).count() ) > 0;
+
+	// EN: Create a post through the admin's own form -- fill the title,
+	//     body and category and submit. The form carries 0.71's CSRF
+	//     token, so a successful write proves the token round-trips.
+	//     b2edit.php redirects back to itself after the INSERT; wait for
+	//     the post list to actually show the new title.
+	await editFrame.fill( 'form[name="post"] #title', CREATED_TITLE );
+	await editFrame.fill( 'form[name="post"] #content', CREATED_BODY );
+	await editFrame.selectOption( 'form[name="post"] select#category', {
+		index: 0,
+	} );
+	await editFrame.click( 'form[name="post"] input[type="submit"]' );
+	const postListed = await waitForBlogText( page, isAdmin, CREATED_TITLE );
+
+	// EN: The created post shows on the front page.
+	await gotoBlog( page, '/index.php' );
+	const createdOnFront = await waitForBlogText(
+		page,
+		isFront,
+		CREATED_TITLE
+	);
+
+	// EN: Edit the post. The admin lists an "Edit" link per post -- the
+	//     b2edit.php?action=edit permalink. Follow it to the edit form,
+	//     change the title and submit.
+	const editList = await gotoBlog( page, '/wp-admin/b2edit.php' );
+	await editList.waitForSelector( 'a[href*="action=edit"]', {
+		timeout: 15000,
+	} );
+	await editList.locator( 'a[href*="action=edit"]' ).first().click();
+	const editFormFrame = await waitForBlogFrame( page, ( url ) =>
+		url.includes( 'action=edit' )
+	);
+	await editFormFrame.waitForSelector( 'form[name="post"] #title', {
+		timeout: 15000,
+	} );
+	await editFormFrame.fill( 'form[name="post"] #title', EDITED_TITLE );
+	await editFormFrame.click( 'form[name="post"] input[type="submit"]' );
+	const postEdited = await waitForBlogText( page, isAdmin, EDITED_TITLE );
+
+	// EN: The edited title shows on the front page.
+	await gotoBlog( page, '/index.php' );
+	const editedOnFront = await waitForBlogText( page, isFront, EDITED_TITLE );
+
+	// EN: Manage a category -- add one through the category admin and
+	//     confirm it lands in the category list.
+	const catFrame = await gotoBlog( page, '/wp-admin/b2categories.php' );
+	await catFrame.waitForSelector(
+		'form[name="addcat"] input[name="cat_name"]',
+		{ timeout: 15000 }
+	);
+	await catFrame.fill(
+		'form[name="addcat"] input[name="cat_name"]',
+		NEW_CATEGORY
+	);
+	await catFrame.click( 'form[name="addcat"] input[type="submit"]' );
+	const categoryListed = await waitForBlogText(
+		page,
+		isCatAdmin,
+		NEW_CATEGORY
+	);
+
+	await page.screenshot( {
+		path: join( here, '071-now-admin.png' ),
+		fullPage: true,
+	} );
+
+	return [
+		[ 'admin opens logged in (auto-login)', adminReachable ],
+		[ 'post created through the admin form', postListed ],
+		[ 'created post shows on the front page', createdOnFront ],
+		[ 'post edited through the admin form', postEdited && editedOnFront ],
+		[ 'category added through the admin', categoryListed ],
+	];
 }
 
 /**
@@ -201,6 +381,12 @@ async function verify() {
 			.locator( `text=${ EXPECTED_TITLE }` )
 			.count();
 
+		// EN: Exercise the WordPress 0.71 admin (Issue #120) -- this runs
+		//     after the front-page navigation checks and before the
+		//     console-error assertion so an admin-side console error is
+		//     also caught.
+		const adminChecks = await verifyAdmin( page );
+
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
 			[ 'service worker controls the page', swController ],
@@ -214,6 +400,7 @@ async function verify() {
 				`category page reached by clicking "${ categoryHref }"`,
 				categoryPostVisible > 0,
 			],
+			...adminChecks,
 			[ 'no console errors', consoleErrors.length === 0 ],
 		];
 
@@ -230,7 +417,9 @@ async function verify() {
 			console.log( 'console errors:\n  ' + consoleErrors.join( '\n  ' ) );
 		}
 		// eslint-disable-next-line no-console
-		console.log( 'screenshot: tools/playground/test/071-now-frontpage.png' );
+		console.log(
+			'screenshots: tools/playground/test/071-now-frontpage.png, 071-now-admin.png'
+		);
 
 		if ( ! ok ) {
 			throw new Error( '071-now verification failed' );
