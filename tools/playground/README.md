@@ -36,10 +36,13 @@ remaining work for the full `071-now` build, are in
 
 ## How it works
 
-1. `scripts/build-overlay.mjs` snapshots `src/` (WordPress 0.71) into
+1. `scripts/build-overlay.mjs` builds the block-editor app
+   (`src/block-editor/app/`), then snapshots `src/` (WordPress 0.71,
+   including the freshly built `src/block-editor/assets/`) into
    `tools/playground/wp/` and overlays the 071-now SQLite database layer
    onto that copy. **`src/` itself is never modified** — the overlay only
-   touches the generated, git-ignored `tools/playground/wp/` directory.
+   touches the generated, git-ignored `tools/playground/wp/` directory
+   (and the block editor's own git-ignored build output).
 2. Vite bundles the browser app and the WordPress 0.71 tree.
 3. At boot the app registers the request-routing service worker
    (`public/sw.js`), boots `@php-wasm/web`, writes the WordPress 0.71
@@ -225,6 +228,54 @@ makes it work in the playground and persists the uploaded images.
 directory creation, the media persistence layer and the reset all live
 under `tools/playground/`.
 
+## The block editor
+
+WordPress 0.71-gold also carries a **custom block editor**
+(`src/block-editor/`) — a `@wordpress/block-editor` React app over a thin
+WordPress 0.71 JSON backend (`api/load.php`, `api/save.php`,
+`api/upload.php`, served by `api/editor.php`). Issue #132 makes it work
+in the playground too.
+
+- **The playground build builds it.** The block editor's React app
+  (`src/block-editor/app/`) is its own package — its own `package.json`
+  and `package-lock.json`, deliberately not a repo-root workspace — and
+  `npm run build` there writes the bundle and the Vite manifest to
+  `src/block-editor/assets/`, a git-ignored build artifact.
+  `scripts/build-overlay.mjs` runs that `npm install` + `npm run build`
+  **before** it snapshots `src/`, so the overlay always carries a fresh
+  bundle at `wp/block-editor/assets/`. `src/block-editor/api/editor.php`
+  then finds the bundle and serves the editor instead of its "bundle not
+  built" fallback. The earlier empty `block-library.css` placeholder is
+  gone — the real built stylesheet is now in place.
+- **The build inputs stay out of the overlay.** The snapshot skips
+  `src/block-editor/app/` — the React source, its ~450 MB `node_modules`
+  and the Vite config are build inputs the in-browser blog never serves;
+  only the build *output*, `src/block-editor/assets/`, belongs in the
+  overlay.
+- **The Vite manifest is moved off the dot-directory.** Vite writes its
+  manifest to `block-editor/assets/.vite/manifest.json`, but
+  `src/wp-files.js` bundles the `wp/` tree with an `import.meta.glob`,
+  and that glob does not match files inside a dot-directory. The overlay
+  builder copies the manifest to `block-editor/assets/vite-manifest.json`
+  and rewrites the overlay's `editor.php` to read it there — the same
+  overlay-only patching as the `mysqli_*` rewrite.
+- **The `api/` runs against the SQLite-backed `wpdb`.** The block
+  editor's JSON endpoints bootstrap WordPress 0.71's database layer,
+  which in the playground is the SQLite-backed `wpdb`. They issue only
+  the query shapes the classic admin already exercises — `SELECT *`,
+  `SELECT ... WHERE ID = N`, the post `INSERT` / `UPDATE`, `COUNT(*)` —
+  so the existing translator covers them with no extension needed. The
+  cookie auth (`be_require_login`) reads the same `wordpressuser` /
+  `wordpresspass` cookies the boot shim already injects for the
+  playground's auto-login, so the editor opens authenticated.
+
+The editor is opened from the admin's per-post **Block editor** link
+(`wp-admin/b2edit.showposts.php`): a post can be edited and saved through
+it, and the change is reflected on the WordPress 0.71 front page. `src/`
+is never touched — the block-editor build wiring, the overlay snapshot
+filter and the manifest rewrite all live under `tools/playground/` (and
+the block editor's own git-ignored build output).
+
 ## The polished playground
 
 Step 6 (Issue #126) turns the working build into a presentable
@@ -276,8 +327,9 @@ tools/playground/
     boot.php              auto_prepend boot shim (seed, auto-login, chdir)
     mysqli-compat.php     mysqli compat helpers for the rewritten sites
   scripts/
-    build-overlay.mjs     snapshots src/, applies the db overlay, and
-                          rewrites the direct mysqli_* call sites
+    build-overlay.mjs     builds the block-editor app, snapshots src/,
+                          applies the db overlay, and rewrites the
+                          direct mysqli_* call sites
   test/
     verify.mjs            headless verification (Chromium + WebKit)
   wp/                     generated overlay (git-ignored)
@@ -305,7 +357,11 @@ CSS and the seeded demo blog (several posts across a couple of
 categories), and a visitor can click through to a post page and a
 category page. It then exercises the admin — opening it logged in,
 creating and editing a post and adding a category through the admin's
-own forms, and confirming each change on the front page. It then checks
+own forms, and confirming each change on the front page. It then
+exercises the block editor — opening it from the admin's "Block editor"
+link, asserting the editor loads (not the "bundle not built" page),
+editing and saving a post's title through it, and confirming the change
+round-trips to the database and the front page. It then checks
 persistence — creating a post, reloading the page and asserting the
 post is still present, then exercising the reset. Finally it checks
 image upload — uploading an image through `b2upload.php`, asserting it

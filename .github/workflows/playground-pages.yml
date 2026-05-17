@@ -97,10 +97,13 @@ jobs:
 
       - name: Upload the playground as a Pages artifact
         # EN: Upload only the playground's build output. It is roughly
-        #     54 MB (the ~40 MB PHP 8.3 .wasm runtime included), well
-        #     within the GitHub Pages 1 GB site-size limit.
-        # JA: playground のビルド成果物のみをアップロードする。約 54 MB で
-        #     GitHub Pages の 1 GB サイトサイズ上限に十分収まる。
+        #     72 MB (the ~40 MB PHP 8.3 .wasm runtime and the bundled
+        #     block-editor app included), well within the GitHub Pages
+        #     1 GB site-size limit.
+        # JA: playground のビルド成果物のみをアップロードする。約 72 MB
+        #     (PHP 8.3 の .wasm ランタイムとバンドル済みブロックエディタ
+        #     アプリを含む)で GitHub Pages の 1 GB サイトサイズ上限に
+        #     十分収まる。
         uses: actions/upload-pages-artifact@v3
         with:
           path: tools/playground/dist

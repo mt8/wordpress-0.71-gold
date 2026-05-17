@@ -1,5 +1,5 @@
 // EN: 071-now headless verification (Issue #116, #120, #122, #124,
-//     #126, #130; full build).
+//     #126, #130, #132; full build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, and runs the verification in two headless engines --
@@ -30,20 +30,27 @@
 //     after a reset the post is gone and the blog is back to its fresh
 //     seeded state.
 //
-//     Finally it checks image upload and its persistence (Issue #124):
-//     an image is uploaded through the classic admin's b2upload.php
-//     form, asserted stored and served from the php-wasm VFS, the page
-//     is reloaded and the image asserted still served -- proving the
+//     It checks image upload and its persistence (Issue #124): an image
+//     is uploaded through the classic admin's b2upload.php form,
+//     asserted stored and served from the php-wasm VFS, the page is
+//     reloaded and the image asserted still served -- proving the
 //     uploaded media survives a reload -- then a reset is asserted to
 //     clear it.
+//
+//     Finally it checks the block editor (Issue #132): the custom
+//     @wordpress/block-editor app (src/block-editor/) is opened from the
+//     admin's "Block editor" link, a post's title is edited and saved
+//     through it, and the change is asserted to round-trip -- the editor
+//     reloads with the new title and the WordPress 0.71 front page
+//     renders it.
 //
 //     This extends the feasibility spike's check (Issue #108, which
 //     only confirmed the front-page text rendered) with the things the
 //     full build unlocks -- styling and navigation (the service worker,
-//     step 1), the working admin (step 3), persistence (step 4) and
-//     image upload (step 5).
+//     step 1), the working admin (step 3), persistence (step 4), image
+//     upload (step 5) and the block editor (Issue #132).
 // JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124・#126・
-//     #130、フル実装)。
+//     #130・#132、フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、2 つのヘッドレス
 //     エンジン -- Chromium と WebKit(Safari のエンジン、Issue #130)--
@@ -801,6 +808,150 @@ async function verifyImageUpload( page ) {
 }
 
 /**
+ * Wait for the block editor to mount in the blog iframe and return its
+ * frame, once the editor's title input is present.
+ *
+ * The block editor is the custom @wordpress/block-editor app served by
+ * src/block-editor/api/editor.php. It is opened at a scoped blog path
+ * (/block-editor/api/editor.php?post=ID); editor.php serves the HTML
+ * shell, the bundle mounts the React editor, and load.php fills the
+ * title -- so a present `input.be-title` proves editor.php found the
+ * bundle (not the "bundle not built" fallback) and load.php answered.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @param {number}                    post The post id to open.
+ * @return {Promise<import('playwright').Frame>} The editor frame.
+ */
+async function openBlockEditor( page, post ) {
+	await gotoBlog( page, `/block-editor/api/editor.php?post=${ post }` );
+	const deadline = Date.now() + 40000;
+	while ( Date.now() < deadline ) {
+		const frame = page
+			.frames()
+			.find( ( f ) =>
+				f.url().includes( '/block-editor/api/editor.php' )
+			);
+		if ( frame ) {
+			try {
+				await frame.waitForSelector( 'input.be-title', {
+					timeout: 5000,
+				} );
+				return frame;
+			} catch ( error ) {
+				// EN: A detached frame or a not-yet-mounted editor -- retry.
+				if ( ! /detached|Timeout/i.test( error.message ) ) {
+					throw error;
+				}
+			}
+		}
+		await new Promise( ( r ) => setTimeout( r, 250 ) );
+	}
+	throw new Error( 'block editor did not mount in the blog iframe' );
+}
+
+/**
+ * Verify the block editor in the playground (Issue #132).
+ *
+ * The block editor (src/block-editor/) is a custom @wordpress/
+ * block-editor app over a thin WordPress 0.71 JSON backend; the
+ * playground build now builds it and carries its bundle in the overlay.
+ * This opens the editor from the admin's own "Block editor" link, edits
+ * a post's title through it, saves, and confirms the change round-trips
+ * -- the editor reloads with the new title and the WordPress 0.71 front
+ * page renders it. Every request goes through the service worker and the
+ * SQLite-backed wpdb, the same path a real visitor takes.
+ *
+ * @param {import('playwright').Page} page The host page.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifyBlockEditor( page ) {
+	// EN: A unique title so the check is unaffected by any earlier edit
+	//     and the front-page assertion cannot match stale content.
+	const BLOCK_EDITED_TITLE = `071-now block-edited post ${ Date.now() }`;
+	const isFront = ( url ) => url.includes( 'index.php?p=' );
+
+	// EN: The admin lists a per-post "Block editor" link
+	//     (b2edit.showposts.php). Open the post editor, follow that link,
+	//     and confirm it lands on the block editor -- not editor.php's
+	//     "bundle not built" fallback. Reaching the link at all also
+	//     confirms the admin is logged in (the auto-login).
+	const adminFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+	await adminFrame.waitForSelector( 'a[href*="block-editor/api/editor.php"]', {
+		timeout: 15000,
+	} );
+	const linkInAdmin =
+		( await adminFrame
+			.locator( 'a[href*="block-editor/api/editor.php"]' )
+			.count() ) > 0;
+	const editorHref = await adminFrame
+		.locator( 'a[href*="block-editor/api/editor.php?post="]' )
+		.first()
+		.getAttribute( 'href' );
+
+	// EN: The href is "../block-editor/api/editor.php?post=ID" relative to
+	//     wp-admin/; take the post id from it and open the editor the same
+	//     way a click would, through the service worker.
+	const postId = Number( ( editorHref || '' ).match( /post=(\d+)/ )?.[ 1 ] );
+	const editorFrame = await openBlockEditor( page, postId );
+
+	// EN: editor.php found the bundle -- the editor mounted rather than
+	//     showing the "Block editor bundle not built" page.
+	const bodyText = await editorFrame
+		.evaluate( () => ( document.body ? document.body.innerText : '' ) )
+		.catch( () => '' );
+	const editorLoaded =
+		! bodyText.includes( 'bundle not built' ) &&
+		( await editorFrame.locator( '.be-app' ).count() ) > 0;
+
+	// EN: load.php answered -- the title input carries the post's title.
+	const loadedTitle = await editorFrame.evaluate(
+		() => document.querySelector( 'input.be-title' ).value
+	);
+	const postLoaded = typeof loadedTitle === 'string';
+
+	// EN: Edit the title and save through the editor. The Save button is
+	//     the primary toolbar button; save.php writes the block markup and
+	//     title back into b2posts through the SQLite-backed wpdb.
+	await editorFrame.fill( 'input.be-title', BLOCK_EDITED_TITLE );
+	await editorFrame
+		.locator( 'button.is-primary', { hasText: 'Save' } )
+		.first()
+		.click();
+	const saveConfirmed = await editorFrame
+		.locator( '.be-notice .components-notice.is-success' )
+		.waitFor( { timeout: 20000 } )
+		.then( () => true )
+		.catch( () => false );
+
+	// EN: Re-open the editor for the same post -- the new title must come
+	//     back from load.php, proving save.php persisted it to the
+	//     database rather than only updating the in-page React state.
+	const reopened = await openBlockEditor( page, postId );
+	const reopenedTitle = await reopened.evaluate(
+		() => document.querySelector( 'input.be-title' ).value
+	);
+	const titlePersisted = reopenedTitle === BLOCK_EDITED_TITLE;
+
+	// EN: The edited post renders on the WordPress 0.71 front end -- the
+	//     change is visible to a visitor, not just inside the editor.
+	await gotoBlog( page, `/index.php?p=${ postId }` );
+	const editVisibleOnFront = await waitForBlogText(
+		page,
+		isFront,
+		BLOCK_EDITED_TITLE
+	);
+
+	return [
+		[ 'admin links to the block editor', linkInAdmin ],
+		[ 'block editor loads (not the "bundle not built" page)', editorLoaded ],
+		[ 'post loaded into the block editor via load.php', postLoaded ],
+		[ 'post saved through the block editor (save.php)', saveConfirmed ],
+		[ 'block-editor edit persisted to the database', titlePersisted ],
+		[ 'block-editor edit shows on the 0.71 front page', editVisibleOnFront ],
+	];
+}
+
+/**
  * Verify the service-worker-served blog in one headless browser engine.
  *
  * Run against both Chromium and WebKit (Safari's engine, Issue #130) so a
@@ -991,6 +1142,12 @@ async function verify( browserType, engine ) {
 		//     also caught.
 		const adminChecks = await verifyAdmin( page, engine );
 
+		// EN: Exercise the block editor (Issue #132) -- open it from the
+		//     admin's link, edit and save a post through it, and confirm
+		//     the change round-trips. This runs before the persistence and
+		//     upload checks because those reload and reset the page.
+		const blockEditorChecks = await verifyBlockEditor( page );
+
 		// EN: Check database persistence (Issue #122) -- create a post,
 		//     reload, assert it survived, then exercise the reset. The
 		//     reset at its end leaves a clean seeded state.
@@ -1026,6 +1183,7 @@ async function verify( browserType, engine ) {
 			],
 			[ 'category page renders no SQL/DB error', categoryNoSqlError ],
 			...adminChecks,
+			...blockEditorChecks,
 			...persistenceChecks,
 			...uploadChecks,
 			[ 'no console errors', consoleErrors.length === 0 ],
