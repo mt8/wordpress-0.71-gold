@@ -10,8 +10,10 @@ PHP 8.3 + MySQL 8, as required by CLAUDE.md.
 | `web`   | Built from `Dockerfile` (`php:8.3-apache`) | Apache + PHP 8.3. Serves `./src`. |
 | `db`    | `mysql:8.0` (official) | MySQL 8 database. |
 
-Both base images are official. The only customization is the `Dockerfile`
-adding the `mysqli` extension, which the base image does not ship with.
+Both base images are official. The `Dockerfile` keeps customization minimal:
+it adds the `mysqli` extension (the base image ships with neither `mysql` nor
+`mysqli`) and raises PHP's upload limits (`upload_max_filesize = 16M`,
+`post_max_size = 20M`) so the block editor can upload images (Issue #102).
 
 ## Usage
 
@@ -81,8 +83,11 @@ CLAUDE.md の要求に従い、WordPress 0.71-gold を PHP 8.3 + MySQL 8 で
 | `web`   | `Dockerfile` からビルド(`php:8.3-apache`) | Apache + PHP 8.3。`./src` を配信する。 |
 | `db`    | `mysql:8.0`(公式) | MySQL 8 データベース。 |
 
-ベースイメージはいずれも公式。カスタマイズはベースイメージに含まれない
-`mysqli` 拡張を `Dockerfile` で追加する 1 点のみ。
+ベースイメージはいずれも公式。`Dockerfile` のカスタマイズは最小限で、
+`mysqli` 拡張の追加（ベースイメージは `mysql` も `mysqli` も同梱しない）と、
+ブロックエディタが画像をアップロードできるよう PHP のアップロード上限
+（`upload_max_filesize = 16M`、`post_max_size = 20M`）を引き上げる 2 点
+（Issue #102）。
 
 ## 使い方
 

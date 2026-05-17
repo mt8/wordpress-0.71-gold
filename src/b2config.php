@@ -125,7 +125,11 @@ $fileupload_allowedtypes = ' jpg gif png ';
 
 // by default, most servers limit the size of uploads to 2048 KB
 //   if you want to set it to a lower value, here it is (you cannot set a higher value)
-$fileupload_maxk = '96';
+// EN (Issue #102): raised to 16 MB (16384 KB) for block-editor image uploads;
+//     the Docker image's PHP upload_max_filesize is raised to 16M to match.
+// JA (Issue #102): ブロックエディタの画像アップロード用に 16 MB (16384 KB) へ
+//     引き上げ。Docker イメージの PHP upload_max_filesize も 16M に整合させる。
+$fileupload_maxk = '16384';
 
 // you may not want all users to upload pictures/files, so you can set a minimum level for this
 $fileupload_minlevel = '1';
