@@ -288,8 +288,8 @@ browser-based WordPress 0.71.
   fresh playground therefore opens on a real WordPress 0.71 blog —
   showing 0.71's post, category and author rendering — and the reset
   control returns to exactly this state. The newest post keeps the title
-  and body the headless verifier expects, so the seed stays in step with
-  `test/verify.mjs`.
+  and body the e2e suite expects, so the seed stays in step with the
+  playground e2e specs (`tests/playground/`, Issue #141).
 - **Loading UI.** php-wasm's boot fetches and starts the ~40 MB PHP 8.3
   WebAssembly runtime, which takes a few seconds. `index.html` shows a
   loading splash — a spinner and a short explanation — over the blank
@@ -364,10 +364,12 @@ tools/playground/
     build-overlay.mjs     builds the block-editor app, snapshots src/,
                           applies the db overlay, and rewrites the
                           direct mysqli_* call sites
-  test/
-    verify.mjs            headless verification (Chromium + WebKit)
   wp/                     generated overlay (git-ignored)
 ```
+
+The playground's end-to-end tests live outside this workspace, in the
+project's Playwright suite at `tests/playground/` (Issue #141) — see
+[Testing](#testing) below.
 
 ## Commands
 
@@ -375,35 +377,62 @@ tools/playground/
 npm run build      build the overlay and the Vite bundle
 npm run dev        Vite dev server
 npm run preview    serve the production build
-npm run verify     build, serve, and verify in headless Chromium + WebKit
+npm run verify     run the playground e2e suite (alias of the command below)
 ```
 
-`npm run verify` runs the full check suite against two headless engines
-— Chromium and WebKit (Safari's engine) — so a browser-compatibility
-regression is caught here rather than in production (Issue #130). Both
-must pass. In WebKit the playground boots with persistence on the
-IndexedDB fallback; in Chromium it uses OPFS. Each engine confirms, in a
-real browser, that the WordPress 0.71 blog is served through the service
-worker: a loading splash covers the
-php-wasm boot and is replaced by the blog, the host page frames the
-playground and links to the repository, the front page renders with its
-CSS and the seeded demo blog (several posts across a couple of
-categories), and a visitor can click through to a post page and a
-category page. It then exercises the admin — opening it logged in,
-creating and editing a post and adding a category through the admin's
-own forms, and confirming each change on the front page. It then
-exercises the block editor — opening it from the admin's "Block editor"
-link, asserting the editor loads (not the "bundle not built" page),
-editing and saving a post's title through it, and confirming the change
-round-trips to the database and the front page. It then checks
-persistence — creating a post, reloading the page and asserting the
-post is still present, then exercising the reset. Finally it checks
-image upload — uploading an image through `b2upload.php`, asserting it
-is stored and served from the VFS, reloading and asserting it survived,
-then asserting the reset clears it — with no console errors. It also
-asserts the page is cross-origin-isolated. It writes a screenshot per
-engine: `test/071-now-frontpage-<engine>.png` and
-`test/071-now-admin-<engine>.png`.
+## Testing
+
+The playground has a proper end-to-end test suite in the project's
+Playwright framework (`@playwright/test`, Issue #141). The specs live at
+`tests/playground/` — outside this workspace, alongside the Docker-site
+e2e suite — and are run as their own Playwright projects
+(`playground-chromium` and `playground-webkit`):
+
+```
+npm run test:e2e:playground    run the playground e2e suite (from the repo root)
+```
+
+`npm run verify` in this workspace is an alias of that command, kept so
+the historical name still works.
+
+The suite needs no Docker: Playwright's `webServer` builds the
+playground and serves the production build with `vite preview`, and the
+specs run against that — the same bundle the GitHub Pages deploy ships.
+It runs against two engines — Chromium and WebKit (Safari's engine) —
+so a browser-compatibility regression is caught here rather than in
+production (Issue #130). In WebKit the playground boots with persistence
+on the IndexedDB fallback; in Chromium it uses OPFS.
+
+The spec files cover the playground's end-to-end flows:
+
+- `boot.spec.js` — php-wasm boots, the loading splash covers the boot
+  and is replaced by the blog, the host page frames the playground and
+  links to the repository, the page is cross-origin-isolated and
+  service-worker-controlled, the front page renders with its CSS and the
+  seeded demo blog, and a visitor can click through to a post page and a
+  category page (every page asserted free of SQL and console errors).
+- `admin.spec.js` — the WordPress 0.71 admin opens already logged in
+  (auto-login), a post is created and edited through the admin's own
+  forms, a category is added, and each change shows on the front page.
+- `block-editor.spec.js` — the block editor opens from the admin's
+  "Block editor" link, loads (not the "bundle not built" page), and a
+  title edit saved through it round-trips to the database and the front
+  page.
+- `persistence.spec.js` — a post created through the admin survives a
+  full page reload (the SQLite database is restored from OPFS /
+  IndexedDB), and the reset control returns the playground to its fresh
+  seeded state.
+- `image-upload.spec.js` — an image uploaded through `b2upload.php` is
+  stored and served from the VFS, survives a reload, and is cleared by
+  a reset.
+- `inapp-browser.spec.js` — opened in a mobile in-app browser
+  user-agent, the playground shows the "open in your standard browser"
+  screen instead of booting, and the "continue anyway" escape hatch
+  boots it (Issue #140).
+
+The Playwright configuration is shared with the Docker-site e2e suite
+(`playwright.config.js` at the repo root); see `tests/playground/` for
+the specs and their shared helpers.
 
 ## Deployment
 
@@ -418,8 +447,8 @@ A project page is served under the repository name, so the workflow
 builds with `PLAYGROUND_BASE=/wordpress-0.71-gold/`. `vite.config.js`
 reads that environment variable as the public base path (`base`), and
 `src/main.js` builds the service-worker registration and the scoped
-blog paths under it. Locally `build` / `dev` / `preview` / `verify`
-leave `PLAYGROUND_BASE` unset and use the default `/`.
+blog paths under it. Locally `build` / `dev` / `preview` and the e2e
+suite leave `PLAYGROUND_BASE` unset and use the default `/`.
 
 GitHub Pages cannot set custom HTTP headers, and php-wasm needs the
 COOP/COEP cross-origin isolation headers for `SharedArrayBuffer`; the
