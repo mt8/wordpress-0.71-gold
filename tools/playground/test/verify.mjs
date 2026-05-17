@@ -1,12 +1,15 @@
-// EN: 071-now headless verification (Issue #116, #120, #122, #124; full
-//     build).
+// EN: 071-now headless verification (Issue #116, #120, #122, #124,
+//     #126; full build).
 //
 //     Builds the playground, serves the production build with `vite
 //     preview`, opens it in headless Chromium, and asserts that the
-//     WordPress 0.71 blog is served through the service worker: the
-//     front page renders with its CSS, and a visitor can click through
-//     to a post page and a category page. A PNG screenshot is written
-//     for the record.
+//     WordPress 0.71 blog is served through the service worker: a
+//     loading splash covers the php-wasm boot and is replaced by the
+//     blog, the host page frames the playground and links to the
+//     repository (Issue #126), the front page renders with its CSS and
+//     the seeded demo blog -- several posts across a couple of
+//     categories -- and a visitor can click through to a post page and
+//     a category page. A PNG screenshot is written for the record.
 //
 //     It then exercises the WordPress 0.71 admin (Issue #120): the
 //     admin opens already logged in (auto-login), a post is created and
@@ -32,12 +35,17 @@
 //     full build unlocks -- styling and navigation (the service worker,
 //     step 1), the working admin (step 3), persistence (step 4) and
 //     image upload (step 5).
-// JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124、フル実装)。
+// JA: 071-now のヘッドレス検証(Issue #116・#120・#122・#124・#126、
+//     フル実装)。
 //
 //     playground をビルドし、`vite preview` で配信し、ヘッドレス
 //     Chromium で開き、WordPress 0.71 ブログがサービスワーカー経由で
-//     配信されることを検証する。フロントページが CSS 付きで描画され、
-//     訪問者が投稿ページとカテゴリーページへ辿れることを確認する。
+//     配信されることを検証する。ローディングスプラッシュが php-wasm の
+//     起動を覆いブログに置き換わること、ホストページが playground を
+//     枠付けしリポジトリへリンクすること(Issue #126)、フロントページが
+//     CSS とシード済みデモブログ(複数カテゴリーにまたがる数件の投稿)
+//     付きで描画されること、訪問者が投稿ページとカテゴリーページへ
+//     辿れることを確認する。
 //
 //     続いて WordPress 0.71 の管理画面を動かす(Issue #120)。管理画面は
 //     ログイン済みで開き(自動ログイン)、管理画面自身のフォームから
@@ -72,9 +80,27 @@ const playgroundDir = join( here, '..' );
 const PREVIEW_PORT = 4173;
 const PREVIEW_URL = `http://localhost:${ PREVIEW_PORT }/`;
 
-// EN: Text the seeded post (tools/playground/db/seed.php) must contribute.
+// EN: Text the seeded demo blog (tools/playground/db/seed.php) must
+//     contribute. EXPECTED_TITLE / EXPECTED_BODY are the newest seeded
+//     post -- the post the front-page-to-post-to-category click-through
+//     follows. The demo seed is a small blog of several posts across a
+//     couple of categories (Issue #126); the further entries below are
+//     other seeded posts and the seeded category names, asserted so the
+//     verification confirms the richer seed rendered, not just one post.
 const EXPECTED_TITLE = 'Hello world from 071-now';
 const EXPECTED_BODY = 'in-browser SQLite database';
+
+// EN: Other seeded post titles -- the front page must list more than the
+//     one post, so the demo blog shows 0.71's real multi-post rendering.
+const OTHER_SEEDED_TITLES = [
+	'A quick tour of the playground',
+	'How the database works without MySQL',
+	'WordPress 0.71, twenty years on',
+];
+
+// EN: Seeded category names -- the front page's category list must show
+//     the demo blog's categories.
+const SEEDED_CATEGORIES = [ 'Announcements', 'Notes from 2003' ];
 
 /**
  * Run an npm script in the playground package and wait for it to exit.
@@ -310,6 +336,45 @@ async function verifyAdmin( page ) {
 		[ 'created post shows on the front page', createdOnFront ],
 		[ 'post edited through the admin form', postEdited && editedOnFront ],
 		[ 'category added through the admin', categoryListed ],
+	];
+}
+
+/**
+ * Verify the seeded demo blog rendered on the front page (Issue #126).
+ *
+ * A fresh playground is seeded with a small demo blog -- several
+ * published posts across a couple of categories -- rather than a single
+ * placeholder post. This reads the front page and asserts that the
+ * further seeded posts and the seeded category names all appear, so the
+ * verification confirms 0.71's real multi-post / multi-category
+ * rendering, not just the one post the spike checked.
+ *
+ * @param {import('playwright').Frame} frontFrame The front-page frame.
+ * @return {Promise<Array<[string, boolean]>>} Labelled check results.
+ */
+async function verifySeedContent( frontFrame ) {
+	const bodyText = await frontFrame
+		.evaluate( () => ( document.body ? document.body.innerText : '' ) )
+		.catch( () => '' );
+
+	// EN: The front page lists a post per <h3 class="storytitle"> -- the
+	//     demo seed must contribute several, not one.
+	const storyCount = await frontFrame.locator( 'h3.storytitle' ).count();
+
+	const otherPostsShown = OTHER_SEEDED_TITLES.every( ( title ) =>
+		bodyText.includes( title )
+	);
+	const categoriesShown = SEEDED_CATEGORIES.every( ( name ) =>
+		bodyText.includes( name )
+	);
+
+	return [
+		[
+			`front page lists several seeded posts (${ storyCount } stories)`,
+			storyCount >= 4,
+		],
+		[ 'further seeded posts all show on the front page', otherPostsShown ],
+		[ 'seeded categories show in the category list', categoriesShown ],
 	];
 }
 
@@ -625,9 +690,29 @@ async function verify() {
 	try {
 		await page.goto( PREVIEW_URL, { waitUntil: 'load' } );
 
+		// EN: Loading UI check (Issue #126). The host page shows a loading
+		//     splash over the blank iframe while php-wasm boots. Catch it
+		//     before waitForBoot resolves: the splash element must be
+		//     present and visible on the just-loaded page, with its
+		//     spinner, before the blog replaces it.
+		const splashShownAtBoot = await page
+			.locator( '#splash' )
+			.isVisible()
+			.catch( () => false );
+		const splashHasSpinner =
+			( await page.locator( '#splash .spinner' ).count() ) > 0;
+
 		// EN: Wait for the boot hook the app sets once php-wasm is up and
 		//     the front page has been served through the request handler.
 		await waitForBoot( page );
+
+		// EN: Once the blog iframe has loaded the front page the splash is
+		//     faded out (the 'hidden' class). Wait for that, so the check
+		//     confirms the splash is replaced by the live blog.
+		const splashHiddenAfterBoot = await page
+			.waitForSelector( '#splash.hidden', { timeout: 30000 } )
+			.then( () => true )
+			.catch( () => false );
 
 		const result = await page.evaluate( () => ( {
 			status: window.__071now.status,
@@ -660,6 +745,37 @@ async function verify() {
 		const cssApplied =
 			headerBackground !== 'rgba(0, 0, 0, 0)' &&
 			headerBackground !== 'transparent';
+
+		// EN: Seed-content check (Issue #126) -- confirm the demo blog
+		//     rendered: the front page lists several seeded posts across a
+		//     couple of categories, not a single placeholder. Run this on
+		//     the front frame before the navigation checks click away.
+		const seedChecks = await verifySeedContent( frontFrame );
+
+		// EN: Chrome check (Issue #126) -- the host page frames the
+		//     playground and links back to the repository.
+		const repoLinkHref = await page
+			.locator( '#chrome a' )
+			.first()
+			.getAttribute( 'href' )
+			.catch( () => null );
+		const chromeFramed =
+			!! repoLinkHref &&
+			repoLinkHref.includes( 'github.com/mt8/wordpress-0.71-gold' );
+
+		// EN: The splash fades out over a short transition once it gets
+		//     the 'hidden' class; wait for it to be fully transparent so
+		//     the recorded screenshot shows the blog, not a mid-fade
+		//     splash.
+		await page
+			.waitForFunction(
+				() => {
+					const el = document.getElementById( 'splash' );
+					return el && getComputedStyle( el ).opacity === '0';
+				},
+				{ timeout: 5000 }
+			)
+			.catch( () => {} );
 
 		await page.screenshot( {
 			path: join( here, '071-now-frontpage.png' ),
@@ -719,10 +835,15 @@ async function verify() {
 		const checks = [
 			[ 'HTTP 200 from index.php', result.status === 200 ],
 			[ 'service worker controls the page', swController ],
+			[ 'loading splash shown while php-wasm boots', splashShownAtBoot ],
+			[ 'loading splash has a spinner', splashHasSpinner ],
+			[ 'loading splash removed once the blog is served', splashHiddenAfterBoot ],
+			[ 'chrome links back to the GitHub repository', chromeFramed ],
 			[ 'seeded post title in HTML', result.html.includes( EXPECTED_TITLE ) ],
 			[ 'seeded post body in HTML', result.html.includes( EXPECTED_BODY ) ],
 			[ 'front page served through the service worker', titleVisible > 0 ],
 			[ `front page CSS applied (#header bg ${ headerBackground })`, cssApplied ],
+			...seedChecks,
 			[ `post page reached by clicking "${ postHref }"`, postTitleVisible > 0 ],
 			[ 'post page keeps its CSS', postCssApplied ],
 			[
