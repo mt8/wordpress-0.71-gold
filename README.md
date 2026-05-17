@@ -1,7 +1,9 @@
-# WordPress 0.71-gold on PHP 8.3
+# WordPress 0.71-gold × a modern stack
 
-An experimental project that takes the **oldest WordPress release —
-0.71-gold (2003)** — and modifies it to run on **PHP 8.3 + MySQL 8**.
+An experimental project that merges a modern development environment
+(PHP 8.3, MySQL 8, Docker, a block editor, CLI / env / playground
+tooling) into the oldest WordPress release — 0.71-gold (2003) —
+leaving the 2003 code itself untouched.
 
 > ⚠️ **This is purely an experimental / study project — it is NOT intended
 > for production use.** WordPress 0.71-gold is 2003-era b2/cafelog code; even
@@ -215,10 +217,12 @@ License; this derivative work follows the same license.
 
 ---
 
-# WordPress 0.71-gold を PHP 8.3 で動かす
+# WordPress 0.71-gold × モダンな環境
 
-**最古の WordPress リリース 0.71-gold(2003 年)** を改修し、
-**PHP 8.3 + MySQL 8** で動作させる実験プロジェクト。
+最古の WordPress リリース 0.71-gold(2003 年)に、モダンな開発環境
+(PHP 8.3・MySQL 8・Docker・ブロックエディタ・CLI / 環境 /
+playground ツール群)をマージする実験プロジェクト。2003 年の
+コード本体には手を入れない。
 
 > ⚠️ **これはあくまでも実験・学習目的のプロジェクトであり、本番利用は
 > 想定していません。** WordPress 0.71-gold は 2003 年当時の b2/cafelog コード
