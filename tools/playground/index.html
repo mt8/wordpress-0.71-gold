@@ -7,9 +7,10 @@
       The chrome frames the playground -- a title bar stating this is
       WordPress 0.71 (2003) running in the browser via WebAssembly PHP,
       with a link back to the GitHub repository -- and carries the reset
-      control (Issue #122). A loading splash covers the php-wasm boot
-      (the ~40 MB PHP 8.3 runtime takes a few seconds) and is removed
-      once the blog is served (Issue #126).
+      control (Issue #122; a full environment reset since Issue #144). A
+      loading splash covers the php-wasm boot (the ~40 MB PHP 8.3 runtime
+      takes a few seconds) and is removed once the blog is served
+      (Issue #126).
   JA: 071-now ホストページ(Issue #116、フル実装 1/6。Issue #126、
       ステップ 6/6 で仕上げ)。@php-wasm/web を起動し、サービスワーカー
       経由で WordPress 0.71 を配信するブラウザアプリを読み込む(ブラウザ
@@ -180,17 +181,25 @@
 		</header>
 		<!--
 		  EN: The toolbar holds the boot status line and the reset
-		      control. Reset clears the persisted SQLite database and the
-		      uploaded media, then reloads, returning the blog to its
-		      fresh seeded state.
+		      control. Reset is a full environment reset (Issue #144): it
+		      clears every piece of the playground's persistent and cached
+		      state -- the persisted SQLite database and uploaded media,
+		      the service worker and its Cache API caches, and the
+		      sessionStorage / localStorage the playground sets -- then
+		      reloads, so the playground comes back exactly as a brand-new
+		      first visit.
 		  JA: ツールバーは起動ステータス行とリセット操作を持つ。リセットは
-		      永続化された SQLite データベースとアップロードメディアを
-		      クリアして再読み込みし、ブログを新しいシード済み状態へ戻す。
+		      完全な環境リセット(Issue #144)。playground のすべての永続・
+		      キャッシュ状態 -- 永続化された SQLite データベースとアップ
+		      ロードメディア、サービスワーカーとその Cache API キャッシュ、
+		      playground が設定する sessionStorage / localStorage -- を
+		      クリアして再読み込みし、playground を新規初回訪問とまったく
+		      同じ状態へ戻す。
 		-->
 		<div id="toolbar">
 			<div id="status">071-now: booting php-wasm&hellip;</div>
-			<button id="reset" type="button" title="Clear the persisted database and re-seed">
-				Reset database
+			<button id="reset" type="button" title="Clear all playground state and reload as a brand-new first visit">
+				Reset
 			</button>
 		</div>
 		<div id="stage">
