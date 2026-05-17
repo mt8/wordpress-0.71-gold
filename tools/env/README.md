@@ -43,10 +43,12 @@ Only `./src` is mounted into the `web` container, and `071-cli`'s PHP lives in
 not web-served. `071-env` bridges this with a Compose **override file**,
 [`docker-compose.071.yml`](docker-compose.071.yml), which bind-mounts
 `./tools/cli` read-only into the container at `/opt/071-cli`. Every `071-env`
-Compose call passes both files:
+Compose call passes both files, with `--project-directory` pinned to the
+repository root (the in-file relative paths are repository-root-relative):
 
 ```
-docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
+docker compose --project-directory <repo root> \
+  -f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 So `071-env run cli post list` becomes:
@@ -98,8 +100,8 @@ Example `.071-env.json`:
 
 How each field is applied:
 
-- **`port` / `dbPort`** -- `docker-compose.yml` uses Compose variable
-  substitution with defaults (`"${WP_PORT:-8080}:80"`,
+- **`port` / `dbPort`** -- `tools/env/docker-compose.yml` uses Compose
+  variable substitution with defaults (`"${WP_PORT:-8080}:80"`,
   `"${DB_PORT:-3306}:3306"`); `071-env` passes `WP_PORT` / `DB_PORT` in the
   environment of `docker compose`. Compose appends port lists across `-f`
   files, so a layered override cannot change a port -- variable substitution
@@ -115,15 +117,20 @@ How each field is applied:
   the destroy confirmation but before Compose tears the environment down. A
   failing `beforeDestroy` aborts the destroy.
 
-A plain `docker compose up` without `071-env` still works exactly as before
--- all defaults are preserved. See [`docs/071-tooling.md`](../../docs/071-tooling.md)
-section 4.4.
+A plain `docker compose up` without `071-env` still works -- all defaults are
+preserved -- but it must point at the moved file and set the project
+directory:
+`docker compose -f tools/env/docker-compose.yml --project-directory . up`,
+run from the repository root. See
+[`docs/071-tooling.md`](../../docs/071-tooling.md) section 4.4.
 
 ## Package structure
 
 ```
 tools/env/
   package.json            name "071-env", bin { "071-env": "bin/071-env.mjs" }
+  Dockerfile              the `web` image (php:8.3-apache + mysqli)
+  docker-compose.yml      base Compose file (web + db services)
   docker-compose.071.yml  Compose override: bind-mounts tools/cli/ at /opt/071-cli
   bin/071-env.mjs         Node CLI entry point (thin wrapper around src/main.mjs)
   src/
@@ -212,10 +219,13 @@ Docker Compose 環境をラップする -- 置き換えはしない。設計は
 配信させないための意図的な配置）。`071-env` はこれを Compose の
 **オーバーライドファイル** [`docker-compose.071.yml`](docker-compose.071.yml)
 で橋渡しする。これは `./tools/cli` を読み取り専用でコンテナ内 `/opt/071-cli`
-にバインドマウントする。`071-env` の各 Compose 呼び出しは両ファイルを渡す:
+にバインドマウントする。`071-env` の各 Compose 呼び出しは両ファイルを渡し、
+`--project-directory` をリポジトリルートに固定する（ファイル内の相対パスは
+リポジトリルート基準である）:
 
 ```
-docker compose -f docker-compose.yml -f tools/env/docker-compose.071.yml …
+docker compose --project-directory <リポジトリルート> \
+  -f tools/env/docker-compose.yml -f tools/env/docker-compose.071.yml …
 ```
 
 そのため `071-env run cli post list` は次のようになる:
@@ -267,11 +277,11 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
 
 各フィールドの適用方法:
 
-- **`port` / `dbPort`** -- `docker-compose.yml` は既定値付きの Compose 変数
-  置換（`"${WP_PORT:-8080}:80"`・`"${DB_PORT:-3306}:3306"`）を使い、`071-env`
-  は `docker compose` の環境に `WP_PORT` / `DB_PORT` を渡す。Compose は `-f`
-  ファイル間でポートのリストを追記するため、重ねた上書きではポートを変更
-  できない -- 変数置換が正しい仕組みである。
+- **`port` / `dbPort`** -- `tools/env/docker-compose.yml` は既定値付きの
+  Compose 変数置換（`"${WP_PORT:-8080}:80"`・`"${DB_PORT:-3306}:3306"`）を
+  使い、`071-env` は `docker compose` の環境に `WP_PORT` / `DB_PORT` を渡す。
+  Compose は `-f` ファイル間でポートのリストを追記するため、重ねた上書きでは
+  ポートを変更できない -- 変数置換が正しい仕組みである。
 - **`phpVersion`** -- `Dockerfile` は `ARG PHP_VERSION=8.3` /
   `FROM php:${PHP_VERSION}-apache` を宣言し、`web` サービスは `build.args`
   エントリを持ち、`071-env` は `PHP_VERSION` を渡す。
@@ -283,8 +293,11 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   destroy 確認後・Compose が環境を破棄する前。`beforeDestroy` が失敗したら
   destroy を中止する。
 
-`071-env` を介さない素の `docker compose up` も以前とまったく同じく動作する
--- すべての既定値が保持される。[`docs/071-tooling.md`](../../docs/071-tooling.md)
+`071-env` を介さない素の `docker compose up` も動作する -- すべての既定値が
+保持される -- が、移動したファイルを指定しプロジェクトディレクトリを設定
+する必要がある: リポジトリルートから
+`docker compose -f tools/env/docker-compose.yml --project-directory . up`
+を実行する。[`docs/071-tooling.md`](../../docs/071-tooling.md)
 セクション 4.4 を参照。
 
 ## パッケージ構成
@@ -292,6 +305,8 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
 ```
 tools/env/
   package.json            name "071-env"、bin { "071-env": "bin/071-env.mjs" }
+  Dockerfile              `web` イメージ（php:8.3-apache + mysqli）
+  docker-compose.yml      ベースの Compose ファイル（web + db サービス）
   docker-compose.071.yml  Compose オーバーライド: tools/cli/ を /opt/071-cli にバインドマウント
   bin/071-env.mjs         Node CLI エントリポイント（src/main.mjs の薄いラッパ）
   src/

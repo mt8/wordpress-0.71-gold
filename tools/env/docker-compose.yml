@@ -1,6 +1,12 @@
 # EN: Local development environment for WordPress 0.71-gold (PHP 8.3 + MySQL 8).
-#     Start : docker compose up -d --build
+#     Start : docker compose -f tools/env/docker-compose.yml --project-directory . up -d --build
 #     Browse: http://localhost:8080
+#
+#     This file lives in tools/env/ but its relative paths (`context: .`,
+#     `dockerfile: tools/env/Dockerfile`, `./src`) are repository-root-relative.
+#     Compose resolves them against the project directory, which defaults to
+#     the first `-f` file's directory; pass `--project-directory .` from the
+#     repository root (071-env does this automatically) so they resolve there.
 #
 #     The host ports and the PHP version use Compose variable substitution with
 #     defaults (`${VAR:-default}`), so a plain `docker compose up` is unchanged
@@ -9,8 +15,14 @@
 #     across `-f` files, so a layered override file cannot change a port --
 #     variable substitution is the correct mechanism.
 # JA: WordPress 0.71-gold のローカル開発環境 (PHP 8.3 + MySQL 8)。
-#     起動    : docker compose up -d --build
+#     起動    : docker compose -f tools/env/docker-compose.yml --project-directory . up -d --build
 #     アクセス: http://localhost:8080
+#
+#     本ファイルは tools/env/ に置かれるが、相対パス (`context: .`、
+#     `dockerfile: tools/env/Dockerfile`、`./src`) はリポジトリルート基準で
+#     ある。Compose はこれらをプロジェクトディレクトリから解決し、その既定値は
+#     最初の `-f` ファイルのディレクトリである。リポジトリルートから
+#     `--project-directory .` を渡せば (071-env は自動で行う) そこから解決される。
 #
 #     ホストポートと PHP バージョンは既定値付きの Compose 変数置換
 #     (`${VAR:-default}`) を使う。素の `docker compose up` は変わらず、071-env
@@ -18,11 +30,16 @@
 #     上書きできる。Compose は `-f` ファイル間でポートのリストを追記するため、
 #     重ねた上書きファイルではポートを変更できない -- 変数置換が正しい仕組み。
 services:
-  # EN: Apache + PHP web server, built from the local Dockerfile.
-  # JA: ローカルの Dockerfile からビルドする Apache + PHP Web サーバー。
+  # EN: Apache + PHP web server, built from tools/env/Dockerfile.
+  # JA: tools/env/Dockerfile からビルドする Apache + PHP Web サーバー。
   web:
     build:
+      # EN: The build context is the repository root (the project directory);
+      #     the Dockerfile path is repository-root-relative.
+      # JA: ビルドコンテキストはリポジトリルート (プロジェクトディレクトリ)。
+      #     Dockerfile のパスはリポジトリルート基準である。
       context: .
+      dockerfile: tools/env/Dockerfile
       # EN: Forward the PHP version to the Dockerfile's PHP_VERSION build ARG.
       # JA: PHP バージョンを Dockerfile の PHP_VERSION ビルド ARG へ渡す。
       args:

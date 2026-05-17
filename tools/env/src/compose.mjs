@@ -2,7 +2,7 @@
  * EN: Docker Compose argv construction for 071-env.
  *
  *     071-env wraps the repository's existing Docker Compose environment. It
- *     never replaces docker-compose.yml; it layers
+ *     never replaces tools/env/docker-compose.yml; it layers
  *     tools/env/docker-compose.071.yml on top so the 071-cli package is
  *     reachable inside the `web` container (see docs/071-tooling.md
  *     section 4.3).
@@ -15,7 +15,7 @@
  * JA: 071-env のための Docker Compose 引数ベクタ構築。
  *
  *     071-env はリポジトリの既存 Docker Compose 環境をラップする。
- *     docker-compose.yml を置き換えることはなく、その上に
+ *     tools/env/docker-compose.yml を置き換えることはなく、その上に
  *     tools/env/docker-compose.071.yml を重ねて、`web` コンテナ内で 071-cli
  *     パッケージに到達できるようにする (docs/071-tooling.md セクション 4.3)。
  *
@@ -24,7 +24,7 @@
  *     引数ベクタの構築は Docker 無しで単体テストできる。
  */
 
-import { baseComposeFile, overrideComposeFile } from './paths.mjs';
+import { baseComposeFile, overrideComposeFile, repoRoot } from './paths.mjs';
 
 /**
  * EN: The path to the 071-cli PHP entry point as seen *inside* the `web`
@@ -39,11 +39,11 @@ import { baseComposeFile, overrideComposeFile } from './paths.mjs';
 export const CLI_PHP_IN_CONTAINER = '/opt/071-cli/php/071-cli.php';
 
 /**
- * EN: The WordPress 0.71 install path inside the `web` container. The root
- *     docker-compose.yml mounts `./src` as the Apache document root at
- *     /var/www/html, so 071-cli is pointed there with `--path`.
- * JA: `web` コンテナ内の WordPress 0.71 インストールパス。リポジトリ直下の
- *     docker-compose.yml が `./src` を Apache ドキュメントルート
+ * EN: The WordPress 0.71 install path inside the `web` container.
+ *     tools/env/docker-compose.yml mounts `./src` as the Apache document root
+ *     at /var/www/html, so 071-cli is pointed there with `--path`.
+ * JA: `web` コンテナ内の WordPress 0.71 インストールパス。
+ *     tools/env/docker-compose.yml が `./src` を Apache ドキュメントルート
  *     /var/www/html にマウントするため、071-cli は `--path` でそこを指す。
  */
 export const WP_PATH_IN_CONTAINER = '/var/www/html';
@@ -57,10 +57,28 @@ export const WP_PATH_IN_CONTAINER = '/var/www/html';
 export const WEB_SERVICE = 'web';
 
 /**
+ * EN: The `--project-directory` argument that pins Compose's project
+ *     directory to the repository root. The Compose files live in tools/env/
+ *     but their in-file relative paths (`./src`, `./tools/cli`, the build
+ *     context `.`, and the runtime mappings override's host paths) are
+ *     repository-root-relative. Compose otherwise resolves them against the
+ *     first `-f` file's directory (tools/env/), so this argument is what
+ *     keeps every path resolving correctly.
+ * JA: Compose のプロジェクトディレクトリをリポジトリルートに固定する
+ *     `--project-directory` 引数。Compose ファイルは tools/env/ に置かれるが、
+ *     ファイル内の相対パス (`./src`、`./tools/cli`、ビルドコンテキスト `.`、
+ *     実行時 mappings オーバーライドのホストパス) はリポジトリルート基準で
+ *     ある。Compose はさもなくば最初の `-f` ファイルのディレクトリ
+ *     (tools/env/) から解決するため、この引数がすべてのパスを正しく
+ *     解決させる。
+ */
+export const projectDirArgs = [ '--project-directory', repoRoot ];
+
+/**
  * EN: The leading arguments common to every `docker` invocation 071-env makes:
- *     the `compose` subcommand followed by the Compose files. Passing the
- *     base file and the cli/ override on every call is what makes the `cli/`
- *     bind mount take effect.
+ *     the `compose` subcommand, the `--project-directory` pin, then the
+ *     Compose files. Passing the base file and the cli/ override on every
+ *     call is what makes the `cli/` bind mount take effect.
  *
  *     `extraFiles` carries any additional override files appended in order
  *     after the cli/ override -- in practice the runtime `mappings` override
@@ -69,9 +87,9 @@ export const WEB_SERVICE = 'web';
  *     disturbing the existing ones.
  *
  * JA: 071-env が行うすべての `docker` 呼び出しに共通する先頭の引数:
- *     `compose` サブコマンドに続けて Compose ファイル群。すべての呼び出しで
- *     ベースファイルと cli/ オーバーライドを渡すことが、`cli/` バインド
- *     マウントを有効にする。
+ *     `compose` サブコマンド、`--project-directory` の固定、続けて Compose
+ *     ファイル群。すべての呼び出しでベースファイルと cli/ オーバーライドを
+ *     渡すことが、`cli/` バインドマウントを有効にする。
  *
  *     `extraFiles` は、cli/ オーバーライドの後ろに順に追加される追加の
  *     上書きファイルを運ぶ -- 実際には `.071-env.json` が追加のバインド
@@ -83,7 +101,14 @@ export const WEB_SERVICE = 'web';
  * @returns {string[]} the shared `docker` argument prefix.
  */
 export function composePrefix( extraFiles = [] ) {
-	const prefix = [ 'compose', '-f', baseComposeFile, '-f', overrideComposeFile ];
+	const prefix = [
+		'compose',
+		...projectDirArgs,
+		'-f',
+		baseComposeFile,
+		'-f',
+		overrideComposeFile,
+	];
 	for ( const file of extraFiles ) {
 		prefix.push( '-f', file );
 	}

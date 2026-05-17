@@ -10,7 +10,7 @@ const { defineConfig, devices } = require( '@playwright/test' );
  *     1. The Docker-site suite (`tests/e2e/`, project `chromium`) --
  *        the classic WordPress 0.71 served by the local Docker
  *        environment (see docs/docker-environment.md). Start it first
- *        with `docker compose up -d`. Run it with
+ *        with `npx 071-env start`. Run it with
  *        `npm run test:e2e` (which selects only that project).
  *
  *     2. The 071-now playground suite (`tests/playground/`, projects
@@ -35,7 +35,7 @@ const { defineConfig, devices } = require( '@playwright/test' );
  *
  *     1. Docker サイトスイート(`tests/e2e/`、プロジェクト `chromium`)
  *        -- ローカル Docker 環境(docs/docker-environment.md 参照)が
- *        配信する従来型 WordPress 0.71。先に `docker compose up -d` で
+ *        配信する従来型 WordPress 0.71。先に `npx 071-env start` で
  *        起動すること。`npm run test:e2e` で実行する(そのプロジェクト
  *        のみを選択する)。
  *

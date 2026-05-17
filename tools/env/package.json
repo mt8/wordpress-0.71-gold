@@ -11,6 +11,8 @@
   "files": [
     "bin",
     "src",
+    "Dockerfile",
+    "docker-compose.yml",
     "docker-compose.071.yml"
   ],
   "scripts": {

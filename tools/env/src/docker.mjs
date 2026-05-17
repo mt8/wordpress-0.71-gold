@@ -18,8 +18,9 @@ import { repoRoot } from './paths.mjs';
 /**
  * EN: Run `docker` with the given argument vector, inheriting stdio so the
  *     user sees Compose's output directly. The child runs with the repository
- *     root as its working directory, so the relative paths inside the Compose
- *     files (`./src`, `./cli`) resolve correctly regardless of the caller's
+ *     root as its working directory; combined with the `--project-directory`
+ *     argument compose.mjs adds, the relative paths inside the Compose files
+ *     (`./src`, `./tools/cli`) resolve correctly regardless of the caller's
  *     own cwd.
  *
  *     `extraEnv` is merged onto the inherited environment before the child is
@@ -30,8 +31,9 @@ import { repoRoot } from './paths.mjs';
  *
  * JA: 与えられた引数ベクタで `docker` を実行する。stdio を継承し、ユーザーが
  *     Compose の出力を直接見られるようにする。子プロセスはリポジトリルートを
- *     作業ディレクトリとして実行されるため、Compose ファイル内の相対パス
- *     (`./src`・`./cli`) は呼び出し元の cwd によらず正しく解決される。
+ *     作業ディレクトリとして実行され、compose.mjs が付加する
+ *     `--project-directory` 引数と相まって、Compose ファイル内の相対パス
+ *     (`./src`・`./tools/cli`) は呼び出し元の cwd によらず正しく解決される。
  *
  *     `extraEnv` は子プロセス起動前に継承された環境にマージされる。071-env は
  *     これを使って `WP_PORT` / `DB_PORT` / `PHP_VERSION` を渡し、

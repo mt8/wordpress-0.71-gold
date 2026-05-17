@@ -4,7 +4,7 @@ A way to **publish** a WordPress 0.71-gold blog safely. WordPress 0.71 is
 2003-era code and must never be exposed to the public internet as a running
 PHP application. Instead:
 
-1. Write and manage posts in the **local** environment (`docker compose up`).
+1. Write and manage posts in the **local** environment (`071-env start`).
 2. Export the whole site to **static HTML** with `071 export`.
 3. Upload only the static files to a public server.
 
@@ -17,7 +17,7 @@ The static export is the `export` command group of
 [`071-cli`](../tools/cli/README.md):
 
 ```sh
-docker compose up -d            # the local blog must be running
+npx 071-env start               # the local blog must be running
 071 export                      # or: composer static-export
 ```
 
@@ -94,7 +94,7 @@ WordPress 0.71-gold のブログを安全に**公開**するための仕組み�
 WordPress 0.71 は 2003 年当時のコードであり、稼働中の PHP アプリケーション
 として公開インターネットに晒してはならない。代わりに:
 
-1. **ローカル**環境(`docker compose up`)で投稿を書き・管理する。
+1. **ローカル**環境(`071-env start`)で投稿を書き・管理する。
 2. `071 export` でサイト全体を**静的 HTML** に書き出す。
 3. 静的ファイルだけを公開サーバーへアップロードする。
 
@@ -107,7 +107,7 @@ WordPress 0.71 は 2003 年当時のコードであり、稼働中の PHP アプ
 グループである:
 
 ```sh
-docker compose up -d            # the local blog must be running
+npx 071-env start               # the local blog must be running
 071 export                      # or: composer static-export
 ```
 

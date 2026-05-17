@@ -326,7 +326,7 @@ function cli_export_run( array $flags ): int {
 	if ( null === cli_export_fetch( $blog_url . '/' ) ) {
 		cli_fail(
 			"cannot reach the blog at $blog_url -- is the local environment running? "
-			. '(`docker compose up` / `071-env start`)'
+			. '(start it with `071-env start`)'
 		);
 	}
 
