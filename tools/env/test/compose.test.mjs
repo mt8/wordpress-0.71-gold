@@ -83,9 +83,9 @@ test( 'destroy: docker compose down -v', () => {
 	assert.deepEqual( args.slice( -2 ), [ 'down', '-v' ] );
 } );
 
-test( 'status: docker compose ps', () => {
+test( 'status: docker compose ps -a (includes stopped containers)', () => {
 	const args = buildComposeArgs( 'status' );
-	assert.equal( args.at( -1 ), 'ps' );
+	assert.deepEqual( args.slice( -2 ), [ 'ps', '-a' ] );
 } );
 
 test( 'logs: docker compose logs -f with no service', () => {
