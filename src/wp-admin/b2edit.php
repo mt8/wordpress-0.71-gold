@@ -308,6 +308,19 @@ switch ( $action ) {
 					</div>
 					<?php
 				}
+				// EN: Issue #96 -- entry point to create a new post in the
+				//     experimental block editor. editor.php with no `post`
+				//     parameter starts in new-post mode and INSERTs a fresh
+				//     b2posts row on the first save.
+				// JA: Issue #96 -- 実験的ブロックエディタで新規投稿を作成する
+				//     動線。`post` パラメータ無しの editor.php は新規投稿
+				//     モードで始まり、最初の保存で b2posts へ新規行を
+				//     INSERT する。
+				?>
+				<div class="wrap">
+				<p><a href="../block-editor/api/editor.php">Write a new post in the block editor</a></p>
+				</div>
+				<?php
 				include 'b2edit.form.php';
 				echo '<br /><br />';
 

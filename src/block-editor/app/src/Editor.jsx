@@ -221,6 +221,18 @@ export function Editor( { config } ) {
 	const [ status, setStatus ] = useState( 'loading' );
 	const [ message, setMessage ] = useState( '' );
 
+	// EN: The post id this editor is bound to. It starts from the boot config
+	//     (0 in Issue #96's new-post mode) and is adopted from save.php's
+	//     response after the first INSERT, so later saves UPDATE the same row.
+	// JA: このエディタが紐づく投稿 ID。ブート設定から開始し(Issue #96 の
+	//     新規投稿モードでは 0)、最初の INSERT 後に save.php の応答から採用
+	//     する。以降の保存は同じ行を UPDATE する。
+	const [ postId, setPostId ] = useState( config.postId );
+
+	// EN: True until the new post has been saved once and adopted an id.
+	// JA: 新規投稿が一度保存され id を採用するまで true。
+	const isNew = postId <= 0;
+
 	// EN: Post settings surfaced in the sidebar's Post panel.
 	// JA: サイドバーの Post パネルに表示する投稿設定。
 	const [ postStatus, setPostStatus ] = useState( 'publish' );
@@ -231,8 +243,14 @@ export function Editor( { config } ) {
 	// JA: ドキュメント概観(リストビュー)パネルの表示切り替え。
 	const [ showOverview, setShowOverview ] = useState( true );
 
-	// EN: Load the post once on mount.
-	// JA: マウント時に一度だけ投稿を読み込む。
+	// EN: Load the post once on mount. In Issue #96's new-post mode config.postId
+	//     is 0, and load.php answers with an empty post shape (blank title /
+	//     content, draft status) plus the category list, so the same code path
+	//     starts the editor empty without a special case here.
+	// JA: マウント時に一度だけ投稿を読み込む。Issue #96 の新規投稿モードでは
+	//     config.postId は 0 で、load.php は空の投稿の形(空のタイトル /
+	//     コンテンツ・draft ステータス)とカテゴリー一覧を返すため、ここに
+	//     特別な分岐を設けずに同じ経路でエディタを空の状態で始められる。
 	useEffect( () => {
 		const url = `${ config.loadEndpoint }?post=${ encodeURIComponent(
 			config.postId
@@ -281,7 +299,11 @@ export function Editor( { config } ) {
 			credentials: 'include',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify( {
-				post: config.postId,
+				// EN: postId is 0 for a not-yet-saved new post; save.php
+				//     reads that as the INSERT path.
+				// JA: 未保存の新規投稿では postId は 0。save.php はそれを
+				//     INSERT 経路として読む。
+				post: postId,
 				title,
 				content,
 				status: postStatus,
@@ -294,7 +316,17 @@ export function Editor( { config } ) {
 				}
 				return res.json();
 			} )
-			.then( () => {
+			.then( ( data ) => {
+				// EN: Adopt the id returned by save.php. For a new post this
+				//     is the freshly INSERTed row's id, so every later save
+				//     UPDATEs that same post instead of inserting again.
+				// JA: save.php が返す id を採用する。新規投稿ではこれが
+				//     たった今 INSERT した行の id であり、以降の保存は同じ
+				//     投稿を UPDATE し、再 INSERT しない。
+				const savedId = Number( data && data.id );
+				if ( savedId > 0 ) {
+					setPostId( savedId );
+				}
 				setStatus( 'ready' );
 				setMessage( 'Saved.' );
 			} )
@@ -308,16 +340,28 @@ export function Editor( { config } ) {
 		postStatus,
 		postCategory,
 		config.saveEndpoint,
-		config.postId,
+		postId,
 	] );
 
 	if ( status === 'loading' ) {
 		return (
 			<div className="be-state">
-				Loading post #{ config.postId }&hellip;
+				{ config.isNew
+					? 'Starting a new post…'
+					: `Loading post #${ config.postId }…` }
 			</div>
 		);
 	}
+
+	// EN: Front-end URL for the "View on 0.71 front end" link. The boot config
+	//     URL embeds config.postId, which is 0 for a new post; once the post
+	//     has been saved and an id adopted, rebuild the URL for that id.
+	// JA: 「View on 0.71 front end」リンク用のフロントエンド URL。ブート設定の
+	//     URL は config.postId を埋め込んでおり、新規投稿では 0。投稿が保存
+	//     され id を採用したら、その id で URL を組み立て直す。
+	const frontEndUrl = isNew
+		? config.frontEndUrl
+		: `../../index.php?p=${ postId }`;
 
 	// EN: Category options for the Post panel selector. SelectControl needs
 	//     string values, so cat_ID is stringified here and parsed back on
@@ -336,7 +380,11 @@ export function Editor( { config } ) {
 					<a className="be-link" href={ config.adminUrl }>
 						← Back to wp-admin
 					</a>
-					<span className="be-badge">WordPress 0.71</span>
+					<span className="be-badge">
+						{ isNew
+							? 'WordPress 0.71 — new post'
+							: `WordPress 0.71 — post #${ postId }` }
+					</span>
 					<Button
 						size="compact"
 						icon="menu"
@@ -350,14 +398,20 @@ export function Editor( { config } ) {
 					/>
 				</div>
 				<div className="be-toolbar-right">
-					<a
-						className="be-link"
-						href={ config.frontEndUrl }
-						target="_blank"
-						rel="noreferrer"
-					>
-						View on 0.71 front end
-					</a>
+					{ /* EN: A new post has no front-end URL until it is saved
+					       and an id is adopted; hide the link until then.
+					     JA: 新規投稿は保存して id を採用するまでフロントエンド
+					       URL を持たない。それまではリンクを隠す。 */ }
+					{ ! isNew && (
+						<a
+							className="be-link"
+							href={ frontEndUrl }
+							target="_blank"
+							rel="noreferrer"
+						>
+							View on 0.71 front end
+						</a>
+					) }
 					<Button
 						variant="primary"
 						onClick={ onSave }
@@ -366,7 +420,9 @@ export function Editor( { config } ) {
 					>
 						{ status === 'saving'
 							? 'Saving…'
-							: 'Save to WordPress 0.71' }
+							: isNew
+								? 'Create post in WordPress 0.71'
+								: 'Save to WordPress 0.71' }
 					</Button>
 				</div>
 			</header>

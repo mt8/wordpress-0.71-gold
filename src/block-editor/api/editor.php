@@ -7,18 +7,33 @@
  *     ../assets/) and mounts it for a chosen post id. Usage: open
  *     editor.php?post=ID in a browser while logged in to WordPress 0.71's
  *     admin.
+ *
+ *     Issue #96 adds a "new post" mode. When the request has no usable post id
+ *     (no `post` parameter, or `post=new`), the boot config reports postId 0
+ *     and an isNew flag, so the editor starts empty and the first save INSERTs
+ *     a fresh b2posts row instead of UPDATE-ing an existing one.
  * JA: Issue #65 の実験的試作。バンドル済みのカスタムブロックエディタ
  *     (../app/ から `npm run build` で ../assets/ へビルド)を読み込み、
  *     選んだ投稿 ID に対してマウントする HTML シェルを配信する。使い方:
  *     WordPress 0.71 の管理画面にログインした状態で、ブラウザで
  *     editor.php?post=ID を開く。
  *
+ *     Issue #96 で「新規投稿」モードを追加する。リクエストに有効な投稿 ID が
+ *     無い場合(`post` パラメータ無し、または `post=new`)、ブート設定は
+ *     postId 0 と isNew フラグを報告し、エディタは空の状態で始まり、最初の
+ *     保存は既存行の UPDATE ではなく b2posts への新規行 INSERT を行う。
+ *
  * @package wordpress-0.71-gold
  */
 
-// EN: Cast the post id to int -- echoed into a JS literal and a URL below.
-// JA: 投稿 ID を整数にキャスト -- 下で JS リテラルと URL に出力する。
-$post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : 1;
+// EN: Decide between "edit existing post" and "new post" mode. The `post`
+//     parameter is cast to int (it is echoed into a JS literal / URL below);
+//     a missing parameter, `post=new`, or a non-positive id all mean new post.
+// JA: 「既存投稿の編集」と「新規投稿」モードを判定する。`post` パラメータは
+//     整数にキャスト(下で JS リテラル / URL に出力する)。パラメータ無し・
+//     `post=new`・正でない ID はいずれも新規投稿を意味する。
+$post_id = isset( $_GET['post'] ) ? (int) $_GET['post'] : 0;
+$is_new  = ( $post_id <= 0 );
 
 // EN: Locate the build output. The bundle filenames are hashed by Vite, so
 //     read them from the manifest the build writes.
@@ -42,7 +57,7 @@ header( 'Content-Type: text/html; charset=utf-8' );
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="icon" href="data:," />
-<title>Block Editor Prototype (Issue #65) &mdash; post <?php echo (int) $post_id; ?></title>
+<title>Block Editor Prototype (Issue #65) &mdash; <?php echo $is_new ? 'new post' : 'post ' . (int) $post_id; ?></title>
 <?php foreach ( $css as $href ) : ?>
 <link rel="stylesheet" href="../assets/<?php echo htmlspecialchars( (string) $href, ENT_QUOTES ); ?>" />
 <?php endforeach; ?>
@@ -77,6 +92,7 @@ npm run build</code></pre>
 	//     (src/block-editor/api/)からの相対パスである。
 	window.BLOCK_EDITOR_PROTOTYPE = {
 		postId: <?php echo (int) $post_id; ?>,
+		isNew: <?php echo $is_new ? 'true' : 'false'; ?>,
 		loadEndpoint: 'load.php',
 		saveEndpoint: 'save.php',
 		frontEndUrl: '../../index.php?p=<?php echo (int) $post_id; ?>',
