@@ -1,0 +1,18 @@
+{
+  "name": "071-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "wp-cli-style command-line interface for WordPress 0.71 (b2/cafelog) / WordPress 0.71 (b2/cafelog) 向けの wp-cli 風コマンドラインインターフェース",
+  "license": "GPL-2.0-or-later",
+  "type": "module",
+  "bin": {
+    "071": "bin/071.mjs"
+  },
+  "files": [
+    "bin",
+    "php"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
