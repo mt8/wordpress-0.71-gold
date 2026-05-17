@@ -41,3 +41,13 @@ if ( ! file_exists( WP071_DB_PATH ) ) {
 	//     builder, so __DIR__ here is that b2-include directory.
 	require __DIR__ . '/071-now-seed.php';
 }
+
+// EN: The mysqli compat helpers (wp071_db_query / wp071_db_fetch_* /
+//     wp071_db_error). A few 0.71 functions call mysqli_*( $wpdb->dbh,
+//     ... ) directly; the overlay builder rewrites those sites to these
+//     helpers (see scripts/build-overlay.mjs). Declaring the functions
+//     here -- before any blog script runs -- makes them available to
+//     every rewritten admin page. WP071_DbResult, which the helpers
+//     reference, is defined later in wp-db.php; only the call-time
+//     instanceof touches it, so the early declaration is safe.
+require_once __DIR__ . '/071-now-mysqli-compat.php';
