@@ -33,16 +33,11 @@ require_once '../wp-links/links.php';
 $title = 'Link Categories';
 
 $b2varstoreset = array( 'action', 'standalone', 'cat', 'auto_toggle' );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {

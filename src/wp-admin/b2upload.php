@@ -153,14 +153,10 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	$img1_type = ( strlen( $imgalt ) ) ? $_POST['img1_type'] : $_FILES['img1']['type'];
 	$imgdesc   = str_replace( '"', '&amp;quot;', $_POST['imgdesc'] );
 
-	// EN: Sanitise the user-supplied file name before it is used in any path.
-	//     basename() strips directory components (e.g. "../../etc/passwd"),
-	//     then we keep only a safe character set so the saved file can never
-	//     escape $fileupload_realpath (path-traversal defence).
-	// JA: パスに使う前にユーザー指定のファイル名をサニタイズする。
-	//     basename() でディレクトリ部分(例 "../../etc/passwd")を除去し、
-	//     安全な文字種のみを残すことで、保存ファイルが $fileupload_realpath
-	//     の外へ出られないようにする(パストラバーサル対策)。
+	// Sanitise the user-supplied file name before it is used in any path.
+	// basename() strips directory components (e.g. "../../etc/passwd"),
+	// then we keep only a safe character set so the saved file can never
+	// escape $fileupload_realpath (path-traversal defence).
 	$img1_name = basename( $img1_name );
 	$img1_name = preg_replace( '~[^A-Za-z0-9._-]~', '_', $img1_name );
 	$img1_name = preg_replace( '~\.+~', '.', $img1_name ); // collapse repeated dots
@@ -168,33 +164,25 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	if ( '' === $img1_name || null === $img1_name ) {
 		die( 'Invalid file name.' );
 	}
-	// EN: Keep $imgalt (the alternate-name path) in sync with the sanitised
-	//     name so the second upload path is hardened the same way.
-	// JA: $imgalt(代替名のパス)もサニタイズ後の名前に揃え、2 つ目の
-	//     アップロード経路にも同じ対策を適用する。
+	// Keep $imgalt (the alternate-name path) in sync with the sanitised
+	// name so the second upload path is hardened the same way.
 	if ( strlen( $imgalt ) ) {
 		$imgalt = $img1_name;
 	}
 
-	// EN: Derive the extension from the *sanitised* name (the final segment
-	//     after the last dot) and require an exact, per-extension match
-	//     against the configured allow-list. A loose substring preg_match
-	//     would let "evil.php.jpg" or "x.phpjpg" through; only the final
-	//     extension decides, and a name with no extension is rejected.
-	// JA: 拡張子はサニタイズ後の名前(最後のドット以降の最終要素)から取得し、
-	//     設定された許可リストと拡張子単位で厳密に一致させる。緩い部分一致の
-	//     preg_match では "evil.php.jpg" や "x.phpjpg" を通してしまうため、
-	//     判定するのは最終拡張子のみ。拡張子の無い名前は拒否する。
+	// Derive the extension from the *sanitised* name (the final segment
+	// after the last dot) and require an exact, per-extension match
+	// against the configured allow-list. A loose substring preg_match
+	// would let "evil.php.jpg" or "x.phpjpg" through; only the final
+	// extension decides, and a name with no extension is rejected.
 	$imgtype = explode( '.', $img1_name );
 	$ext     = ( count( $imgtype ) > 1 ) ? strtolower( end( $imgtype ) ) : '';
 	$allowed = array_filter( array_map( 'trim', explode( ' ', strtolower( $fileupload_allowedtypes ) ) ), 'strlen' );
 	if ( '' === $ext || ! in_array( $ext, $allowed, true ) ) {
 		die( "File $img1_name of type ." . htmlspecialchars( $ext ) . ' is not allowed.' );
 	}
-	// EN: $imgtype is reused below as the duplicate-rename suffix; keep it as
-	//     the validated, space-padded extension the original code expected.
-	// JA: $imgtype は以降の重複リネーム用サフィックスとして再利用される。
-	//     元のコードが期待する空白で囲まれた検証済み拡張子のまま保持する。
+	// $imgtype is reused below as the duplicate-rename suffix; keep it as
+	// the validated, space-padded extension the original code expected.
 	$imgtype = ' ' . $ext . ' ';
 
 	if ( strlen( $imgalt ) ) {
@@ -205,12 +193,9 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 		$img1       = $_FILES['img1']['tmp_name'];
 	}
 
-	// EN: Defence in depth -- the file name is already sanitised above, but
-	//     verify the resolved destination directory is exactly the configured
-	//     upload directory before any file is written. If it is not, abort.
-	// JA: 多層防御 -- ファイル名は上でサニタイズ済みだが、ファイル書き込み前に
-	//     解決後の保存先ディレクトリが設定どおりのアップロードディレクトリと
-	//     完全に一致することを確認する。一致しなければ中止する。
+	// Defence in depth -- the file name is already sanitised above, but
+	// verify the resolved destination directory is exactly the configured
+	// upload directory before any file is written. If it is not, abort.
 	$dest_dir = realpath( dirname( $pathtofile ) );
 	$base_dir = realpath( $fileupload_realpath );
 	if ( false === $dest_dir || false === $base_dir || $dest_dir !== $base_dir ) {
@@ -266,14 +251,10 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	}
 
 	if ( ! strlen( $imgalt ) ) {
-		// EN: The upload directory only needs to be writable by the web server
-		//     user (e.g. 0755, or 0775 if the web user is in the group).
-		//     chmod 777 is NOT required and should be avoided -- it makes the
-		//     directory world-writable.
-		// JA: アップロードディレクトリは Web サーバーのユーザーが書き込めれば
-		//     よい(例: 0755、Web ユーザーがグループに属するなら 0775)。
-		//     chmod 777 は不要であり、避けるべき — 全ユーザー書き込み可に
-		//     なってしまう。
+		// The upload directory only needs to be writable by the web server
+		// user (e.g. 0755, or 0775 if the web user is in the group).
+		// chmod 777 is NOT required and should be avoided -- it makes the
+		// directory world-writable.
 		move_uploaded_file( $img1, $pathtofile )
 		or die( "Couldn't Upload Your File to $pathtofile." );
 	} else {

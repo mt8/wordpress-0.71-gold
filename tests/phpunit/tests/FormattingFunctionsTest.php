@@ -1,11 +1,8 @@
 <?php
 /**
- * EN: Tests for the pure formatting / conversion helpers in b2functions.php.
- *     These take a string and return a transformed string with no database
- *     access; the assertions are regression guards on the observed output.
- * JA: b2functions.php の純粋な整形/変換ヘルパーのテスト。これらは文字列を
- *     受け取り DB アクセス無しで変換後の文字列を返す。アサーションは観測した
- *     出力に対する回帰ガードである。
+ * Tests for the pure formatting / conversion helpers in b2functions.php.
+ * These take a string and return a transformed string with no database
+ * access; the assertions are regression guards on the observed output.
  */
 
 declare(strict_types=1);
@@ -24,8 +21,7 @@ final class FormattingFunctionsTest extends TestCase
 
     public function testWpautopLeavesBlockTagsUnwrapped(): void
     {
-        // EN: <ul> is a block-level tag, so wpautop does not wrap it in <p>.
-        // JA: <ul> はブロックレベルタグのため wpautop は <p> で包まない。
+        // <ul> is a block-level tag, so wpautop does not wrap it in <p>.
         $this->assertStringContainsString('<ul>', wpautop("<ul><li>x</li></ul>"));
         $this->assertStringNotContainsString('<p><ul>', wpautop("<ul><li>x</li></ul>"));
     }
@@ -150,10 +146,8 @@ final class FormattingFunctionsTest extends TestCase
 
     public function testConvertBbcodeEmailBuildsAnObfuscatedMailtoLink(): void
     {
-        // EN: convert_bbcode_email() obfuscates the address with antispambot(),
-        //     which is randomised, so assert the link structure, not the bytes.
-        // JA: convert_bbcode_email() は antispambot() で住所を難読化する。これは
-        //     乱数を使うため、バイト列ではなくリンク構造を検証する。
+        // convert_bbcode_email() obfuscates the address with antispambot(),
+        // which is randomised, so assert the link structure, not the bytes.
         $output = convert_bbcode_email('contact [email]a@b.com[/email] now');
         $this->assertStringStartsWith('contact <a href="mailto:', $output);
         $this->assertStringContainsString('</a> now', $output);
@@ -161,10 +155,8 @@ final class FormattingFunctionsTest extends TestCase
 
     public function testAntispambotAvoidsTheLiteralAtSign(): void
     {
-        // EN: antispambot() is randomised; its one invariant is that a literal
-        //     '@' is never emitted (it becomes the entity &#64;).
-        // JA: antispambot() は乱数を使う。唯一の不変条件は、リテラルの '@' を
-        //     決して出力しないこと(エンティティ &#64; になる)。
+        // antispambot() is randomised; its one invariant is that a literal
+        // '@' is never emitted (it becomes the entity &#64;).
         $this->assertStringNotContainsString('@', antispambot('user@example.com'));
     }
 }

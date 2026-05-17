@@ -9,10 +9,8 @@
 	//  We have modified the HTML it returns slightly.
 
 	define( 'EZSQL_VERSION', '1.21' );
-	// EN: The 3rd argument (case-insensitive constants) was removed in PHP 8.0
-	//     and now emits an E_WARNING; these constants are used case-sensitively.
-	// JA: 第3引数(大文字小文字を区別しない定数)は PHP 8.0 で廃止され E_WARNING を
-	//     出す。これらの定数は大文字小文字を区別して使用している。
+	// The 3rd argument (case-insensitive constants) was removed in PHP 8.0
+	// and now emits an E_WARNING; these constants are used case-sensitively.
 	define( 'OBJECT', 'OBJECT' );
 	define( 'ARRAY_A', 'ARRAY_A' );
 	define( 'ARRAY_N', 'ARRAY_N' );
@@ -24,8 +22,7 @@ class wpdb {
 	public $debug_called;
 	public $vardump_called;
 	public $show_errors = true;
-	// EN: Declared so PHP 8.2 does not warn about dynamic property creation.
-	// JA: PHP 8.2 の動的プロパティ生成の警告を避けるため宣言する。
+	// Declared so PHP 8.2 does not warn about dynamic property creation.
 	public $dbh;
 	public $result;
 	public $last_query;
@@ -39,15 +36,11 @@ class wpdb {
 	// ==================================================================
 	//  DB Constructor - connects to the server and selects a database
 
-	// EN: Old-style constructors (method name == class name) are no longer
-	//     recognized as constructors in PHP 8.0; renamed to __construct().
-	// JA: 旧式コンストラクタ(メソッド名 == クラス名)は PHP 8.0 でコンスト
-	//     ラクタとして認識されないため __construct() に改名。
+	// Old-style constructors (method name == class name) are no longer
+	// recognized as constructors in PHP 8.0; renamed to __construct().
 	public function __construct( $dbuser, $dbpassword, $dbname, $dbhost ) {
-		// EN: PHP 8.1+ makes mysqli throw exceptions on error by default;
-		//     this class expects the classic false-return style, so disable it.
-		// JA: PHP 8.1+ は mysqli を既定でエラー時に例外送出にする。本クラスは
-		//     従来の false 返却を前提とするため無効化する。
+		// PHP 8.1+ makes mysqli throw exceptions on error by default;
+		// this class expects the classic false-return style, so disable it.
 		if ( function_exists( 'mysqli_report' ) ) {
 			mysqli_report( MYSQLI_REPORT_OFF );
 		}
@@ -64,10 +57,8 @@ class wpdb {
 				</ol>"
 			);
 		} else {
-			// EN: WordPress 0.71-era SQL relies on the permissive sql_mode of
-			//     2003-era MySQL; MySQL 8 defaults to STRICT. Reset it.
-			// JA: WordPress 0.71 当時の SQL は当時の MySQL の寛容な sql_mode に
-			//     依存する。MySQL 8 は既定で STRICT のためリセットする。
+			// WordPress 0.71-era SQL relies on the permissive sql_mode of
+			// 2003-era MySQL; MySQL 8 defaults to STRICT. Reset it.
 			@mysqli_query( $this->dbh, "SET SESSION sql_mode=''" );
 		}
 
@@ -194,12 +185,9 @@ class wpdb {
 
 		} else {
 
-			// EN: A SELECT yields a mysqli_result; a successful non-SELECT
-			//     (CREATE/etc.) yields bool true. Only fetch from a result
-			//     set -- mysqli_num_fields(true) would be a TypeError.
-			// JA: SELECT は mysqli_result を返し、SELECT 以外(CREATE 等)の
-			//     成功は bool true を返す。結果セットのときだけ取得する。
-			//     mysqli_num_fields(true) は TypeError になるため。
+			// A SELECT yields a mysqli_result; a successful non-SELECT
+			// (CREATE/etc.) yields bool true. Only fetch from a result
+			// set -- mysqli_num_fields(true) would be a TypeError.
 			if ( $this->result instanceof mysqli_result ) {
 
 				// =======================================================

@@ -1,15 +1,10 @@
 <?php
 /**
- * EN: Tests for the pure functions in b2-include/textile.php -- the Textile
- *     1.0 humane-text formatter (string in, HTML out) plus its small helpers.
- *     textile() wraps each block in a leading tab and a trailing "\n ", so the
- *     assertions match on the meaningful HTML fragment rather than the exact
- *     surrounding whitespace where that whitespace is incidental.
- * JA: b2-include/textile.php の純粋な関数のテスト -- Textile 1.0 の人に優しい
- *     テキストフォーマッタ(文字列入力・HTML 出力)と、その小さなヘルパー群。
- *     textile() は各ブロックを先頭タブと末尾 "\n " で包むため、その空白が
- *     付随的な箇所では、囲みの空白そのものではなく意味のある HTML 断片に対して
- *     アサートする。
+ * Tests for the pure functions in b2-include/textile.php -- the Textile
+ * 1.0 humane-text formatter (string in, HTML out) plus its small helpers.
+ * textile() wraps each block in a leading tab and a trailing "\n ", so the
+ * assertions match on the meaningful HTML fragment rather than the exact
+ * surrounding whitespace where that whitespace is incidental.
  */
 
 declare(strict_types=1);
@@ -115,12 +110,9 @@ final class TextileTest extends TestCase
 
     public function testNotextileEscapesItsContent(): void
     {
-        // EN: ==...== marks a notextile span. The current implementation does
-        //     NOT pass the inner text through untouched -- it escapes the
-        //     angle brackets it produced (a regression guard on real output).
-        // JA: ==...== は notextile 範囲を示す。現在の実装は内側のテキストを
-        //     そのまま通さず、生成した山括弧をエスケープする(実際の出力に
-        //     対する回帰ガード)。
+        // ==...== marks a notextile span. The current implementation does
+        // NOT pass the inner text through untouched -- it escapes the
+        // angle brackets it produced (a regression guard on real output).
         $this->assertStringContainsString(
             '&lt;strong&gt;this&lt;/strong&gt;',
             textile('notext ==leave *this*== alone')
@@ -160,16 +152,14 @@ final class TextileTest extends TestCase
     {
         $cmap = cmap();
         $this->assertIsArray($cmap);
-        // EN: the map is a flat list of 4-tuples (start, end, offset, mask).
-        // JA: マップは 4 要素組(start, end, offset, mask)の平坦なリスト。
+        // the map is a flat list of 4-tuples (start, end, offset, mask).
         $this->assertSame(0, count($cmap) % 4);
         $this->assertSame(264, count($cmap));
     }
 
     public function testEncodeAndDecodeHighRoundTripHighCharacters(): void
     {
-        // EN: encode_high() -> numeric entities, decode_high() -> back again.
-        // JA: encode_high() で数値実体参照へ、decode_high() で元へ戻す。
+        // encode_high() -> numeric entities, decode_high() -> back again.
         $entity = encode_high("\u{00e9}");
         $this->assertSame('&#233;', $entity);
         $this->assertSame("\u{00e9}", decode_high($entity));

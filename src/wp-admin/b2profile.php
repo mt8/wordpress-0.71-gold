@@ -17,16 +17,11 @@ $_POST   = add_magic_quotes( $_POST );
 $_COOKIE = add_magic_quotes( $_COOKIE );
 
 $b2varstoreset = array( 'action', 'standalone', 'redirect', 'profile', 'user' );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -52,12 +47,9 @@ switch ( $action ) {
 
 		get_currentuserinfo();
 
-		// EN: CSRF check -- reject a forged request to update the profile.
-		//     This runs before the password change below, so b2_csrf_token()
-		//     still reads the current 'wordpresspass' cookie.
-		// JA: CSRF チェック -- プロフィール更新リクエストの偽造を拒否する。
-		//     下のパスワード変更より前に実行されるため、b2_csrf_token() は
-		//     現在の 'wordpresspass' クッキーを読む。
+		// CSRF check -- reject a forged request to update the profile.
+		// This runs before the password change below, so b2_csrf_token()
+		// still reads the current 'wordpresspass' cookie.
 		b2_csrf_check( 'profile-update' );
 
 		/* checking the nickname has been typed */
@@ -95,13 +87,10 @@ switch ( $action ) {
 			if ( $_POST['pass1'] != $_POST['pass2'] ) {
 				die( '<strong>ERROR</strong>: you typed two different passwords. Go back to correct that.' );
 			}
-			// EN: Issue #34 -- store a bcrypt hash of the new password, not the
-			//     plaintext. The auth cookie 'wordpresspass' is then set to md5() of
-			//     that stored hash (the value now in the DB), so checklogin() and the
-			//     CSRF token stay consistent and the session persists.
-			// JA: Issue #34 -- 新しいパスワードは平文ではなく bcrypt ハッシュで保存する。
-			//     認証クッキー 'wordpresspass' はその保存ハッシュ(DB に入る値)の md5()
-			//     とし、checklogin() と CSRF トークンの整合性を保ちセッションを維持する。
+			// Issue #34 -- store a bcrypt hash of the new password, not the
+			// plaintext. The auth cookie 'wordpresspass' is then set to md5() of
+			// that stored hash (the value now in the DB), so checklogin() and the
+			// CSRF token stay consistent and the session persists.
 			$newuser_pass_hash = password_hash( $_POST['pass1'], PASSWORD_DEFAULT );
 			$updatepassword    = "user_pass='" . addslashes( $newuser_pass_hash ) . "', ";
 			setcookie(
@@ -128,8 +117,7 @@ switch ( $action ) {
 		$newuser_url       = addslashes( $_POST['newuser_url'] );
 		$newuser_idmode    = addslashes( $_POST['newuser_idmode'] );
 
-		// EN: Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $user_ID).
-		// JA: ユーザー ID を整数にキャスト -- SQL でクォート無し(WHERE ID = $user_ID)で使われる。
+		// Cast the user id to int -- it is used unquoted in SQL (WHERE ID = $user_ID).
 		$user_ID = (int) $user_ID;
 		$query   = "UPDATE $tableusers SET user_firstname='$newuser_firstname', " . $updatepassword . "user_lastname='$newuser_lastname', user_nickname='$newuser_nickname', user_icq='$newuser_icq', user_email='$newuser_email', user_url='$newuser_url', user_aim='$newuser_aim', user_msn='$newuser_msn', user_yim='$newuser_yim', user_idmode='$newuser_idmode' WHERE ID = $user_ID";
 		$result  = $wpdb->query( $query );
@@ -285,8 +273,7 @@ switch ( $action ) {
 	<input type="hidden" name="action" value="update" />
 	<input type="hidden" name="checkuser_id" value="<?php echo $user_ID; ?>" />
 		<?php
-		// EN: CSRF token for the profile-update submit (verified in b2profile.php).
-		// JA: プロフィール更新の送信用 CSRF トークン(b2profile.php で検証)。
+		// CSRF token for the profile-update submit (verified in b2profile.php).
 		b2_csrf_field( 'profile-update' );
 		?>
 	</p>

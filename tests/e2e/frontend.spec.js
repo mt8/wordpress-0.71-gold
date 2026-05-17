@@ -8,18 +8,13 @@ const {
 } = require( './helpers/test-data' );
 
 /**
- * EN: Front-end E2E specs for WordPress 0.71-gold.
- *     Covers the home page, a single post (`?p=`), a category page (`?cat=`),
- *     a monthly archive (`?m=`) and the three feeds (RSS .92 / RDF 1.0 /
- *     RSS 2.0). Every page is checked for the absence of PHP error output.
- * JA: WordPress 0.71-gold のフロントエンド E2E spec。
- *     トップページ、単一投稿 (`?p=`)、カテゴリページ (`?cat=`)、月別アーカイブ
- *     (`?m=`)、3 種のフィード (RSS .92 / RDF 1.0 / RSS 2.0) を対象とする。
- *     どのページでも PHP エラー出力が無いことを検証する。
+ * Front-end E2E specs for WordPress 0.71-gold.
+ * Covers the home page, a single post (`?p=`), a category page (`?cat=`),
+ * a monthly archive (`?m=`) and the three feeds (RSS .92 / RDF 1.0 /
+ * RSS 2.0). Every page is checked for the absence of PHP error output.
  */
 
-// EN: Seeded fixtures shared by the front-end specs.
-// JA: フロントエンド spec 群で共有する投入済みフィクスチャ。
+// Seeded fixtures shared by the front-end specs.
 const fixture = {
 	/** @type {number} */ categoryId: 0,
 	/** @type {number} */ postId: 0,
@@ -29,12 +24,10 @@ const fixture = {
 
 test.describe( 'Front end', () => {
 	test.beforeAll( () => {
-		// EN: Start from a clean slate, then seed a known category + post.
-		// JA: まずクリーンな状態にし、既知のカテゴリ + 投稿を投入する。
+		// Start from a clean slate, then seed a known category + post.
 		cleanupE2EData();
 		fixture.categoryId = seedCategory( 'Frontend Category' );
-		// EN: Pin the post to a fixed date so the monthly-archive URL is stable.
-		// JA: 月別アーカイブ URL を安定させるため投稿日付を固定する。
+		// Pin the post to a fixed date so the monthly-archive URL is stable.
 		const date = '2026-05-15 12:00:00';
 		fixture.archiveMonth = '202605';
 		fixture.postId = seedPost( {
@@ -52,8 +45,7 @@ test.describe( 'Front end', () => {
 	test( 'home page renders without PHP errors', async ( { page } ) => {
 		await page.goto( '/' );
 		await expect( page.locator( '#header' ) ).toBeVisible();
-		// EN: The seeded post is recent, so it appears on the home page.
-		// JA: 投入した投稿は新しいためトップページに表示される。
+		// The seeded post is recent, so it appears on the home page.
 		await expect(
 			page.locator( 'h3.storytitle', { hasText: fixture.postTitle } )
 		).toBeVisible();
@@ -77,8 +69,7 @@ test.describe( 'Front end', () => {
 		page,
 	} ) => {
 		await page.goto( `/?cat=${ fixture.categoryId }` );
-		// EN: The seeded post belongs to the seeded category.
-		// JA: 投入した投稿は投入したカテゴリに属する。
+		// The seeded post belongs to the seeded category.
 		await expect(
 			page.locator( 'h3.storytitle', { hasText: fixture.postTitle } )
 		).toBeVisible();
@@ -128,13 +119,11 @@ test.describe( 'Front end', () => {
 } );
 
 /**
- * EN: Feed bodies are XML, not a rendered DOM, so check the raw text directly
- *     for PHP error output.
- * JA: フィード本文はレンダリングされた DOM ではなく XML なので、生テキストを
- *     直接 PHP エラー出力について検査する。
+ * Feed bodies are XML, not a rendered DOM, so check the raw text directly
+ * for PHP error output.
  *
- * @param {string} body Raw response text. / 生のレスポンステキスト。
- * @param {string} where Identifying URL for the failure message. / 失敗メッセージ用の URL。
+ * @param {string} body Raw response text.
+ * @param {string} where Identifying URL for the failure message.
  */
 function expectNoPhpErrorsInText( body, where ) {
 	const patterns = [

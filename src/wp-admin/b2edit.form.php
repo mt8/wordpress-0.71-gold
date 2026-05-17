@@ -7,10 +7,8 @@ function selected( $selected, $current ) {
 	}
 }
 
-// EN: defaults for a brand-new post so the form does not read undefined
-//     variables; the 'edit' case overrides them from the stored post.
-// JA: 新規投稿でフォームが未定義変数を読まないための既定値。
-//     'edit' の場合は保存済み投稿の値で上書きされる。
+// defaults for a brand-new post so the form does not read undefined
+// variables; the 'edit' case overrides them from the stored post.
 if ( ! isset( $post_status ) ) {
 	$post_status = 'publish';
 }
@@ -51,10 +49,8 @@ switch ( $action ) {
 <input type="hidden" name="user_ID" value="<?php echo $user_ID; ?>" />
 <input type="hidden" name="action" value='<?php echo $form_action . $form_extra; ?>' />
 <?php
-// EN: CSRF token scoped to the action this form submits ('post' /
-//     'editpost'); verified by b2_csrf_check() in b2edit.php.
-// JA: このフォームが送信するアクション('post' / 'editpost')に限定した
-//     CSRF トークン。b2edit.php の b2_csrf_check() で検証する。
+// CSRF token scoped to the action this form submits ('post' /
+// 'editpost'); verified by b2_csrf_check() in b2edit.php.
 b2_csrf_field( $form_action );
 ?>
 
@@ -128,8 +124,7 @@ if ( $use_quicktags ) {
 if ( $user_level > 4 ) {
 	touch_time( ( 'edit' == $action ) );
 }
-// EN: Append the CSRF token to the delete link (verified by b2edit.php).
-// JA: 削除リンクに CSRF トークンを付与する(b2edit.php で検証)。
+// Append the CSRF token to the delete link (verified by b2edit.php).
 if ( 'edit' == $action ) {
 	echo "
 <p><a href='b2edit.php?action=delete&amp;post=$post&amp;_b2csrf=" . b2_csrf_token( 'delete-post' ) . "' onclick=\"return confirm('You are about to delete this post \'" . $edited_post_title . "\'\\n  \'Cancel\' to stop, \'OK\' to delete.')\">Delete this post</a></p>";

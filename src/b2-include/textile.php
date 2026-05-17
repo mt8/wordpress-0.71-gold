@@ -375,10 +375,8 @@ function textile( $text ) {
 }
 
 
-	// EN: $url defaults to '' so the optional $title no longer precedes a
-	//     required parameter (deprecated in PHP 8.0).
-	// JA: $url に既定値 '' を与え、任意引数 $title が必須引数より前に
-	//     来ないようにする(PHP 8.0 で非推奨)。
+	// $url defaults to '' so the optional $title no longer precedes a
+	// required parameter (deprecated in PHP 8.0).
 function callback_url( $text, $title = '', $url = '' ) {
 
 	$out  = 'a href="' . $url . '"';

@@ -37,16 +37,11 @@ if ( ( $is_macIE ) || ( $is_lynx ) ) {
 }
 
 $b2varstoreset = array( 'profile', 'standalone', 'redirect', 'redirect_url', 'a', 'popuptitle', 'popupurl', 'text', 'trackback', 'pingback' );
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. b2header.php is include()d by the admin scripts at global scope,
-//     so $GLOBALS[$b2var] is exactly equivalent to $$b2var here; it makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。
-//     b2header.php は管理スクリプトからグローバルスコープで include() される
-//     ため、ここでは $GLOBALS[$b2var] は $$b2var と完全に等価。意図(既知の
-//     グローバル変数を $_GET/$_POST から設定する)を明確にする。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. b2header.php is include()d by the admin scripts at global scope,
+// so $GLOBALS[$b2var] is exactly equivalent to $$b2var here; it makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {

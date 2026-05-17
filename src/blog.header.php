@@ -13,19 +13,13 @@ require_once $curpath . $b2inc . '/b2functions.php';
 
 $b2varstoreset = array( 'm', 'p', 'posts', 'w', 'c', 'cat', 'withcomments', 's', 'search', 'exact', 'sentence', 'poststart', 'postend', 'preview', 'debug', 'calendar', 'page', 'paged', 'more', 'tb', 'pb', 'author', 'order', 'orderby' );
 
-	// EN: Issue #37 hardening. The original loop used the variable-variable
-	//     form ($$b2var = ...), a register_globals-style construct. The name
-	//     list ($b2varstoreset) is a fixed whitelist, so this was never
-	//     arbitrary variable injection, but $$var is fragile and obscures the
-	//     intent. This loop runs at global scope, so assigning through
-	//     $GLOBALS[$b2var] is exactly equivalent and makes it explicit that
-	//     the script populates a known set of globals from $_GET/$_POST.
-	// JA: Issue #37 の堅牢化。元のループは可変変数($$b2var = ...)を使って
-	//     おり、register_globals 風の構文だった。名前リスト($b2varstoreset)
-	//     は固定のホワイトリストなので任意の変数注入ではないが、$$var は脆く
-	//     意図が分かりにくい。本ループはグローバルスコープで動くため、
-	//     $GLOBALS[$b2var] への代入は完全に等価であり、既知のグローバル変数群
-	//     を $_GET/$_POST から設定していることを明示できる。
+	// Issue #37 hardening. The original loop used the variable-variable
+	// form ($$b2var = ...), a register_globals-style construct. The name
+	// list ($b2varstoreset) is a fixed whitelist, so this was never
+	// arbitrary variable injection, but $$var is fragile and obscures the
+	// intent. This loop runs at global scope, so assigning through
+	// $GLOBALS[$b2var] is exactly equivalent and makes it explicit that
+	// the script populates a known set of globals from $_GET/$_POST.
 for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -51,10 +45,8 @@ for ( $i = 0; $i < count( $b2varstoreset ); $i += 1 ) {
 @header( 'Pragma: no-cache' );                                    // HTTP/1.0
 
 /* Getting settings from db */
-// EN: $querycount is a global counter incremented by the query helpers below;
-//     initialize it so the first ++$querycount does not hit an undefined var.
-// JA: $querycount は下記のクエリ補助関数が加算するグローバルカウンタ。最初の
-//     ++$querycount が未定義変数にならないよう初期化する。
+// $querycount is a global counter incremented by the query helpers below;
+// initialize it so the first ++$querycount does not hit an undefined var.
 $querycount      = 0;
 $posts_per_page  = get_settings( 'posts_per_page' );
 $what_to_show    = get_settings( 'what_to_show' );
@@ -274,14 +266,10 @@ if ( 'b2edit.php' != $pagenow ) {
 $where .= ' AND (post_status = "publish"';
 
 // Get private posts
-// EN: Test the integer directly. PHP 8 changed string<->number comparison, so
-//     "'' != intval($user_ID)" is now true when $user_ID is unset (intval 0),
-//     which built an invalid SQL fragment. intval($user_ID) is truthy only for
-//     a real (non-zero) user id, matching the original intent on PHP 7 and 8.
-// JA: 整数を直接判定する。PHP 8 は文字列<->数値の比較を変更したため、$user_ID
-//     未設定時(intval は 0)に "'' != intval($user_ID)" が真となり不正な SQL 片を
-//     生成していた。intval($user_ID) は実在の(非ゼロの)user id でのみ真となり、
-//     PHP 7 / 8 の双方で本来の意図に一致する。
+// Test the integer directly. PHP 8 changed string<->number comparison, so
+// "'' != intval($user_ID)" is now true when $user_ID is unset (intval 0),
+// which built an invalid SQL fragment. intval($user_ID) is truthy only for
+// a real (non-zero) user id, matching the original intent on PHP 7 and 8.
 if ( intval( $user_ID ?? 0 ) ) {
 	$where .= " OR post_author = $user_ID AND post_status != 'draft')";
 } else {

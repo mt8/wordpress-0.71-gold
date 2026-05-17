@@ -23,14 +23,10 @@ $_COOKIE = add_magic_quotes( $_COOKIE );
 
 $b2varstoreset = array( 'action', 'mode', 'error', 'text', 'popupurl', 'popuptitle' );
 
-// EN: Cookie hardening (Issue #34). Build the security flags shared by every
-//     authentication cookie: HttpOnly so JavaScript cannot read the token,
-//     SameSite=Lax to blunt cross-site sends, and Secure only over HTTPS so the
-//     local HTTP environment keeps working.
-// JA: クッキーのセキュリティ強化(Issue #34)。すべての認証クッキーで共有する
-//     セキュリティフラグを組み立てる。HttpOnly で JavaScript からトークンを
-//     読めないようにし、SameSite=Lax でクロスサイト送信を抑止し、Secure は
-//     HTTPS のときだけ付与してローカルの HTTP 環境を壊さないようにする。
+// Cookie hardening (Issue #34). Build the security flags shared by every
+// authentication cookie: HttpOnly so JavaScript cannot read the token,
+// SameSite=Lax to blunt cross-site sends, and Secure only over HTTPS so the
+// local HTTP environment keeps working.
 function b2_auth_cookie_flags( $expires ) {
 	return array(
 		'expires'  => $expires,
@@ -41,16 +37,11 @@ function b2_auth_cookie_flags( $expires ) {
 	);
 }
 
-// EN: Issue #37 hardening. Replace the variable-variable ($$b2var)
-//     register_globals-style assignment with an explicit $GLOBALS[$b2var]
-//     write. The name list is a fixed whitelist and this loop runs at global
-//     scope, so the two forms are exactly equivalent; $GLOBALS makes the
-//     intent (populate known globals from $_GET/$_POST) explicit.
-// JA: Issue #37 の堅牢化。可変変数($$b2var)による register_globals 風の
-//     代入を、明示的な $GLOBALS[$b2var] への書き込みに置き換える。名前リスト
-//     は固定のホワイトリストで、本ループはグローバルスコープで動くため両者は
-//     完全に等価。$GLOBALS により意図(既知のグローバル変数を $_GET/$_POST
-//     から設定する)が明確になる。
+// Issue #37 hardening. Replace the variable-variable ($$b2var)
+// register_globals-style assignment with an explicit $GLOBALS[$b2var]
+// write. The name list is a fixed whitelist and this loop runs at global
+// scope, so the two forms are exactly equivalent; $GLOBALS makes the
+// intent (populate known globals from $_GET/$_POST) explicit.
 for ( $i = 0; $i < count( $b2varstoreset ); $i = $i + 1 ) {
 	$b2var = $b2varstoreset[ $i ];
 	if ( ! isset( $GLOBALS[ $b2var ] ) ) {
@@ -69,10 +60,8 @@ for ( $i = 0; $i < count( $b2varstoreset ); $i = $i + 1 ) {
 switch ( $action ) {
 
 	case 'logout':
-		// EN: Expire the auth cookies; pass the same path/flags so the browser
-		//     matches and actually deletes the hardened cookies set at login.
-		// JA: 認証クッキーを失効させる。ログイン時に設定した強化クッキーと一致して
-		//     確実に削除されるよう、同じ path/フラグを渡す。
+		// Expire the auth cookies; pass the same path/flags so the browser
+		// matches and actually deletes the hardened cookies set at login.
 		setcookie( 'wordpressuser', '', b2_auth_cookie_flags( time() - 31536000 ) );
 		setcookie( 'wordpresspass', '', b2_auth_cookie_flags( time() - 31536000 ) );
 		header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT' );
@@ -110,10 +99,8 @@ switch ( $action ) {
 				return false;
 			}
 
-			// EN: Issue #34 -- look the user up by login name only, then verify the
-			//     password in PHP. Passwords are now stored as bcrypt hashes.
-			// JA: Issue #34 -- ユーザーはログイン名のみで検索し、パスワードは PHP 側で
-			//     検証する。パスワードは bcrypt ハッシュで保存されるようになった。
+			// Issue #34 -- look the user up by login name only, then verify the
+			// password in PHP. Passwords are now stored as bcrypt hashes.
 			if ( 'md5:' == substr( $password, 0, 4 ) ) {
 				$pass_is_md5 = 1;
 				$password    = substr( $password, 4, strlen( $password ) );
@@ -136,23 +123,17 @@ switch ( $action ) {
 			$ok      = false;
 
 			if ( $pass_is_md5 ) {
-				// EN: Edge feature -- the typed value is md5(stored user_pass). This
-				//     only works for a legacy plaintext row, because the stored bcrypt
-				//     hash is not recoverable from its md5. A hashed row therefore
-				//     cannot be reached through the md5: path (documented limitation).
-				// JA: エッジ機能 -- 入力値は md5(保存された user_pass)。bcrypt ハッシュは
-				//     その md5 から復元できないため、これはレガシーな平文行でのみ成立する。
-				//     ハッシュ済みの行は md5: 経路では認証できない(既知の制限として記録)。
+				// Edge feature -- the typed value is md5(stored user_pass). This
+				// only works for a legacy plaintext row, because the stored bcrypt
+				// hash is not recoverable from its md5. A hashed row therefore
+				// cannot be reached through the md5: path (documented limitation).
 				$ok = ( md5( $stored ) === $password );
 			} elseif ( $is_hash ) {
-				// EN: Normal path -- verify the typed password against the bcrypt hash.
-				// JA: 通常経路 -- 入力されたパスワードを bcrypt ハッシュで検証する。
+				// Normal path -- verify the typed password against the bcrypt hash.
 				$ok = password_verify( $password, $stored );
 			} else {
-				// EN: Legacy fallback -- the row still holds a plaintext password.
-				//     On a match, transparently re-hash it and upgrade the row.
-				// JA: レガシーフォールバック -- 行にまだ平文パスワードが残っている。
-				//     一致したら透過的に再ハッシュして行を更新する。
+				// Legacy fallback -- the row still holds a plaintext password.
+				// On a match, transparently re-hash it and upgrade the row.
 				if ( $stored === $password ) {
 					$ok        = true;
 					$new_hash  = password_hash( $password, PASSWORD_DEFAULT );
@@ -164,12 +145,9 @@ switch ( $action ) {
 
 			if ( $ok ) {
 				$user_ID = $login->ID;
-				// EN: Hand the (possibly just upgraded) stored value to the cookie
-				//     setter so wordpresspass = md5(stored) -- the same value that
-				//     checklogin() and the CSRF token expect.
-				// JA: (アップグレードされた可能性のある)保存値をクッキー設定側へ渡し、
-				//     wordpresspass = md5(保存値) とする -- checklogin() と CSRF
-				//     トークンが期待するのと同じ値。
+				// Hand the (possibly just upgraded) stored value to the cookie
+				// setter so wordpresspass = md5(stored) -- the same value that
+				// checklogin() and the CSRF token expect.
 				$stored_user_pass = $stored;
 				return true;
 			}
@@ -192,15 +170,11 @@ switch ( $action ) {
 			exit();
 		} else {
 			$user_login = $log;
-			// EN: Issue #34 -- the auth cookie carries md5() of the *stored*
-			//     user_pass value (the bcrypt hash), not md5() of the typed
-			//     plaintext. checklogin() compares the cookie to
-			//     md5($userdata->user_pass), so both sides agree whether the row is
-			//     hashed or still legacy plaintext.
-			// JA: Issue #34 -- 認証クッキーには入力された平文ではなく、*保存された*
-			//     user_pass の値(bcrypt ハッシュ)の md5() を入れる。checklogin() は
-			//     クッキーを md5($userdata->user_pass) と比較するため、行がハッシュ済み
-			//     でもレガシー平文でも両者が一致する。
+			// Issue #34 -- the auth cookie carries md5() of the *stored*
+			// user_pass value (the bcrypt hash), not md5() of the typed
+			// plaintext. checklogin() compares the cookie to
+			// md5($userdata->user_pass), so both sides agree whether the row is
+			// hashed or still legacy plaintext.
 			setcookie( 'wordpressuser', $user_login, b2_auth_cookie_flags( time() + 31536000 ) );
 			setcookie( 'wordpresspass', md5( $stored_user_pass ), b2_auth_cookie_flags( time() + 31536000 ) );
 			if ( empty( $_COOKIE['wordpressblogid'] ) ) {
@@ -277,17 +251,12 @@ switch ( $action ) {
 		$user_login = $_POST['user_login'];
 		$user_data  = get_userdatabylogin( $user_login );
 
-		// EN: Issue #34 -- never email a stored secret. After hashing, the stored
-		//     user_pass is a bcrypt hash and is useless to the user anyway. Instead
-		//     generate a fresh random temporary password, store its hash, and email
-		//     the new plaintext password so the user can log in and then change it.
-		// JA: Issue #34 -- 保存されている秘密情報をメール送信しない。ハッシュ化後の
-		//     user_pass は bcrypt ハッシュであり、利用者にとっては無意味である。
-		//     代わりに新しいランダムな一時パスワードを生成してそのハッシュを保存し、
-		//     新しい平文パスワードをメール送信する。利用者はログイン後に変更できる。
+		// Issue #34 -- never email a stored secret. After hashing, the stored
+		// user_pass is a bcrypt hash and is useless to the user anyway. Instead
+		// generate a fresh random temporary password, store its hash, and email
+		// the new plaintext password so the user can log in and then change it.
 		if ( ! $user_data ) {
-			// EN: Do not reveal whether the login exists; reply the same way.
-			// JA: ログインが存在するか否かを明かさず、同じ応答を返す。
+			// Do not reveal whether the login exists; reply the same way.
 			echo "<p>If that login exists, an email with a new password has been sent.<br />
 		<a href='b2login.php' title='Check your email first, of course'>Click here to login!</a></p>";
 			die();

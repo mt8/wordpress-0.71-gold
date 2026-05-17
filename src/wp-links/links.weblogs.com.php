@@ -1,6 +1,5 @@
 <?php
-// EN: this script lives in wp-links/, so b2config.php is one directory up.
-// JA: このスクリプトは wp-links/ にあるため b2config.php は一つ上の階層。
+// this script lives in wp-links/, so b2config.php is one directory up.
 require_once '../b2config.php';
 require_once $abspath . '/wp-links/links.config.php';
 require_once $abspath . $b2inc . '/b2functions.php';
@@ -38,8 +37,7 @@ function update_links() {
 	foreach ( $all_links as $id => $val ) {
 		if ( $val[1] ) {
 			//echo("executing: $sql\n");
-			// EN: Cast the link id to int -- it is used unquoted in SQL (WHERE link_id = ...).
-			// JA: リンク ID を整数にキャスト -- SQL でクォート無し(WHERE link_id = ...)で使われる。
+			// Cast the link id to int -- it is used unquoted in SQL (WHERE link_id = ...).
 			$link_id = (int) $val[0];
 			$wpdb->query( "UPDATE $tablelinks SET link_updated = '$val[1]' WHERE link_id = $link_id" );
 		}

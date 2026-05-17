@@ -1,7 +1,6 @@
 <?php
 /**
- * EN: Tests for the CSRF token helper b2_csrf_token() added in Issue #33.
- * JA: Issue #33 で追加した CSRF トークンヘルパー b2_csrf_token() のテスト。
+ * Tests for the CSRF token helper b2_csrf_token() added in Issue #33.
  */
 
 declare(strict_types=1);
@@ -31,10 +30,8 @@ final class SecurityTest extends TestCase
 
     public function testCsrfTokenDiffersByAuthCookie(): void
     {
-        // EN: the token is seeded from the auth cookie, so a different cookie
-        //     (i.e. a different user / session) must yield a different token.
-        // JA: トークンは認証クッキーを種にするため、異なるクッキー
-        //     (=異なるユーザー/セッション)では異なるトークンになる。
+        // the token is seeded from the auth cookie, so a different cookie
+        // (i.e. a different user / session) must yield a different token.
         $_COOKIE['wordpresspass'] = 'cookie-A';
         $tokenA = b2_csrf_token('save-post');
 
@@ -46,8 +43,7 @@ final class SecurityTest extends TestCase
 
     public function testCsrfFieldPrintsAHiddenInputCarryingTheToken(): void
     {
-        // EN: b2_csrf_field() echoes a hidden form input; capture and inspect it.
-        // JA: b2_csrf_field() は隠しフォーム入力を出力する。捕捉して検証する。
+        // b2_csrf_field() echoes a hidden form input; capture and inspect it.
         $_COOKIE['wordpresspass'] = 'cookie-value';
 
         ob_start();

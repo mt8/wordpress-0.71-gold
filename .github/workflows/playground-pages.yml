@@ -1,38 +1,20 @@
-# EN: Deploy the 071-now playground to GitHub Pages (Issue #128).
+# Deploy the 071-now playground to GitHub Pages (Issue #128).
 #
-#     Builds the tools/playground npm workspace -- browser-based
-#     WordPress 0.71 on @php-wasm/web -- and publishes its dist/ to
-#     GitHub Pages, so anyone viewing the repository can launch the
-#     playground from https://mt8.github.io/wordpress-0.71-gold/.
+# Builds the tools/playground npm workspace -- browser-based
+# WordPress 0.71 on @php-wasm/web -- and publishes its dist/ to
+# GitHub Pages, so anyone viewing the repository can launch the
+# playground from https://mt8.github.io/wordpress-0.71-gold/.
 #
-#     Pages cannot set custom HTTP headers, and php-wasm needs the
-#     COOP/COEP cross-origin isolation headers for SharedArrayBuffer; the
-#     playground's service worker (tools/playground/public/sw.js) adds
-#     them on the deployed site, so no header configuration is needed
-#     here.
+# Pages cannot set custom HTTP headers, and php-wasm needs the
+# COOP/COEP cross-origin isolation headers for SharedArrayBuffer; the
+# playground's service worker (tools/playground/public/sw.js) adds
+# them on the deployed site, so no header configuration is needed
+# here.
 #
-#     The build is served under the repository name, so PLAYGROUND_BASE
-#     is set to /wordpress-0.71-gold/ -- vite.config.js reads it as the
-#     public base path and the browser app builds its service-worker and
-#     scoped-blog paths under it.
-# JA: 071-now playground を GitHub Pages へデプロイする(Issue #128)。
-#
-#     tools/playground の npm ワークスペース -- @php-wasm/web 上の
-#     ブラウザ内 WordPress 0.71 -- をビルドし、その dist/ を GitHub Pages
-#     へ公開する。これでリポジトリを見た人は
-#     https://mt8.github.io/wordpress-0.71-gold/ から playground を起動
-#     できる。
-#
-#     Pages はカスタム HTTP ヘッダを設定できず、php-wasm は
-#     SharedArrayBuffer のため COOP/COEP のクロスオリジン分離ヘッダを必要
-#     とする。playground のサービスワーカー
-#     (tools/playground/public/sw.js)がデプロイ後のサイトでそれらを付与
-#     するため、ここでのヘッダ設定は不要である。
-#
-#     ビルドはリポジトリ名配下で配信されるため PLAYGROUND_BASE を
-#     /wordpress-0.71-gold/ に設定する -- vite.config.js がこれを公開ベース
-#     パスとして読み取り、ブラウザアプリはサービスワーカーとスコープ付き
-#     ブログのパスをその配下に構築する。
+# The build is served under the repository name, so PLAYGROUND_BASE
+# is set to /wordpress-0.71-gold/ -- vite.config.js reads it as the
+# public base path and the browser app builds its service-worker and
+# scoped-blog paths under it.
 name: Deploy 071-now playground to GitHub Pages
 
 on:
@@ -41,18 +23,15 @@ on:
       - main
   workflow_dispatch:
 
-# EN: The standard GitHub Pages deployment permissions: read the repo,
-#     write to Pages, and mint the OIDC token actions/deploy-pages uses.
-# JA: GitHub Pages デプロイの標準権限: リポジトリ読み取り、Pages 書き込み、
-#     actions/deploy-pages が使う OIDC トークンの発行。
+# The standard GitHub Pages deployment permissions: read the repo,
+# write to Pages, and mint the OIDC token actions/deploy-pages uses.
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# EN: Let an in-progress deploy finish rather than cancelling it, but
-#     keep only one queued run so a burst of pushes does not pile up.
-# JA: 進行中のデプロイは中断せず完了させ、待機実行は 1 つだけ保持する。
+# Let an in-progress deploy finish rather than cancelling it, but
+# keep only one queued run so a burst of pushes does not pile up.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -79,38 +58,31 @@ jobs:
           cache: npm
 
       - name: Configure GitHub Pages
-        # EN: Enables Pages for the repository if it is not already on,
-        #     and exposes the resolved base path. The playground build
-        #     uses its own PLAYGROUND_BASE below, so the step's base_path
-        #     output is not consumed.
-        # JA: 未有効なら Pages を有効化し、解決済みベースパスを公開する。
+        # Enables Pages for the repository if it is not already on,
+        # and exposes the resolved base path. The playground build
+        # uses its own PLAYGROUND_BASE below, so the step's base_path
+        # output is not consumed.
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
-        # EN: The repository is an npm workspace root; install once so the
-        #     tools/playground workspace and its dependencies are present.
-        # JA: リポジトリは npm ワークスペースルート。一度インストールする。
+        # The repository is an npm workspace root; install once so the
+        # tools/playground workspace and its dependencies are present.
         run: npm ci
 
       - name: Build the 071-now playground
-        # EN: Build only the tools/playground workspace. PLAYGROUND_BASE
-        #     makes vite.config.js serve the app under the repository name,
-        #     so the deployed assets and the service worker resolve
-        #     correctly at https://mt8.github.io/wordpress-0.71-gold/.
-        # JA: tools/playground ワークスペースのみをビルドする。
+        # Build only the tools/playground workspace. PLAYGROUND_BASE
+        # makes vite.config.js serve the app under the repository name,
+        # so the deployed assets and the service worker resolve
+        # correctly at https://mt8.github.io/wordpress-0.71-gold/.
         run: npm run build --workspace tools/playground
         env:
           PLAYGROUND_BASE: /wordpress-0.71-gold/
 
       - name: Upload the playground as a Pages artifact
-        # EN: Upload only the playground's build output. It is roughly
-        #     72 MB (the ~40 MB PHP 8.3 .wasm runtime and the bundled
-        #     block-editor app included), well within the GitHub Pages
-        #     1 GB site-size limit.
-        # JA: playground のビルド成果物のみをアップロードする。約 72 MB
-        #     (PHP 8.3 の .wasm ランタイムとバンドル済みブロックエディタ
-        #     アプリを含む)で GitHub Pages の 1 GB サイトサイズ上限に
-        #     十分収まる。
+        # Upload only the playground's build output. It is roughly
+        # 72 MB (the ~40 MB PHP 8.3 .wasm runtime and the bundled
+        # block-editor app included), well within the GitHub Pages
+        # 1 GB site-size limit.
         uses: actions/upload-pages-artifact@v3
         with:
           path: tools/playground/dist

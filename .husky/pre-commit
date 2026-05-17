@@ -1,16 +1,10 @@
 #!/usr/bin/env sh
-# EN: Committed executable (mode 100755) with a shebang so the hook fires
-#     whether git invokes it directly or via husky's wrapper (Issue #83).
-# JA: 実行権限付き(モード 100755)＋シバンでコミットし、git が直接実行しても
-#     husky のラッパー経由でもフックが発火するようにする(Issue #83)。
-# EN: husky pre-commit hook -- run lint-staged (phpcs / phpstan on staged
-#     src/ PHP files). Skip gracefully when the dev tooling is not installed
-#     (e.g. a fresh git worktree without `composer install` / `npm install`),
-#     so commits there are not blocked by missing binaries.
-# JA: husky の pre-commit フック -- lint-staged(staged な src/ PHP ファイルへの
-#     phpcs / phpstan)を実行する。開発ツール未導入時(composer install /
-#     npm install していない新規 git worktree など)はグレースフルにスキップ
-#     し、バイナリ欠如でそこでのコミットを妨げない。
+# Committed executable (mode 100755) with a shebang so the hook fires
+# whether git invokes it directly or via husky's wrapper (Issue #83).
+# husky pre-commit hook -- run lint-staged (phpcs / phpstan on staged
+# src/ PHP files). Skip gracefully when the dev tooling is not installed
+# (e.g. a fresh git worktree without `composer install` / `npm install`),
+# so commits there are not blocked by missing binaries.
 if [ ! -f vendor/bin/phpcs ] || [ ! -f vendor/bin/phpstan ] || [ ! -d node_modules/lint-staged ]; then
   echo "husky: dev tooling not installed -- skipping pre-commit checks."
   exit 0
