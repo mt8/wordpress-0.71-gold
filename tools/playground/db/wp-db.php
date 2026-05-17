@@ -174,6 +174,13 @@ class wpdb {
 			$this->dbh = new PDO( 'sqlite:' . $path );
 			$this->dbh->setAttribute( PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION );
 			$this->dbh->exec( 'PRAGMA foreign_keys = ON' );
+			// EN: The 071-now boot shim opens its own short-lived SQLite
+			//     connections (the seed, the auto-login lookup) just
+			//     before this one. They are closed promptly, but a busy
+			//     timeout makes the admin's first write wait briefly for
+			//     the lock instead of failing outright with "database is
+			//     locked" should any overlap remain.
+			$this->dbh->setAttribute( PDO::ATTR_TIMEOUT, 5 );
 		} catch ( Exception $e ) {
 			$this->print_error( 'SQLite connection failed: ' . $e->getMessage() );
 		}
