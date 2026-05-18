@@ -73,7 +73,7 @@ them all.
 |---------|------|-----|------------|
 | `071-cli` | `tools/cli` | `npx 071 <command>` | wp-cli-style CLI for WordPress 0.71; includes `071 export` (static export). See [`tools/cli/README.md`](tools/cli/README.md). |
 | `071-env` | `tools/env` | `npx 071-env <command>` | wp-env-style manager for the PHP 8.3 / MySQL 8 Docker environment. See [`tools/env/README.md`](tools/env/README.md). |
-| `071-now` | `tools/playground` | `npm run dev --workspace tools/playground` | wp-now / Playground-style in-browser WordPress 0.71. See [`tools/playground/README.md`](tools/playground/README.md). |
+| `071-now` | `tools/playground` | `npx 071-now` | wp-now / Playground-style in-browser WordPress 0.71. See [`tools/playground/README.md`](tools/playground/README.md). |
 | block editor | `tools/block-editor` | `cd tools/block-editor && npm install && npm run build` | Build source for the custom block editor; build output goes to `src/block-editor/assets/`. See [`tools/block-editor/README.md`](tools/block-editor/README.md). |
 
 `npx` always works. To run the bare `071` / `071-env` commands (without the
