@@ -206,9 +206,9 @@ test.describe( 'Playground block editor', () => {
 			timeout: 15000,
 		} );
 
-		// Open the first colour control; its popover lists the preset
+		// Open the Text colour control; its popover lists the preset
 		// swatches -- the twelve WordPress-core default colours.
-		await colorDropdowns.first().click();
+		await colorDropdowns.filter( { hasText: 'Text' } ).click();
 		const swatches = editorFrame.locator(
 			'button.components-circular-option-picker__option'
 		);
@@ -219,5 +219,25 @@ test.describe( 'Playground block editor', () => {
 			await swatches.count(),
 			'the WordPress core default palette has twelve colours'
 		).toBeGreaterThanOrEqual( 12 );
+
+		// Pick the "Vivid red" preset. A preset pick is stored as a
+		// `has-<slug>-color` class, not an inline colour -- it renders
+		// only through the preset stylesheet (block-presets.css) the
+		// build now emits and editor.php links. A custom inline colour
+		// always worked; a preset did not, until Issue #181's follow-up.
+		await editorFrame
+			.locator(
+				'button.components-circular-option-picker__option' +
+					'[aria-label*="Vivid red"]'
+			)
+			.click();
+
+		// The paragraph in the canvas carries the preset class and
+		// renders the WordPress-core "Vivid red" (#cf2e2e).
+		await expect(
+			editorFrame.locator(
+				'.block-editor-block-list__layout p.has-vivid-red-color'
+			)
+		).toHaveCSS( 'color', 'rgb(207, 46, 46)' );
 	} );
 } );
