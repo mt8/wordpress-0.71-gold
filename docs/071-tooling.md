@@ -182,7 +182,7 @@ tools/env/
 | `071-env start`        | `docker compose up -d --build` |
 | `071-env stop`         | `docker compose stop` |
 | `071-env destroy`      | `docker compose down -v` (confirmation prompt — removes the DB volume) |
-| `071-env status`       | `docker compose ps` |
+| `071-env status`       | `docker compose ps -a` |
 | `071-env logs [svc]`   | `docker compose logs -f` |
 | `071-env run cli <…>`  | run `071-cli` inside the `web` container |
 | `071-env run <cmd…>`   | run an arbitrary command in the `web` container |
@@ -585,7 +585,7 @@ tools/env/
 | `071-env start`        | `docker compose up -d --build` |
 | `071-env stop`         | `docker compose stop` |
 | `071-env destroy`      | `docker compose down -v`（確認プロンプト — DB ボリュームを削除） |
-| `071-env status`       | `docker compose ps` |
+| `071-env status`       | `docker compose ps -a` |
 | `071-env logs [svc]`   | `docker compose logs -f` |
 | `071-env run cli <…>`  | `web` コンテナ内で `071-cli` を実行 |
 | `071-env run <cmd…>`   | `web` コンテナ内で任意のコマンドを実行 |
