@@ -10,6 +10,7 @@
     "tools/playground"
   ],
   "scripts": {
+    "setup": "node scripts/setup.mjs",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:playground": "playwright test --project=playground-chromium --project=playground-webkit",
     "test:env": "node --test \"tools/env/test/**/*.test.mjs\"",
