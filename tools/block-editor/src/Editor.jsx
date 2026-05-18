@@ -208,6 +208,44 @@ const UPLOAD_ERROR_MESSAGES = {
 };
 
 /**
+ * The WordPress core default colour palette -- the same twelve presets a
+ *     stock WordPress install offers before any theme.json is applied.
+ *
+ *     A standalone @wordpress/block-editor build ships no palette: the
+ *     block-editor store's preset settings come from theme.json on the
+ *     server, which this core-less editor has none of. The swatches are
+ *     therefore declared here and fed to the editor two ways -- as
+ *     `EDITOR_FEATURES.color.palette` (the theme.json-style feature the
+ *     block Color panel reads) and as the legacy top-level `colors`
+ *     setting (which the inline Highlight colour popover reads).
+ *
+ *     Each entry's `slug` becomes a `has-<slug>-color` class on saved
+ *     markup, so the slugs match WordPress core's own.
+ */
+const WP_DEFAULT_COLOR_PALETTE = [
+	{ name: 'Black', slug: 'black', color: '#000000' },
+	{ name: 'Cyan bluish gray', slug: 'cyan-bluish-gray', color: '#abb8c3' },
+	{ name: 'White', slug: 'white', color: '#ffffff' },
+	{ name: 'Pale pink', slug: 'pale-pink', color: '#f78da7' },
+	{ name: 'Vivid red', slug: 'vivid-red', color: '#cf2e2e' },
+	{
+		name: 'Luminous vivid orange',
+		slug: 'luminous-vivid-orange',
+		color: '#ff6900',
+	},
+	{
+		name: 'Luminous vivid amber',
+		slug: 'luminous-vivid-amber',
+		color: '#fcb900',
+	},
+	{ name: 'Light green cyan', slug: 'light-green-cyan', color: '#7bdcb5' },
+	{ name: 'Vivid green cyan', slug: 'vivid-green-cyan', color: '#00d084' },
+	{ name: 'Pale cyan blue', slug: 'pale-cyan-blue', color: '#8ed1fc' },
+	{ name: 'Vivid cyan blue', slug: 'vivid-cyan-blue', color: '#0693e3' },
+	{ name: 'Vivid purple', slug: 'vivid-purple', color: '#9b51e0' },
+];
+
+/**
  * Editor feature flags handed to BlockEditorProvider.
  *
  *     A block's toolbar / inspector controls for typography, colour, spacing,
@@ -221,6 +259,11 @@ const UPLOAD_ERROR_MESSAGES = {
  *     flags are supplied here directly. `appearanceTools` switches on the
  *     common appearance controls; `typography.textAlign` is what makes the
  *     paragraph's Align-text control appear in the floating toolbar.
+ *
+ *     `color.palette` (and the legacy top-level `colors`, set on
+ *     `editorSettings`) supply the preset colour swatches. Without them the
+ *     block Color panel and the paragraph's inline Highlight format render
+ *     no palette at all.
  */
 const EDITOR_FEATURES = {
 	appearanceTools: true,
@@ -235,6 +278,17 @@ const EDITOR_FEATURES = {
 		text: true,
 		background: true,
 		link: true,
+		// Allow the custom-colour picker alongside the presets.
+		custom: true,
+		// `color.palette` must be the multi-origin object shape
+		//     ({ default, theme, custom }); a bare array is read as
+		//     undefined by the block editor. The presets go in the
+		//     `theme` origin, which is always shown -- the `default`
+		//     origin is gated behind a separate `color.defaultPalette`
+		//     toggle.
+		palette: {
+			theme: WP_DEFAULT_COLOR_PALETTE,
+		},
 	},
 	spacing: {
 		margin: true,
@@ -429,6 +483,13 @@ export function Editor( { config } ) {
 				setMessage( `Image upload failed: ${ uploadMessage }` );
 			} ),
 			__experimentalFeatures: EDITOR_FEATURES,
+			// The legacy top-level colour palette. The inline Highlight
+			//     format (@wordpress/format-library's core/text-color)
+			//     reads its swatches from `getSettings().colors`, not
+			//     from __experimentalFeatures, so the same presets are
+			//     supplied here too -- otherwise the Highlight popover
+			//     shows no colours.
+			colors: WP_DEFAULT_COLOR_PALETTE,
 		} ),
 		[]
 	);
