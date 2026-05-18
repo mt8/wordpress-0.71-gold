@@ -22,6 +22,7 @@ import { runDocker, runDockerCaptured } from './docker.mjs';
 import { loadConfig } from './config.mjs';
 import { deriveEnv } from './env-vars.mjs';
 import { writeMappingsOverride } from './mappings.mjs';
+import { writeB2Config } from './b2config.mjs';
 import { runLifecycleScript, lifecycleCommand } from './lifecycle.mjs';
 import {
 	progressMessage,
@@ -104,6 +105,21 @@ export async function main( argv ) {
 	} catch ( err ) {
 		process.stderr.write( `071-env: could not write the mappings override: ${ err.message }\n` );
 		return 1;
+	}
+
+	// On `start`, generate src/b2config.php from src/b2config-sample.php
+	//     with any `wpConfig` overrides applied. The blog source is mounted
+	//     into the web container, so the file must exist before Compose
+	//     brings the container up.
+	if ( command === 'start' ) {
+		try {
+			writeB2Config( config.wpConfig );
+		} catch ( err ) {
+			process.stderr.write(
+				`071-env: could not write src/b2config.php: ${ err.message }\n`
+			);
+			return 1;
+		}
 	}
 
 	let dockerArgs;

@@ -3,5 +3,6 @@
   "dbPort": 3306,
   "phpVersion": "8.3",
   "mappings": {},
-  "lifecycleScripts": {}
+  "lifecycleScripts": {},
+  "wpConfig": {}
 }

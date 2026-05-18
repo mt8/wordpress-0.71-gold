@@ -38,7 +38,8 @@ export const LIFECYCLE_HOOKS = [ 'afterStart', 'beforeDestroy' ];
  *     behaviour exactly, so `071-env` works with no config file present.
  * @returns {{ port: number, dbPort: number, phpVersion: string,
  *             mappings: Record<string,string>,
- *             lifecycleScripts: Record<string,string> }}
+ *             lifecycleScripts: Record<string,string>,
+ *             wpConfig: Record<string,(string|number|boolean)> }}
  */
 export function defaultConfig() {
 	return {
@@ -47,6 +48,7 @@ export function defaultConfig() {
 		phpVersion: '8.3',
 		mappings: {},
 		lifecycleScripts: {},
+		wpConfig: {},
 	};
 }
 
@@ -132,8 +134,32 @@ export function validateConfig( raw, source = CONFIG_FILE ) {
 			}
 		}
 	}
+	if ( 'wpConfig' in raw ) {
+		assertWpConfig( raw.wpConfig, source );
+	}
 
 	return raw;
+}
+
+/**
+ * Assert a value is a plain object whose every value is a string, number
+ *     or boolean -- the override values 071-env writes into b2config.php.
+ * @param {*} value      The value to check.
+ * @param {string} source The file name, for the error message.
+ * @throws {Error} when the value is not a valid wpConfig object.
+ */
+function assertWpConfig( value, source ) {
+	if ( ! isPlainObject( value ) ) {
+		throw new Error( `${ source }: 'wpConfig' must be a JSON object.` );
+	}
+	for ( const [ key, entry ] of Object.entries( value ) ) {
+		const type = typeof entry;
+		if ( type !== 'string' && type !== 'number' && type !== 'boolean' ) {
+			throw new Error(
+				`${ source }: 'wpConfig.${ key }' must be a string, number or boolean.`
+			);
+		}
+	}
 }
 
 /**
