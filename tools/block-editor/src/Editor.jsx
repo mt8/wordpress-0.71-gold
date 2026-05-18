@@ -44,6 +44,8 @@ import {
 import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
+import { WP_DEFAULT_COLOR_PALETTE } from './palette.js';
+
 // The longest edge, in pixels, an uploaded image is downscaled to
 //     before it is sent to the server (Issue #178). A full-resolution
 //     phone photo is often 12 MP or more; sending it untouched pushes a
@@ -206,44 +208,6 @@ const UPLOAD_ERROR_MESSAGES = {
 	move_failed: 'The server could not store the image.',
 	method_not_allowed: 'The upload request was rejected by the server.',
 };
-
-/**
- * The WordPress core default colour palette -- the same twelve presets a
- *     stock WordPress install offers before any theme.json is applied.
- *
- *     A standalone @wordpress/block-editor build ships no palette: the
- *     block-editor store's preset settings come from theme.json on the
- *     server, which this core-less editor has none of. The swatches are
- *     therefore declared here and fed to the editor two ways -- as
- *     `EDITOR_FEATURES.color.palette` (the theme.json-style feature the
- *     block Color panel reads) and as the legacy top-level `colors`
- *     setting (which the inline Highlight colour popover reads).
- *
- *     Each entry's `slug` becomes a `has-<slug>-color` class on saved
- *     markup, so the slugs match WordPress core's own.
- */
-const WP_DEFAULT_COLOR_PALETTE = [
-	{ name: 'Black', slug: 'black', color: '#000000' },
-	{ name: 'Cyan bluish gray', slug: 'cyan-bluish-gray', color: '#abb8c3' },
-	{ name: 'White', slug: 'white', color: '#ffffff' },
-	{ name: 'Pale pink', slug: 'pale-pink', color: '#f78da7' },
-	{ name: 'Vivid red', slug: 'vivid-red', color: '#cf2e2e' },
-	{
-		name: 'Luminous vivid orange',
-		slug: 'luminous-vivid-orange',
-		color: '#ff6900',
-	},
-	{
-		name: 'Luminous vivid amber',
-		slug: 'luminous-vivid-amber',
-		color: '#fcb900',
-	},
-	{ name: 'Light green cyan', slug: 'light-green-cyan', color: '#7bdcb5' },
-	{ name: 'Vivid green cyan', slug: 'vivid-green-cyan', color: '#00d084' },
-	{ name: 'Pale cyan blue', slug: 'pale-cyan-blue', color: '#8ed1fc' },
-	{ name: 'Vivid cyan blue', slug: 'vivid-cyan-blue', color: '#0693e3' },
-	{ name: 'Vivid purple', slug: 'vivid-purple', color: '#9b51e0' },
-];
 
 /**
  * Editor feature flags handed to BlockEditorProvider.

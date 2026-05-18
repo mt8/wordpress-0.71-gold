@@ -7,6 +7,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath } from 'node:url';
 import { readFileSync } from 'node:fs';
+import { buildPresetColorCss } from './src/palette.js';
 
 /**
  * Emit `@wordpress/block-library`'s FRONT-END stylesheet as a standalone,
@@ -107,8 +108,44 @@ function repairSelectionHack() {
 	};
 }
 
+/**
+ * Emit the preset colour stylesheet (Issue #181) as a standalone, stably
+ *     named CSS file in the build output.
+ *
+ *     When a preset colour is chosen the block editor stores the preset
+ *     slug and applies a `has-<slug>-color` class -- it does not write an
+ *     inline colour. WordPress core resolves those classes with CSS it
+ *     generates from theme.json; this core-less editor generates none, so
+ *     a preset pick was stored but never rendered. `buildPresetColorCss`
+ *     (src/palette.js) returns that missing stylesheet from the one
+ *     palette array, and this plugin writes it to the build output as
+ *     `block-presets.css`, a fixed filename.
+ *
+ *     A fixed name (no content hash) is used deliberately: editor.php and
+ *     src/index.php link this file with hard-coded paths and have no
+ *     manifest lookup -- the same arrangement as block-library.css above.
+ * @return {import('vite').Plugin} The Vite plugin.
+ */
+function emitBlockPresetCss() {
+	return {
+		name: 'emit-block-preset-css',
+		generateBundle() {
+			this.emitFile( {
+				type: 'asset',
+				fileName: 'block-presets.css',
+				source: buildPresetColorCss(),
+			} );
+		},
+	};
+}
+
 export default defineConfig( {
-	plugins: [ react(), repairSelectionHack(), emitBlockLibraryFrontEndCss() ],
+	plugins: [
+		react(),
+		repairSelectionHack(),
+		emitBlockLibraryFrontEndCss(),
+		emitBlockPresetCss(),
+	],
 	define: {
 		// @wordpress/* packages branch on process.env.NODE_ENV; provide it.
 		'process.env.NODE_ENV': JSON.stringify( 'production' ),
