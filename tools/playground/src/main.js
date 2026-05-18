@@ -44,6 +44,33 @@ const DB_PATH = '/tmp/071-now.sqlite';
 //     restores its contents (Issue #124).
 const UPLOADS_DIR = `${ DOCROOT }/wp-content/uploads`;
 
+// The PHP upload size limits the playground's php.ini must set
+//     (Issue #178).
+//
+//     The playground writes its own /internal/shared/php.ini (see
+//     bootPhpWasm), which fully REPLACES php-wasm's default ini. The
+//     default ini raised upload_max_filesize / post_max_size to 2000M;
+//     an ini that omits them lets PHP fall back to its compiled-in
+//     defaults -- upload_max_filesize 2M, post_max_size 8M. WordPress
+//     0.71's b2config.php allows uploads up to $fileupload_maxk (16 MB),
+//     so an iPhone photo (HEIC ~2-5 MB, or the JPEG iOS transcodes a
+//     HEIC to on upload, often 5-15 MB) silently failed: PHP rejected
+//     the file with UPLOAD_ERR_INI_SIZE above 2 MB, or discarded $_FILES
+//     entirely above the 8 MB post_max_size. The block editor's upload
+//     then errored or hung. PC uploads "worked" only because they used
+//     small test images. These limits restore a headroom above
+//     $fileupload_maxk so a real phone photo uploads; multipart overhead
+//     means post_max_size must exceed upload_max_filesize.
+const PHP_UPLOAD_MAX_FILESIZE = '64M';
+const PHP_POST_MAX_SIZE = '80M';
+
+// The PHP memory_limit the playground's php.ini must set (Issue #178).
+//     The php.ini the playground writes replaces php-wasm's default,
+//     which set memory_limit=256M; restoring it here keeps the heap
+//     headroom php-wasm intends, so a multi-megabyte upload does not
+//     exhaust memory mid-request.
+const PHP_MEMORY_LIMIT = '256M';
+
 // The blog's configured $siteurl (src/b2config.php). 0.71 hard-codes
 //     absolute asset URLs and internal links against it.
 const BLOG_SITEURL = 'http://localhost:8080';
@@ -360,12 +387,24 @@ async function bootPhpWasm() {
 	//     SQLite database is seeded before WordPress 0.71's index.php
 	//     runs. error_reporting is trimmed: 0.71 is 2003-era code and
 	//     would otherwise drown the page in deprecation notices.
+	//
+	//     This file fully REPLACES php-wasm's default php.ini, so every
+	//     directive the upload path relies on must be set here -- the
+	//     upload size limits and memory_limit included. Omitting the
+	//     upload limits would let PHP fall back to its compiled-in
+	//     defaults (upload_max_filesize 2M, post_max_size 8M) and reject
+	//     any photo bigger than 2 MB (Issue #178).
 	php.writeFile(
 		'/internal/shared/php.ini',
 		[
 			`auto_prepend_file=${ DOCROOT }/b2-include/071-now-boot.php`,
 			'display_errors=1',
 			'error_reporting=E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING',
+			// Upload size limits -- without these PHP would reject any
+			//     upload above its 2M compiled default (Issue #178).
+			`upload_max_filesize=${ PHP_UPLOAD_MAX_FILESIZE }`,
+			`post_max_size=${ PHP_POST_MAX_SIZE }`,
+			`memory_limit=${ PHP_MEMORY_LIMIT }`,
 		].join( '\n' )
 	);
 
