@@ -955,7 +955,7 @@ async function boot() {
 
 	if ( frontPage.httpStatusCode === 200 ) {
 		setStatus(
-			`WordPress 0.71 served in-browser; database and uploads persisted via ${ persistence.backend }.`,
+			`ready — database and uploads persist via ${ persistence.backend }.`,
 			'ok'
 		);
 	}

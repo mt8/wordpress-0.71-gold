@@ -36,6 +36,15 @@
 			#chrome a { color: #72aee6; font-size: 12px; text-decoration: none; }
 			#chrome a:hover { text-decoration: underline; }
 			#chrome .spacer { flex: 1; }
+			/*
+			 * On a narrow (phone) viewport the descriptive tagline is
+			 *     dropped so the chrome stays one tidy line -- the
+			 *     "071-now" name and the repository link. The boot-status
+			 *     line and the loading splash already state what runs.
+			 */
+			@media (max-width: 600px) {
+				#chrome .tagline { display: none; }
+			}
 
 			#toolbar {
 				display: flex; align-items: center; gap: 12px;
