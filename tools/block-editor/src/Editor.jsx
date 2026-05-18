@@ -10,7 +10,12 @@
  *     post_content into a block tree, and saves the serialized block markup
  *     plus the status / category back through save.php.
  */
-import { useState, useEffect, useCallback } from '@wordpress/element';
+import {
+	useState,
+	useEffect,
+	useCallback,
+	useMemo,
+} from '@wordpress/element';
 import { parse, serialize } from '@wordpress/blocks';
 import {
 	BlockEditorProvider,
@@ -39,8 +44,171 @@ import {
 import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
+// The longest edge, in pixels, an uploaded image is downscaled to
+//     before it is sent to the server (Issue #178). A full-resolution
+//     phone photo is often 12 MP or more; sending it untouched pushes a
+//     many-megabyte body through the service-worker upload path and the
+//     php-wasm runtime, which on iOS WebKit -- with its tighter memory
+//     limits -- can stall. WordPress 0.71's theme renders images far
+//     smaller than this, so capping the long edge here loses nothing
+//     visible while keeping the upload well within budget. 0 would mean
+//     "do not downscale"; 2048 keeps a generous editing resolution.
+const MAX_IMAGE_EDGE = 2048;
+
+// The JPEG quality (0..1) used when an image is re-encoded client-side
+//     -- both the HEIC -> JPEG conversion and the downscale path
+//     (Issue #178). 0.82 is visually lossless for web display while
+//     keeping the encoded file small.
+const JPEG_QUALITY = 0.82;
+
 /**
- * Settings handed to BlockEditorProvider.
+ * Whether a picked file looks like a HEIC / HEIF image (Issue #178).
+ *
+ *     iOS cameras save photos as HEIC by default, so the iOS photo
+ *     picker hands the editor a `.heic` (or `.heif`) file. WordPress
+ *     0.71 cannot display HEIC, and its upload allow-list is jpg / gif /
+ *     png, so a HEIC upload is rejected server-side. The file is
+ *     therefore converted to JPEG in the browser before upload (see
+ *     `prepareImageForUpload`). iOS Safari sometimes reports an empty
+ *     `file.type` for a HEIC pick, so the file name is checked too.
+ *
+ * @param {File} file The picked file.
+ * @return {boolean} True when the file looks like HEIC / HEIF.
+ */
+function isHeic( file ) {
+	const type = ( file.type || '' ).toLowerCase();
+	if ( type === 'image/heic' || type === 'image/heif' ) {
+		return true;
+	}
+	return /\.(heic|heif)$/i.test( file.name || '' );
+}
+
+/**
+ * Decode an image file to a bitmap, falling back to an <img> element.
+ *
+ *     `createImageBitmap` is the fast path, but not every engine can
+ *     decode every format through it; loading the file into an <img>
+ *     via an object URL is the broadly supported fallback. The result
+ *     carries `width` / `height` so the caller can size a canvas.
+ *
+ * @param {File} file The image file to decode.
+ * @return {Promise<CanvasImageSource & {width:number,height:number}>}
+ *         The decoded image source.
+ */
+async function decodeImage( file ) {
+	if ( typeof createImageBitmap === 'function' ) {
+		try {
+			return await createImageBitmap( file );
+		} catch {
+			// Fall through to the <img> decode below.
+		}
+	}
+	const url = URL.createObjectURL( file );
+	try {
+		const img = new Image();
+		img.decoding = 'async';
+		img.src = url;
+		await img.decode();
+		return img;
+	} finally {
+		URL.revokeObjectURL( url );
+	}
+}
+
+/**
+ * Prepare a picked image file for upload (Issue #178).
+ *
+ *     Two iOS-specific problems are handled here, in the browser, before
+ *     the file reaches the server:
+ *
+ *       - HEIC photos. iOS saves photos as HEIC, which WordPress 0.71
+ *         cannot display and the upload allow-list rejects. A HEIC file
+ *         is re-encoded to JPEG.
+ *       - Large photos. A full-resolution phone photo is many megabytes;
+ *         pushing it untouched through the upload path can exhaust
+ *         memory on iOS WebKit. An image whose long edge exceeds
+ *         MAX_IMAGE_EDGE is downscaled.
+ *
+ *     A non-image file, or an image that is already small enough and not
+ *     HEIC, is returned unchanged so nothing the old path accepted is
+ *     regressed. When the browser cannot decode the file (a desktop
+ *     engine handed a HEIC it has no codec for) the original file is
+ *     returned and the server's own validation reports a clear error --
+ *     better than a silent failure.
+ *
+ * @param {File} file The picked file.
+ * @return {Promise<File>} The file to upload -- converted / downscaled,
+ *                         or the original when no change is needed.
+ */
+async function prepareImageForUpload( file ) {
+	const looksLikeImage =
+		( file.type || '' ).startsWith( 'image/' ) || isHeic( file );
+	if ( ! looksLikeImage ) {
+		return file;
+	}
+
+	const heic = isHeic( file );
+	let source;
+	try {
+		source = await decodeImage( file );
+	} catch {
+		// The browser has no codec for this file (e.g. a desktop engine
+		//     and a HEIC). Leave it to the server to reject clearly.
+		return file;
+	}
+
+	const longEdge = Math.max( source.width, source.height );
+	const scale =
+		longEdge > MAX_IMAGE_EDGE ? MAX_IMAGE_EDGE / longEdge : 1;
+
+	// Nothing to do -- already a small enough non-HEIC image.
+	if ( ! heic && scale === 1 ) {
+		return file;
+	}
+
+	const canvas = document.createElement( 'canvas' );
+	canvas.width = Math.max( 1, Math.round( source.width * scale ) );
+	canvas.height = Math.max( 1, Math.round( source.height * scale ) );
+	const context = canvas.getContext( '2d' );
+	context.drawImage( source, 0, 0, canvas.width, canvas.height );
+
+	const blob = await new Promise( ( resolve ) =>
+		canvas.toBlob( resolve, 'image/jpeg', JPEG_QUALITY )
+	);
+	if ( ! blob ) {
+		// The canvas could not be encoded -- fall back to the original.
+		return file;
+	}
+
+	// Give the converted file a .jpg name so the server allow-list
+	//     (jpg / gif / png) accepts it; a HEIC keeps no usable extension.
+	const baseName = ( file.name || 'image' ).replace(
+		/\.(heic|heif|jpe?g|png|gif)$/i,
+		''
+	);
+	return new File( [ blob ], `${ baseName }.jpg`, {
+		type: 'image/jpeg',
+		lastModified: Date.now(),
+	} );
+}
+
+// Human-readable messages for the error codes api/upload.php returns,
+//     so a failed upload shows a clear cause instead of a raw code or an
+//     indefinite spinner (Issue #178).
+const UPLOAD_ERROR_MESSAGES = {
+	fileupload_disabled: 'Image upload is disabled in the blog configuration.',
+	no_file: 'No image was received by the server.',
+	upload_failed: 'The image could not be uploaded.',
+	file_too_large: 'The image is too large to upload.',
+	invalid_file_name: 'The image file name is not valid.',
+	disallowed_type: 'That image type is not allowed (use JPG, PNG or GIF).',
+	invalid_destination: 'The server could not store the image.',
+	move_failed: 'The server could not store the image.',
+	method_not_allowed: 'The upload request was rejected by the server.',
+};
+
+/**
+ * Editor feature flags handed to BlockEditorProvider.
  *
  *     A block's toolbar / inspector controls for typography, colour, spacing,
  *     etc. are gated behind editor "settings" -- `useSettings()` reads them
@@ -54,30 +222,94 @@ import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
  *     common appearance controls; `typography.textAlign` is what makes the
  *     paragraph's Align-text control appear in the floating toolbar.
  */
-const EDITOR_SETTINGS = {
-	// hasFixedToolbar=false keeps the floating per-block toolbar.
-	hasFixedToolbar: false,
-	// mediaUpload is the integration seam @wordpress/block-editor uses for
-	//     uploads. The Image / Gallery / Cover blocks call it instead of
-	//     hard-coding the REST API (WordPress 0.71 has none). Each file is
-	//     POSTed as multipart/form-data to the api/upload.php JSON endpoint --
-	//     a sibling of load.php / save.php, so it is reached at the relative
-	//     URL 'upload.php' just like editor.php's loadEndpoint / saveEndpoint
-	//     defaults. The endpoint replies { id, url, alt }; onFileChange is
-	//     called with the resulting media objects so the Image block's upload
-	//     button works. credentials:'include' carries 0.71's auth cookies.
-	mediaUpload( { filesList, allowedTypes, onFileChange, onError } ) {
+const EDITOR_FEATURES = {
+	appearanceTools: true,
+	typography: {
+		textAlign: true,
+		fontStyle: true,
+		fontWeight: true,
+		lineHeight: true,
+		textDecoration: true,
+	},
+	color: {
+		text: true,
+		background: true,
+		link: true,
+	},
+	spacing: {
+		margin: true,
+		padding: true,
+	},
+};
+
+/**
+ * Build the `mediaUpload` integration the block editor uses for uploads.
+ *
+ *     mediaUpload is the integration seam @wordpress/block-editor uses for
+ *     uploads. The Image / Gallery / Cover blocks call it instead of
+ *     hard-coding the REST API (WordPress 0.71 has none). Each file is
+ *     POSTed as multipart/form-data to the api/upload.php JSON endpoint --
+ *     a sibling of load.php / save.php, so it is reached at the relative
+ *     URL 'upload.php' just like editor.php's loadEndpoint / saveEndpoint
+ *     defaults. The endpoint replies { id, url, alt }; onFileChange is
+ *     called with the resulting media objects so the Image block's upload
+ *     button works. credentials:'include' carries 0.71's auth cookies.
+ *
+ *     `reportUploadError` is called with a human-readable message when an
+ *     upload fails. The block-library Image block routes mediaUpload's
+ *     onError into a notice store this standalone editor does not render,
+ *     so without this an upload failure would vanish silently -- the
+ *     Image block placeholder just sits there, which is exactly the
+ *     "upload freezes" symptom Issue #178 reports. Surfacing the message
+ *     in the editor's own notice banner turns that silent hang into a
+ *     clear, fast error.
+ *
+ * @param {(message: string) => void} reportUploadError Editor-level
+ *        error reporter (shows the editor's notice banner).
+ * @return {(options: Object) => void} The mediaUpload function.
+ */
+function createMediaUpload( reportUploadError ) {
+	return function mediaUpload( {
+		filesList,
+		allowedTypes,
+		onFileChange,
+		onError,
+	} ) {
 		const files = Array.from( filesList || [] );
 		if ( files.length === 0 ) {
 			return;
 		}
 
+		// Report an upload failure both to the block (so it clears its
+		//     placeholder spinner) and to the editor banner (so the user
+		//     actually sees the cause) -- Issue #178.
+		const failUpload = ( file, message ) => {
+			if ( onError ) {
+				onError( { code: 'GENERAL', file, message } );
+			}
+			reportUploadError( message );
+		};
+
 		// Optional client-side type pre-filter. allowedTypes is a list of
 		//     MIME types or top-level types (e.g. 'image'); the server still
 		//     enforces its own allow-list, this is only for a fast UX reject.
+		//
+		//     An empty file.type is NOT treated as a rejection: iOS Safari
+		//     reports an empty type for some picks -- a HEIC photo in
+		//     particular -- and dropping those silently was one cause of an
+		//     iPhone upload that never completes (Issue #178). A HEIC file
+		//     is recognised by name and allowed through here; it is
+		//     converted to JPEG before upload (see prepareImageForUpload).
 		const typeAllowed = ( file ) => {
 			if ( ! allowedTypes || allowedTypes.length === 0 ) {
 				return true;
+			}
+			if ( ! file.type ) {
+				// Unknown type -- let an image-by-name (e.g. iOS HEIC)
+				//     through and leave the final say to the server.
+				return /\.(jpe?g|png|gif|heic|heif|webp|avif)$/i.test(
+					file.name || ''
+				);
 			}
 			return allowedTypes.some( ( type ) =>
 				type.includes( '/' )
@@ -97,10 +329,15 @@ const EDITOR_SETTINGS = {
 				.then( ( res ) =>
 					res.json().then( ( data ) => {
 						if ( ! res.ok ) {
+							// Map the endpoint's error code to a clear
+							//     message; fall back to the raw code / HTTP
+							//     status when it is unrecognised.
+							const code = data && data.error;
 							throw new Error(
-								data && data.error
-									? data.error
-									: `upload failed: HTTP ${ res.status }`
+								( code &&
+									UPLOAD_ERROR_MESSAGES[ code ] ) ||
+									code ||
+									`Upload failed (HTTP ${ res.status }).`
 							);
 						}
 						return data;
@@ -115,52 +352,29 @@ const EDITOR_SETTINGS = {
 
 		files.forEach( ( file ) => {
 			if ( ! typeAllowed( file ) ) {
-				if ( onError ) {
-					onError( {
-						code: 'MIME_TYPE_NOT_ALLOWED_FOR_USER',
-						file,
-						message: `${ file.name }: file type not allowed.`,
-					} );
-				}
+				failUpload(
+					file,
+					`${ file.name }: that file type is not allowed.`
+				);
 				return;
 			}
-			uploadOne( file )
+			// Convert HEIC to JPEG and downscale an oversized photo
+			//     before upload, so an iPhone photo reaches the server in
+			//     a format it accepts and a size it can handle
+			//     (Issue #178).
+			prepareImageForUpload( file )
+				.then( ( prepared ) => uploadOne( prepared ) )
 				.then( ( media ) => {
 					if ( onFileChange ) {
 						onFileChange( [ media ] );
 					}
 				} )
 				.catch( ( err ) => {
-					if ( onError ) {
-						onError( {
-							code: 'GENERAL',
-							file,
-							message: String( err.message || err ),
-						} );
-					}
+					failUpload( file, String( err.message || err ) );
 				} );
 		} );
-	},
-	__experimentalFeatures: {
-		appearanceTools: true,
-		typography: {
-			textAlign: true,
-			fontStyle: true,
-			fontWeight: true,
-			lineHeight: true,
-			textDecoration: true,
-		},
-		color: {
-			text: true,
-			background: true,
-			link: true,
-		},
-		spacing: {
-			margin: true,
-			padding: true,
-		},
-	},
-};
+	};
+}
 
 /**
  * The post-status options offered by 0.71's own editor (b2edit.form.php).
@@ -199,6 +413,25 @@ export function Editor( { config } ) {
 	//     matching the modern WordPress editor where the list view is hidden
 	//     until the user opens it from the header.
 	const [ showOverview, setShowOverview ] = useState( false );
+
+	// Settings for BlockEditorProvider. The mediaUpload integration is
+	//     built here -- not as a module constant -- so an upload failure
+	//     can be surfaced in the editor's own notice banner (setMessage /
+	//     setStatus). Without that, a failed image upload would be
+	//     swallowed by the block-library notice store this editor does
+	//     not render, leaving the Image block looking frozen (Issue #178).
+	const editorSettings = useMemo(
+		() => ( {
+			// hasFixedToolbar=false keeps the floating per-block toolbar.
+			hasFixedToolbar: false,
+			mediaUpload: createMediaUpload( ( uploadMessage ) => {
+				setStatus( 'error' );
+				setMessage( `Image upload failed: ${ uploadMessage }` );
+			} ),
+			__experimentalFeatures: EDITOR_FEATURES,
+		} ),
+		[]
+	);
 
 	// Load the post once on mount. In Issue #96's new-post mode config.postId
 	//     is 0, and load.php answers with an empty post shape (blank title /
@@ -324,7 +557,7 @@ export function Editor( { config } ) {
 					value={ blocks }
 					onInput={ setBlocks }
 					onChange={ setBlocks }
-					settings={ EDITOR_SETTINGS }
+					settings={ editorSettings }
 				>
 					<div className="be-app">
 						<header className="be-toolbar">
