@@ -20,6 +20,13 @@ export const COMMANDS = {
 };
 
 /**
+ * The flags that turn on verbose mode, where 071-env streams the raw
+ *     underlying `docker compose` output instead of its own curated summary.
+ *     Both `--debug` and `--verbose` are accepted.
+ */
+export const DEBUG_FLAGS = [ '--debug', '--verbose' ];
+
+/**
  * Parse the raw argv (excluding `node` and the script path) into a
  *     structured command.
  *
@@ -29,26 +36,62 @@ export const COMMANDS = {
  *     example `071-env run cli --help`) is left in `args` so it can be passed
  *     through to the underlying tool.
  *
+ *     `--debug` / `--verbose` before the command (`071-env --debug start`)
+ *     sets the `debug` flag and is stripped from the result. The same flag
+ *     directly after the command (`071-env start --debug`) is also honoured
+ *     and stripped. A `--debug` deeper in a `run` argument list is left in
+ *     place so it can be forwarded to the underlying tool.
+ *
  * @param {string[]} argv Raw argument vector, excluding node and script path.
- * @returns {{ command: string|null, args: string[], help: boolean }}
+ * @returns {{ command: string|null, args: string[], help: boolean,
+ *             debug: boolean }}
  */
 export function parseArgs( argv ) {
-	// No arguments at all -> show help.
-	if ( argv.length === 0 ) {
-		return { command: null, args: [], help: true };
+	// Strip a leading --debug / --verbose flag; remember it was present.
+	let debug = false;
+	const rest = [];
+	let stripping = true;
+	for ( const arg of argv ) {
+		if ( stripping && DEBUG_FLAGS.includes( arg ) ) {
+			debug = true;
+			continue;
+		}
+		// Stop stripping once a non-flag token (the command) is seen.
+		stripping = false;
+		rest.push( arg );
 	}
 
-	const first = argv[ 0 ];
+	// No arguments left -> show help.
+	if ( rest.length === 0 ) {
+		return { command: null, args: [], help: true, debug };
+	}
+
+	const first = rest[ 0 ];
 
 	// A help flag before any command -> show help.
 	if ( first === '-h' || first === '--help' || first === 'help' ) {
-		return { command: null, args: [], help: true };
+		return { command: null, args: [], help: true, debug };
+	}
+
+	const args = rest.slice( 1 );
+
+	// Honour a --debug / --verbose flag placed directly after the command
+	//     (`071-env start --debug`). For `run`, the flag is left in place so
+	//     it can be forwarded to the underlying tool.
+	if ( first !== 'run' ) {
+		for ( let i = args.length - 1; i >= 0; i-- ) {
+			if ( DEBUG_FLAGS.includes( args[ i ] ) ) {
+				debug = true;
+				args.splice( i, 1 );
+			}
+		}
 	}
 
 	return {
 		command: first,
-		args: argv.slice( 1 ),
+		args,
 		help: false,
+		debug,
 	};
 }
 
@@ -70,7 +113,7 @@ export function helpText() {
 		'071-env -- wp-env-style environment manager for WordPress 0.71-gold',
 		'',
 		'Usage:',
-		'  071-env <command> [arguments]',
+		'  071-env [--debug] <command> [arguments]',
 		'',
 		'Commands:',
 	];
@@ -81,8 +124,12 @@ export function helpText() {
 
 	lines.push(
 		'',
+		'Options:',
+		'  --debug, --verbose            Show the full underlying `docker compose` output',
+		'',
 		'Examples:',
 		'  071-env start                 Build and start the containers',
+		'  071-env --debug start         Start, showing the full Docker build output',
 		'  071-env run cli post list     Run `071 post list` inside the web container',
 		'  071-env run php -v            Run an arbitrary command in the web container',
 		'  071-env logs web              Follow the web service logs',

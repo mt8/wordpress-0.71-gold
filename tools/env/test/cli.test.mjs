@@ -13,6 +13,7 @@ test( 'parseArgs: no arguments requests help', () => {
 	assert.equal( result.command, null );
 	assert.deepEqual( result.args, [] );
 	assert.equal( result.help, true );
+	assert.equal( result.debug, false );
 } );
 
 test( 'parseArgs: -h / --help / help before a command request help', () => {
@@ -28,6 +29,42 @@ test( 'parseArgs: a bare command parses with no args', () => {
 	assert.equal( result.command, 'start' );
 	assert.deepEqual( result.args, [] );
 	assert.equal( result.help, false );
+	assert.equal( result.debug, false );
+} );
+
+test( 'parseArgs: --debug before the command sets debug and is stripped', () => {
+	const result = parseArgs( [ '--debug', 'start' ] );
+	assert.equal( result.command, 'start' );
+	assert.deepEqual( result.args, [] );
+	assert.equal( result.debug, true );
+} );
+
+test( 'parseArgs: --verbose is accepted as an alias of --debug', () => {
+	const result = parseArgs( [ '--verbose', 'status' ] );
+	assert.equal( result.command, 'status' );
+	assert.equal( result.debug, true );
+} );
+
+test( 'parseArgs: --debug after the command sets debug and is stripped', () => {
+	const result = parseArgs( [ 'start', '--debug' ] );
+	assert.equal( result.command, 'start' );
+	assert.deepEqual( result.args, [] );
+	assert.equal( result.debug, true );
+} );
+
+test( 'parseArgs: --debug inside `run` args is forwarded, not consumed', () => {
+	// `071-env run php --debug` should forward `--debug` to the command.
+	const result = parseArgs( [ 'run', 'php', '--debug' ] );
+	assert.equal( result.command, 'run' );
+	assert.deepEqual( result.args, [ 'php', '--debug' ] );
+	assert.equal( result.debug, false );
+} );
+
+test( 'parseArgs: a leading --debug before `run` still sets debug', () => {
+	const result = parseArgs( [ '--debug', 'run', 'php', '-v' ] );
+	assert.equal( result.command, 'run' );
+	assert.deepEqual( result.args, [ 'php', '-v' ] );
+	assert.equal( result.debug, true );
 } );
 
 test( 'parseArgs: a command keeps its trailing arguments in order', () => {
@@ -80,4 +117,10 @@ test( 'helpText: mentions usage and every command', () => {
 	for ( const name of Object.keys( COMMANDS ) ) {
 		assert.match( text, new RegExp( name ), `help text should mention ${ name }` );
 	}
+} );
+
+test( 'helpText: documents the --debug flag', () => {
+	const text = helpText();
+	assert.match( text, /--debug/ );
+	assert.match( text, /--verbose/ );
 } );

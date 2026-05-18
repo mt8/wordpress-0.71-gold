@@ -107,7 +107,9 @@ export function buildComposeArgs( command, args = [], extraFiles = [] ) {
 			return [ ...prefix, 'down', '-v' ];
 
 		case 'status':
-			return [ ...prefix, 'ps' ];
+			// `-a` includes stopped containers, so `071-env status` can tell
+			//     a stopped stack apart from one that was never created.
+			return [ ...prefix, 'ps', '-a' ];
 
 		case 'logs': {
 			// Follow logs; an optional service name narrows the output.
