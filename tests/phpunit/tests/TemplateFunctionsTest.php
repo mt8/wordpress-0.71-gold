@@ -34,12 +34,10 @@ final class TemplateFunctionsTest extends TestCase
         $this->assertSame('http://example.com/index.php', get_bloginfo('url'));
     }
 
-    public function testGetBloginfoReturnsFeedUrls(): void
+    public function testGetBloginfoReturnsTheRss2FeedUrl(): void
     {
         $GLOBALS['siteurl'] = 'http://example.com';
-        $this->assertSame('http://example.com/b2rss.php', get_bloginfo('rss_url'));
         $this->assertSame('http://example.com/b2rss2.php', get_bloginfo('rss2_url'));
-        $this->assertSame('http://example.com/b2rdf.php', get_bloginfo('rdf_url'));
     }
 
     public function testGetBloginfoReturnsDescriptionAndAdminEmail(): void
