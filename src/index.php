@@ -22,7 +22,6 @@ require $abspath . 'wp-links/links.php';
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" />
 
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
-	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo( 'rdf_url' ); ?>" />
 	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo( 'rss2_url' ); ?>" />
 </head>
 
@@ -87,8 +86,6 @@ if ( $posts ) {
 </li>
 <li>Meta:
 	<ul>
-		<li><a href="b2rss.php">RSS .92</a></li>
-		<li><a href="b2rdf.php">RDF 1.0</a></li>
 		<li><a href="b2rss2.php">RSS 2.0</a></li>
 		<li><a href="http://validator.w3.org/check/referer" title="This page validates as XHTML 1.0 Transitional">Valid <abbr title="eXtensible HyperText Markup Language">XHTML</abbr></a></li>
 		<li><a href="http://wordpress.org" title="Powered by WordPress, personal publishing platform">WP</a></li>

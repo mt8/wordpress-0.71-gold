@@ -45,14 +45,8 @@ function cli_export_static_name( string $rel, array $asset_extensions ): ?string
 	if ( preg_match( '~^(?:index\.php)?\?m=(\d+)$~', $rel, $m ) ) {
 		return 'm-' . $m[1] . '.html';
 	}
-	if ( 'b2rss.php' === $rel ) {
-		return 'rss.xml';
-	}
 	if ( 'b2rss2.php' === $rel ) {
 		return 'rss2.xml';
-	}
-	if ( 'b2rdf.php' === $rel ) {
-		return 'rdf.xml';
 	}
 
 	// a plain static asset is exported under its own path. parse_url() is
@@ -182,12 +176,8 @@ function cli_export_rewrite( string $body, string $blog_url ): string {
 	// strip the blog host from every remaining absolute URL.
 	$body = str_replace( array( $blog_url . '/', $blog_url ), '', $body );
 
-	// feeds.
-	$body = str_replace(
-		array( 'b2rss2.php', 'b2rdf.php', 'b2rss.php' ),
-		array( 'rss2.xml', 'rdf.xml', 'rss.xml' ),
-		$body
-	);
+	// feed.
+	$body = str_replace( 'b2rss2.php', 'rss2.xml', $body );
 
 	// query-string permalinks -> static filenames (with or without index.php).
 	$body = preg_replace( '~index\.php\?p=(\d+)~', 'p-$1.html', $body );
@@ -291,7 +281,7 @@ function cli_export_run( array $flags ): int {
 	// crawl. $done / $pages / $assets are keyed by the static target
 	//     filename, so a page reached via several URL forms (?p=5 and
 	//     index.php?p=5) is fetched and written exactly once.
-	$queue   = array( 'index.php', 'b2rss.php', 'b2rss2.php', 'b2rdf.php' );
+	$queue   = array( 'index.php', 'b2rss2.php' );
 	$done    = array();
 	$pages   = array();
 	$assets  = array();
