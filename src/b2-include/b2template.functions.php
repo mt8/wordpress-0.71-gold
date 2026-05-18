@@ -48,12 +48,6 @@ function get_bloginfo( $show = '' ) {
 		case 'description':
 			$output = $blogdescription;
 			break;
-		case 'rdf_url':
-			$output = $siteurl . '/b2rdf.php';
-			break;
-		case 'rss_url':
-			$output = $siteurl . '/b2rss.php';
-			break;
 		case 'rss2_url':
 			$output = $siteurl . '/b2rss2.php';
 			break;
@@ -1034,7 +1028,7 @@ function permalink_single( $file = '' ) {
 	echo $file . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'more' . $querystring_equal . '1' . $querystring_separator . 'c' . $querystring_equal . '1';
 }
 
-function permalink_single_rss( $file = 'b2rss.php' ) {
+function permalink_single_rss() {
 	global $id, $pagenow, $siteurl, $blogfilename;
 	global $querystring_start, $querystring_equal, $querystring_separator;
 		echo $siteurl . '/' . $blogfilename . $querystring_start . 'p' . $querystring_equal . $id . $querystring_separator . 'c' . $querystring_equal . '1';

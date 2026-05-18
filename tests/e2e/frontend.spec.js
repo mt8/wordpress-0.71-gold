@@ -10,8 +10,8 @@ const {
 /**
  * Front-end E2E specs for WordPress 0.71-gold.
  * Covers the home page, a single post (`?p=`), a category page (`?cat=`),
- * a monthly archive (`?m=`) and the three feeds (RSS .92 / RDF 1.0 /
- * RSS 2.0). Every page is checked for the absence of PHP error output.
+ * a monthly archive (`?m=`) and the RSS 2.0 feed. Every page is checked
+ * for the absence of PHP error output.
  */
 
 // Seeded fixtures shared by the front-end specs.
@@ -85,26 +85,6 @@ test.describe( 'Front end', () => {
 			page.locator( 'h3.storytitle', { hasText: fixture.postTitle } )
 		).toBeVisible();
 		await expectNoPhpErrors( page );
-	} );
-
-	test( 'RSS .92 feed (b2rss.php) is valid XML without PHP errors', async ( {
-		page,
-	} ) => {
-		const response = await page.goto( '/b2rss.php' );
-		expect( response?.status() ).toBe( 200 );
-		const body = ( await response?.text() ) || '';
-		expect( body ).toContain( '<rss' );
-		expectNoPhpErrorsInText( body, '/b2rss.php' );
-	} );
-
-	test( 'RDF 1.0 feed (b2rdf.php) is valid XML without PHP errors', async ( {
-		page,
-	} ) => {
-		const response = await page.goto( '/b2rdf.php' );
-		expect( response?.status() ).toBe( 200 );
-		const body = ( await response?.text() ) || '';
-		expect( body ).toContain( 'rdf:RDF' );
-		expectNoPhpErrorsInText( body, '/b2rdf.php' );
 	} );
 
 	test( 'RSS 2.0 feed (b2rss2.php) is valid XML without PHP errors', async ( {

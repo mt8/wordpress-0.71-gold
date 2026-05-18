@@ -142,8 +142,8 @@ $fileupload_allowedusers = '';
 
 // ** RSS syndication options **
 
-// these options are used by b2rdf.php (1.0), b2rss.php (0.92), and b2rss2.php (2.0)
-//  note: if you don't want to syndicate your news, you can delete these files
+// these options are used by b2rss2.php (RSS 2.0)
+//  note: if you don't want to syndicate your news, you can delete that file
 
 // number of last posts to syndicate
 $posts_per_rss = 10;
@@ -151,11 +151,11 @@ $posts_per_rss = 10;
 // the language of your blog ( see this: http://backend.userland.com/stories/storyReader$16 )
 $rss_language = 'en';
 
-// for b2rss.php: allow encoded HTML in <description> tag? 1=yes, 0=no
+// allow encoded HTML in <description> tag? 1=yes, 0=no
 $rss_encoded_html = 0;
 
 // length (in words) of excerpts in the RSS feed? 0=unlimited
-//  note: in b2rss.php, this will be set to 0 if you use encoded HTML
+//  note: this will be set to 0 if you use encoded HTML
 $rss_excerpt_length = 50;
 //use the excerpt field for rss feed.
 $rss_use_excerpt = 1;

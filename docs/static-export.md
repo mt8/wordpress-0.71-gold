@@ -40,7 +40,7 @@ The export is a **read-only HTTP crawl** of the running blog — it never
 touches the database. It crawls the running local blog and:
 
 - exports the home page, every post (`?p=`), every category (`?cat=`), every
-  monthly archive (`?m=`), and the three feeds;
+  monthly archive (`?m=`), and the RSS 2.0 feed;
 - rewrites every internal link to a self-contained static path and strips the
   blog host, so the result works from any public URL;
 - copies the referenced CSS and images;
@@ -58,7 +58,7 @@ touches the database. It crawls the running local blog and:
 | `index.php?p=N` | `p-N.html` |
 | `index.php?cat=N` | `cat-N.html` |
 | `index.php?m=YYYYMM` | `m-YYYYMM.html` |
-| `b2rss.php` / `b2rss2.php` / `b2rdf.php` | `rss.xml` / `rss2.xml` / `rdf.xml` |
+| `b2rss2.php` | `rss2.xml` |
 | CSS / images | copied under their own path |
 
 ## Deployment
@@ -72,7 +72,7 @@ storage, a CDN, GitHub Pages, a plain web server, …). Nothing else is needed.
 - Admin / login pages (`b2login.php`, `b2register.php`, `wp-admin/`) are
   deliberately not exported. Theme links pointing at them become dead links
   on the static site — harmless, but a custom theme can omit them.
-- The exported feeds have their internal links relativised; they are a static
+- The exported feed has its internal links relativised; it is a static
   archive snapshot rather than a live feed.
 - `071 export` exits with a non-zero status and a plain-text error if the blog
   is unreachable (start the local environment first).
@@ -130,7 +130,7 @@ npx 071-env start               # the local blog must be running
 データベースには一切触れない。稼働中のローカルブログをクロールし:
 
 - トップページ・全投稿(`?p=`)・全カテゴリ(`?cat=`)・全月別アーカイブ
-  (`?m=`)・3 つのフィードを書き出す;
+  (`?m=`)・RSS 2.0 フィードを書き出す;
 - 内部リンクをすべて自己完結した静的パスへ書き換え、ブログホストを除去する
   ため、結果はどの公開 URL からでも動作する;
 - 参照される CSS と画像をコピーする;
@@ -148,7 +148,7 @@ npx 071-env start               # the local blog must be running
 | `index.php?p=N` | `p-N.html` |
 | `index.php?cat=N` | `cat-N.html` |
 | `index.php?m=YYYYMM` | `m-YYYYMM.html` |
-| `b2rss.php` / `b2rss2.php` / `b2rdf.php` | `rss.xml` / `rss2.xml` / `rdf.xml` |
+| `b2rss2.php` | `rss2.xml` |
 | CSS / images | 同じパスでコピー |
 
 ## 公開
