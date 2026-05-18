@@ -125,9 +125,10 @@ real WordPress install the colour presets come from `theme.json` on the
 server, and this core-less editor has none. So the block **Color** panel and
 the paragraph's inline **Highlight** format showed no swatches (Issue #181).
 
-`Editor.jsx` supplies the palette directly instead. The twelve WordPress-core
-default colours are declared as `WP_DEFAULT_COLOR_PALETTE` and fed to the
-editor two ways, because the editor reads colours from two places:
+The editor supplies the palette directly instead. The twelve WordPress-core
+default colours live in `src/palette.js` as `WP_DEFAULT_COLOR_PALETTE`;
+`Editor.jsx` feeds them to the editor two ways, because the editor reads
+colours from two places:
 
 - `EDITOR_FEATURES.color.palette` — the `theme.json`-style feature the block
   **Color** panel reads (`useHasColorPanel`). Without it the panel does not
@@ -141,6 +142,21 @@ editor two ways, because the editor reads colours from two places:
 `color.custom: true` keeps the custom-colour picker available alongside the
 presets. Adding a `theme.json` file would do nothing here — WordPress core
 reads `theme.json`, and there is no core in this build.
+
+Showing the swatches is only half of it. When a preset colour is chosen the
+block editor stores the preset **slug** and applies a `has-<slug>-color`
+class — it does **not** write an inline `color`. Those classes resolve to a
+colour only through CSS that a real WordPress install generates from
+`theme.json`. With none generated, a preset pick was *stored but never
+rendered*, while a custom (inline) colour worked.
+
+`src/palette.js`'s `buildPresetColorCss()` returns that missing stylesheet —
+the `--wp--preset--color--*` custom properties and the `has-*-color` utility
+classes, the shape WordPress core emits. A Vite plugin (`emitBlockPresetCss`
+in `vite.config.js`) writes it to the build output as `block-presets.css`, a
+fixed filename. `editor.php` links it for the editor canvas and
+`src/index.php` links it for the 0.71 front end, so a preset colour renders
+the same in the editor and on the published page.
 
 ## Build
 
@@ -354,9 +370,9 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 パネルと段落のインライン **ハイライト** フォーマットで色見本が表示され
 なかった(Issue #181)。
 
-代わりに `Editor.jsx` がパレットを直接供給する。WordPress コア標準の 12 色を
-`WP_DEFAULT_COLOR_PALETTE` として宣言し、エディタへ 2 通りで渡す。エディタは
-色を 2 か所から読むためである。
+代わりにエディタがパレットを直接供給する。WordPress コア標準の 12 色は
+`src/palette.js` の `WP_DEFAULT_COLOR_PALETTE` にあり、`Editor.jsx` が
+エディタへ 2 通りで渡す。エディタは色を 2 か所から読むためである。
 
 - `EDITOR_FEATURES.color.palette` — ブロックの **Color** パネル
   (`useHasColorPanel`)が読む `theme.json` 形式の機能。これがないとパネル
@@ -370,6 +386,21 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 `color.custom: true` により、プリセットと並んでカスタムカラーピッカーも
 利用できる。ここで `theme.json` ファイルを置いても効果はない —
 `theme.json` を読むのは WordPress コアであり、このビルドにはコアがない。
+
+色見本の表示はその半分にすぎない。プリセット色を選ぶと、ブロックエディタは
+プリセットの **スラッグ** を保存し `has-<slug>-color` クラスを付与する —
+インラインの `color` は**書かない**。これらのクラスが実際の色になるのは、
+本物の WordPress が `theme.json` から生成する CSS を通じてのみである。
+何も生成されないため、プリセットの選択は*保存されても描画されない*一方、
+カスタム（インライン）色は機能していた。
+
+`src/palette.js` の `buildPresetColorCss()` が、その欠けていたスタイルシート
+を返す — `--wp--preset--color--*` カスタムプロパティと `has-*-color`
+ユーティリティクラスで、WordPress コアが出力するのと同じ形である。Vite
+プラグイン（`vite.config.js` の `emitBlockPresetCss`）がそれをビルド出力へ
+固定名 `block-presets.css` で書き出す。`editor.php` がエディタキャンバス用に、
+`src/index.php` が 0.71 フロントエンド用にこれをリンクするため、プリセット色は
+エディタと公開ページで同じく描画される。
 
 ## ビルド
 
