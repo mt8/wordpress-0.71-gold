@@ -276,6 +276,10 @@ switch ( $action ) {
 							echo ', ';
 						}
 						echo "<a href='b2edit.php?action=edit&amp;post=$draft->ID' title='Edit this draft'>$draft->post_title</a>";
+						// Issue #185 -- also offer the block editor for each
+						// draft, mirroring the per-post "Block editor" link
+						// in b2edit.showposts.php.
+						echo " (<a href='../block-editor/api/editor.php?post=$draft->ID' title='Edit this draft in the block editor'>Block editor</a>)";
 						++$i;
 					}
 					?>
