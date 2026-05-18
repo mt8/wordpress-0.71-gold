@@ -176,6 +176,22 @@ real 0.71 schema, translated by the same code the live blog uses.
   IndexedDB, the counterpart of the database persistence layer — so an
   uploaded image survives a reload / tab close, and the reset clears the
   persisted media alongside the database.
+- **iOS image upload — fixed in Issue #178.** Uploading a photo from an
+  iPhone (iOS Safari / iOS Chrome, both WebKit) errored or froze, while
+  PC upload worked. Two causes were found. (1) `src/main.js` writes the
+  playground's own `/internal/shared/php.ini`, which fully replaces
+  php-wasm's default ini; that default raised `upload_max_filesize` /
+  `post_max_size` to 2000M, and the playground's ini omitted them, so
+  PHP fell back to its compiled defaults (`upload_max_filesize` 2M,
+  `post_max_size` 8M) and rejected any photo over 2 MB — a real phone
+  photo almost always exceeds that. `src/main.js` now sets the upload
+  limits and `memory_limit` explicitly. (2) iOS cameras save HEIC
+  photos, which WordPress 0.71 cannot display and the `jpg gif png`
+  allow-list rejects; the block editor's `mediaUpload`
+  (`tools/block-editor/src/Editor.jsx`) now converts HEIC to JPEG and
+  downscales an oversized photo in the browser before upload, and
+  surfaces a clear error in the editor's notice banner instead of
+  leaving the Image block looking frozen.
 - **Persistence — resolved in the full build, step 4 (Issue #122).**
   The spike's SQLite database lived only in the php-wasm virtual
   filesystem and was discarded when the tab closed, so the boot shim
@@ -416,6 +432,22 @@ WordPress 0.71 の SQL は実に小さい — これは設計セクション 5.2
   データベース永続化層の対応物 — ため、アップロード画像はリロード / タブ
   を閉じても残り、リセットは永続化メディアをデータベースと併せてクリア
   する。
+- **iOS の画像アップロード — Issue #178 で修正。** iPhone から写真を
+  アップロードすると(iOS Safari / iOS Chrome、どちらも WebKit)エラー
+  になるか固まり、PC では動作していた。原因は 2 つ。(1) `src/main.js`
+  は playground 独自の `/internal/shared/php.ini` を書き込み、php-wasm
+  の既定 ini を完全に置き換える。既定の ini は `upload_max_filesize` /
+  `post_max_size` を 2000M に引き上げていたが、playground の ini はそれ
+  を書いておらず、PHP はコンパイル時の既定値(`upload_max_filesize` 2M、
+  `post_max_size` 8M)にフォールバックして 2 MB を超える写真をすべて
+  拒否していた — 実機の写真はほぼ確実にこれを超える。`src/main.js` は
+  アップロード上限と `memory_limit` を明示的に設定するようにした。
+  (2) iOS のカメラは HEIC 写真を保存するが、WordPress 0.71 は HEIC を
+  表示できず、`jpg gif png` の許可リストもこれを拒否する。ブロック
+  エディタの `mediaUpload`(`tools/block-editor/src/Editor.jsx`)は
+  アップロード前にブラウザ内で HEIC を JPEG へ変換し、大きすぎる写真を
+  縮小するようにし、さらに Image ブロックが固まったように見えるのを
+  避けてエディタの通知バナーに明確なエラーを表示するようにした。
 - **永続化 — 本格実装のステップ 4（Issue #122）で解決。**
   スパイクの SQLite データベースは php-wasm 仮想ファイルシステム上に
   しか存在せず、タブを閉じると失われたため、起動シムは php-wasm
