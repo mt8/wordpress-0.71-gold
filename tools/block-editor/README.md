@@ -199,6 +199,10 @@ repository root) and after building:
 2. Open `http://localhost:8080/block-editor/api/editor.php?post=1` (replace
    `1` with any post id).
 
+The 0.71 admin also links into the editor directly: `b2edit.showposts.php`
+adds a "Block editor" link to every post in the post list, and `b2edit.php`
+adds one beside each entry of *Your Drafts* (Issue #185).
+
 ## Round-trip demo
 
 Verified end to end against the Docker blog:
@@ -460,6 +464,10 @@ npm run build
 1. `http://localhost:8080/b2login.php` で 0.71 の管理画面にログインする。
 2. `http://localhost:8080/block-editor/api/editor.php?post=1` を開く
    (`1` は任意の投稿 ID に置き換える)。
+
+0.71 の管理画面からエディタへ直接リンクもされる: `b2edit.showposts.php`
+は投稿一覧の各投稿に「Block editor」リンクを追加し、`b2edit.php` は
+*Your Drafts* の各項目の隣にも同じリンクを追加する(Issue #185)。
 
 ## 往復デモ
 
