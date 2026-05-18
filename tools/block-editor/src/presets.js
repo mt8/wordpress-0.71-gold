@@ -196,6 +196,33 @@ export const WP_DEFAULT_SPACING_SIZES = [
 ];
 
 /**
+ * The layout settings -- the content / wide width a constrained layout
+ *     centres its blocks to.
+ *
+ *     In a real WordPress install these come from theme.json
+ *     `settings.layout`; a layout-supporting block (Group, ...) reads
+ *     them for its Content width / Wide width controls and for wide /
+ *     full alignment. WordPress 0.71's own theme (layout2b.css) is a
+ *     fluid layout -- `#content` has `margin: 0 160px 0 20px` and no
+ *     fixed width -- so there is no canonical width to copy; these
+ *     approximate the 0.71 content column at common desktop viewports
+ *     and are easy to tune.
+ *
+ *     `allowEditing` and `allowCustomContentAndWideSize` are the gating
+ *     flags theme.json carries. Unlike a real install, this core-less
+ *     editor has no defaults behind them: without these flags the layout
+ *     controls read them as undefined and do not render. Unlike the
+ *     other preset families, layout produces no CSS, so buildPresetCss()
+ *     below does not touch it.
+ */
+export const WP_DEFAULT_LAYOUT = {
+	contentSize: '840px',
+	wideSize: '1100px',
+	allowEditing: true,
+	allowCustomContentAndWideSize: true,
+};
+
+/**
  * Build the preset stylesheet for every preset family above.
  *
  *     When a preset is chosen the block editor does NOT write an inline

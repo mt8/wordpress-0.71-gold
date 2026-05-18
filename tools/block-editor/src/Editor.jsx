@@ -50,6 +50,7 @@ import {
 	WP_DEFAULT_FONT_SIZES,
 	WP_DEFAULT_FONT_FAMILIES,
 	WP_DEFAULT_SPACING_SIZES,
+	WP_DEFAULT_LAYOUT,
 } from './presets.js';
 
 // The longest edge, in pixels, an uploaded image is downscaled to
@@ -289,6 +290,12 @@ const EDITOR_FEATURES = {
 			theme: WP_DEFAULT_SPACING_SIZES,
 		},
 	},
+	// `layout` carries the content / wide width a constrained-layout
+	//     block (Group, ...) uses. Its Content width / Wide width controls
+	//     are gated on layout.allowCustomContentAndWideSize; without a
+	//     `layout` setting that flag reads as undefined and the controls
+	//     do not render at all -- so content width cannot be configured.
+	layout: WP_DEFAULT_LAYOUT,
 };
 
 /**

@@ -121,9 +121,9 @@ control (and other typography controls) are gated behind editor *settings*.
 ## Presets
 
 A standalone `@wordpress/block-editor` build ships **no presets**: in a real
-WordPress install the colour palette, gradients, font sizes, font families
-and spacing scale all come from `theme.json` on the server, and this
-core-less editor has none. Adding a `theme.json` file would not help —
+WordPress install the colour palette, gradients, font sizes, font families,
+spacing scale and layout widths all come from `theme.json` on the server, and
+this core-less editor has none. Adding a `theme.json` file would not help —
 WordPress core reads `theme.json`, and there is no core in this build
 (Issues #181 and #183).
 
@@ -145,6 +145,11 @@ one the control **does not render at all** — the **Color** panel
   theme's own stack).
 - **Spacing sizes** — `spacing.spacingSizes`, from `WP_DEFAULT_SPACING_SIZES`
   (a pixel spacing scale).
+- **Layout** — `layout`, from `WP_DEFAULT_LAYOUT`. Not a preset *list* but the
+  same idea: it carries the `contentSize` / `wideSize` a constrained-layout
+  block (Group, …) centres its blocks to, plus the `allowEditing` /
+  `allowCustomContentAndWideSize` flags that gate the block's Content width /
+  Wide width controls.
 
 Each preset setting must be the multi-origin object shape
 (`{ theme: [...] }`); a bare array is read as `undefined`. The presets go in
@@ -387,8 +392,8 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 
 `@wordpress/block-editor` の単体ビルドには **プリセットが付属しない**。実際の
 WordPress ではカラーパレット・グラデーション・フォントサイズ・フォント
-ファミリー・余白スケールはすべてサーバ側の `theme.json` から来るが、コアを
-持たないこのエディタにはそれがない。ここで `theme.json` ファイルを置いても
+ファミリー・余白スケール・レイアウト幅はすべてサーバ側の `theme.json` から
+来るが、コアを持たないこのエディタにはそれがない。ここで `theme.json` ファイルを置いても
 効果はない — `theme.json` を読むのは WordPress コアであり、このビルドには
 コアがない(Issue #181 / #183)。
 
@@ -410,6 +415,11 @@ WordPress ではカラーパレット・グラデーション・フォントサ�
   テーマ自身のスタック)より。
 - **余白サイズ** — `spacing.spacingSizes`、`WP_DEFAULT_SPACING_SIZES`(px の
   余白スケール)より。
+- **レイアウト** — `layout`、`WP_DEFAULT_LAYOUT` より。プリセット *一覧* では
+  ないが考え方は同じ。制約付きレイアウトのブロック(Group など)がブロックを
+  中央寄せする `contentSize` / `wideSize` と、ブロックの「コンテンツ幅」/
+  「幅広幅」操作子を出し分ける `allowEditing` / `allowCustomContentAndWideSize`
+  フラグを持つ。
 
 各プリセット設定は多オリジン形式のオブジェクト(`{ theme: [...] }`)である
 必要があり、素の配列は `undefined` として読まれる。プリセットは常時表示
