@@ -44,7 +44,13 @@ import {
 import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
-import { WP_DEFAULT_COLOR_PALETTE } from './palette.js';
+import {
+	WP_DEFAULT_COLOR_PALETTE,
+	WP_DEFAULT_GRADIENTS,
+	WP_DEFAULT_FONT_SIZES,
+	WP_DEFAULT_FONT_FAMILIES,
+	WP_DEFAULT_SPACING_SIZES,
+} from './presets.js';
 
 // The longest edge, in pixels, an uploaded image is downscaled to
 //     before it is sent to the server (Issue #178). A full-resolution
@@ -237,26 +243,51 @@ const EDITOR_FEATURES = {
 		fontWeight: true,
 		lineHeight: true,
 		textDecoration: true,
+		// Allow a custom font size alongside the presets.
+		customFontSize: true,
+		// `typography.fontSizes` / `fontFamilies` carry the presets the
+		//     typography panel's Font size / Font controls render. With
+		//     no preset list those controls do not render at all
+		//     (useHasFontSizeControl / useHasFontFamilyControl). The
+		//     presets go in the `theme` origin, like the colour palette.
+		fontSizes: {
+			theme: WP_DEFAULT_FONT_SIZES,
+		},
+		fontFamilies: {
+			theme: WP_DEFAULT_FONT_FAMILIES,
+		},
 	},
 	color: {
 		text: true,
 		background: true,
 		link: true,
-		// Allow the custom-colour picker alongside the presets.
+		// Allow the custom colour / gradient pickers alongside the
+		//     presets.
 		custom: true,
-		// `color.palette` must be the multi-origin object shape
-		//     ({ default, theme, custom }); a bare array is read as
-		//     undefined by the block editor. The presets go in the
-		//     `theme` origin, which is always shown -- the `default`
-		//     origin is gated behind a separate `color.defaultPalette`
-		//     toggle.
+		customGradient: true,
+		// `color.palette` / `color.gradients` must be the multi-origin
+		//     object shape ({ default, theme, custom }); a bare array is
+		//     read as undefined by the block editor. The presets go in
+		//     the `theme` origin, which is always shown -- the `default`
+		//     origin is gated behind a separate `defaultPalette` /
+		//     `defaultGradients` toggle.
 		palette: {
 			theme: WP_DEFAULT_COLOR_PALETTE,
+		},
+		gradients: {
+			theme: WP_DEFAULT_GRADIENTS,
 		},
 	},
 	spacing: {
 		margin: true,
 		padding: true,
+		// The spacing scale the margin / padding controls offer as
+		//     presets. `spacing.spacingSizes` is the multi-origin object
+		//     shape; without it the controls fall back to a plain
+		//     numeric input.
+		spacingSizes: {
+			theme: WP_DEFAULT_SPACING_SIZES,
+		},
 	},
 };
 
