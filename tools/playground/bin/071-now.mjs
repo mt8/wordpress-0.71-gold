@@ -4,18 +4,27 @@
  *
  *     071-now is a wp-now-style one-command launcher for the
  *     browser-based WordPress 0.71 playground. `npx 071-now` builds the
- *     071-now overlay, starts the playground's Vite server, opens the
- *     default browser at the playground URL and prints that URL --
- *     mirroring `npx @wp-now/wp-now start` (Issue #171).
+ *     071-now overlay, builds the playground bundle, serves that built
+ *     bundle, opens the default browser at the playground URL and prints
+ *     that URL -- mirroring `npx @wp-now/wp-now start` (Issue #171).
  *
  *     This is a thin launcher. The real work is done by the playground's
  *     existing pieces:
  *       1. scripts/build-overlay.mjs builds the overlay (it snapshots
  *          src/ and builds the block editor, and already skips the
  *          block-editor build when the bundle is current),
- *       2. Vite's programmatic API serves the playground; vite.config.js
- *          already sets the COOP / COEP cross-origin-isolation headers on
- *          both `server` and `preview`, so the launcher only starts Vite.
+ *       2. Vite's programmatic `build()` bundles the playground into
+ *          dist/, and `preview()` serves that built bundle; vite.config.js
+ *          already attaches the COOP / COEP cross-origin-isolation headers
+ *          to `preview`.
+ *
+ *     The launcher deliberately serves the *built* artifact, not the Vite
+ *     dev server. The built bundle is the only verified configuration:
+ *     the playground e2e suite builds and previews it, and GitHub Pages
+ *     deploys the same build. php-wasm boot does not complete on the
+ *     unbundled dev server, so `npx 071-now` builds then previews on every
+ *     run -- build-overlay.mjs already skips the block-editor build when
+ *     its bundle is current, so a rebuild stays cheap (Issue #177).
  *
  *     The playground package directory is resolved from this script's own
  *     location, so `npx 071-now` works regardless of the caller's cwd --
@@ -44,8 +53,9 @@ Options:
   --port <port>    Serve on the given port instead of Vite's default.
   -h, --help       Show this help.
 
-\`071-now\` builds the 071-now overlay, starts the playground's Vite
-server, opens the default browser at the playground URL and prints it.
+\`071-now\` builds the 071-now overlay, builds the playground bundle,
+serves that built bundle, opens the default browser at the playground
+URL and prints it.
 `;
 
 /**
@@ -133,25 +143,44 @@ function openBrowser( url ) {
 }
 
 /**
- * Build the overlay, start the playground's Vite server, open the
- *     default browser at the playground URL and print it.
+ * Build the overlay, build the playground bundle, serve that built
+ *     bundle with `vite preview`, open the default browser at the
+ *     playground URL and print it.
+ *
+ *     The launcher serves the built artifact rather than the Vite dev
+ *     server: the build is the only verified configuration -- the e2e
+ *     suite builds and previews it, and GitHub Pages deploys the same
+ *     build, whereas php-wasm boot does not complete on the unbundled
+ *     dev server (Issue #177).
  * @param {number|undefined} port An optional port override.
  */
 async function start( port ) {
 	buildOverlay();
 
-	process.stdout.write( '071-now: starting the playground server…\n' );
-
 	// Vite is a dependency of the playground package; import it from
-	//     there so the launcher resolves the same Vite the `dev` script
-	//     uses, regardless of the caller's cwd.
-	const { createServer } = await import( 'vite' );
-	const server = await createServer( {
+	//     there so the launcher resolves the same Vite the `build` and
+	//     `preview` scripts use, regardless of the caller's cwd.
+	const { build, preview } = await import( 'vite' );
+
+	process.stdout.write( '071-now: building the playground bundle…\n' );
+
+	// Bundle the playground into dist/. build-overlay.mjs above already
+	//     skips the block-editor build when its bundle is current, so a
+	//     plain build-then-preview on every run stays cheap.
+	await build( {
 		root: playgroundDir,
 		configFile: join( playgroundDir, 'vite.config.js' ),
-		server: port !== undefined ? { port, strictPort: true } : {},
 	} );
-	await server.listen();
+
+	process.stdout.write( '071-now: starting the playground server…\n' );
+
+	// Serve the built bundle. vite.config.js attaches the COOP / COEP
+	//     cross-origin-isolation headers php-wasm needs to `preview`.
+	const server = await preview( {
+		root: playgroundDir,
+		configFile: join( playgroundDir, 'vite.config.js' ),
+		preview: port !== undefined ? { port, strictPort: true } : {},
+	} );
 
 	const url = server.resolvedUrls?.local?.[ 0 ];
 	if ( ! url ) {
