@@ -115,8 +115,32 @@ original guarded comma-separated list, so the hack is Safari-only again.
 
 A second part of the same issue: the paragraph's **text-alignment** toolbar
 control (and other typography controls) are gated behind editor *settings*.
-`Editor.jsx` now passes a `settings` object (`EDITOR_SETTINGS`) with the
+`Editor.jsx` now passes a `settings` object (`EDITOR_FEATURES`) with the
 `__experimentalFeatures` feature flags to `BlockEditorProvider`.
+
+## Colour palette
+
+A standalone `@wordpress/block-editor` build ships **no colour palette**: in a
+real WordPress install the colour presets come from `theme.json` on the
+server, and this core-less editor has none. So the block **Color** panel and
+the paragraph's inline **Highlight** format showed no swatches (Issue #181).
+
+`Editor.jsx` supplies the palette directly instead. The twelve WordPress-core
+default colours are declared as `WP_DEFAULT_COLOR_PALETTE` and fed to the
+editor two ways, because the editor reads colours from two places:
+
+- `EDITOR_FEATURES.color.palette` — the `theme.json`-style feature the block
+  **Color** panel reads (`useHasColorPanel`). Without it the panel does not
+  render at all. `color.palette` must be the multi-origin object shape
+  (`{ theme: [...] }`); the presets go in the `theme` origin, which is always
+  shown.
+- The legacy top-level `colors` setting — the inline **Highlight** format
+  (`@wordpress/format-library`'s `core/text-color`) reads its swatches from
+  `getSettings().colors`, not from `__experimentalFeatures`.
+
+`color.custom: true` keeps the custom-colour picker available alongside the
+presets. Adding a `theme.json` file would do nothing here — WordPress core
+reads `theme.json`, and there is no core in this build.
 
 ## Build
 
@@ -173,7 +197,7 @@ Verified end to end against the Docker blog:
 - **Settings sidebar** — a *Post* panel with a Status control
   (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
   and a *Block* panel with `BlockInspector` for the selected block's
-  attributes (Typography, Dimensions, ...).
+  attributes (Color, Typography, Dimensions, ...) — see *Colour palette*.
 - Saving block markup, `post_status` and `post_category` back into 0.71's
   `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
@@ -320,7 +344,32 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 同じ Issue のもう一部分: 段落の **テキスト配置** ツールバー操作子(その他の
 文字組み操作子も)はエディタの *設定* によって出し分けられる。`Editor.jsx`
 は `__experimentalFeatures` の機能フラグを持つ `settings` オブジェクト
-(`EDITOR_SETTINGS`)を `BlockEditorProvider` へ渡すようになった。
+(`EDITOR_FEATURES`)を `BlockEditorProvider` へ渡すようになった。
+
+## カラーパレット
+
+`@wordpress/block-editor` の単体ビルドには **カラーパレットが付属しない**。
+実際の WordPress ではカラープリセットはサーバ側の `theme.json` から来るが、
+コアを持たないこのエディタにはそれがない。そのためブロックの **Color**
+パネルと段落のインライン **ハイライト** フォーマットで色見本が表示され
+なかった(Issue #181)。
+
+代わりに `Editor.jsx` がパレットを直接供給する。WordPress コア標準の 12 色を
+`WP_DEFAULT_COLOR_PALETTE` として宣言し、エディタへ 2 通りで渡す。エディタは
+色を 2 か所から読むためである。
+
+- `EDITOR_FEATURES.color.palette` — ブロックの **Color** パネル
+  (`useHasColorPanel`)が読む `theme.json` 形式の機能。これがないとパネル
+  自体が描画されない。`color.palette` は多オリジン形式のオブジェクト
+  (`{ theme: [...] }`)である必要があり、プリセットは常時表示される
+  `theme` オリジンに置く。
+- 旧来の最上位 `colors` 設定 — インライン **ハイライト** フォーマット
+  (`@wordpress/format-library` の `core/text-color`)は色見本を
+  `__experimentalFeatures` ではなく `getSettings().colors` から読む。
+
+`color.custom: true` により、プリセットと並んでカスタムカラーピッカーも
+利用できる。ここで `theme.json` ファイルを置いても効果はない —
+`theme.json` を読むのは WordPress コアであり、このビルドにはコアがない。
 
 ## ビルド
 
@@ -376,8 +425,8 @@ Docker のブログに対して端から端まで検証済み:
   アウトライン)と、キャンバス下の `BlockBreadcrumb`。
 - **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
   Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
-  ブロックの属性(Typography・Dimensions など)を出す `BlockInspector` の
-  *Block* パネル。
+  ブロックの属性(Color・Typography・Dimensions など)を出す
+  `BlockInspector` の *Block* パネル(*カラーパレット* を参照)。
 - ブロックマークアップ・`post_status`・`post_category` を 0.71 の
   `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。
