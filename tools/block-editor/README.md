@@ -118,45 +118,62 @@ control (and other typography controls) are gated behind editor *settings*.
 `Editor.jsx` now passes a `settings` object (`EDITOR_FEATURES`) with the
 `__experimentalFeatures` feature flags to `BlockEditorProvider`.
 
-## Colour palette
+## Presets
 
-A standalone `@wordpress/block-editor` build ships **no colour palette**: in a
-real WordPress install the colour presets come from `theme.json` on the
-server, and this core-less editor has none. So the block **Color** panel and
-the paragraph's inline **Highlight** format showed no swatches (Issue #181).
+A standalone `@wordpress/block-editor` build ships **no presets**: in a real
+WordPress install the colour palette, gradients, font sizes, font families
+and spacing scale all come from `theme.json` on the server, and this
+core-less editor has none. Adding a `theme.json` file would not help —
+WordPress core reads `theme.json`, and there is no core in this build
+(Issues #181 and #183).
 
-The editor supplies the palette directly instead. The twelve WordPress-core
-default colours live in `src/palette.js` as `WP_DEFAULT_COLOR_PALETTE`;
-`Editor.jsx` feeds them to the editor two ways, because the editor reads
-colours from two places:
+`src/presets.js` is the single source of truth. It declares each preset
+family and `Editor.jsx` feeds them to `BlockEditorProvider` through
+`EDITOR_FEATURES`. Each control is gated on its own preset list, so without
+one the control **does not render at all** — the **Color** panel
+(`useHasColorPanel`), the **Font size** / **Font** controls
+(`useHasFontSizeControl` / `useHasFontFamilyControl`), and so on:
 
-- `EDITOR_FEATURES.color.palette` — the `theme.json`-style feature the block
-  **Color** panel reads (`useHasColorPanel`). Without it the panel does not
-  render at all. `color.palette` must be the multi-origin object shape
-  (`{ theme: [...] }`); the presets go in the `theme` origin, which is always
-  shown.
-- The legacy top-level `colors` setting — the inline **Highlight** format
-  (`@wordpress/format-library`'s `core/text-color`) reads its swatches from
-  `getSettings().colors`, not from `__experimentalFeatures`.
+- **Colours** — `color.palette`, from `WP_DEFAULT_COLOR_PALETTE` (WordPress
+  core's twelve default colours).
+- **Gradients** — `color.gradients`, from `WP_DEFAULT_GRADIENTS` (WordPress
+  core's default gradients).
+- **Font sizes** — `typography.fontSizes`, from `WP_DEFAULT_FONT_SIZES`
+  (WordPress core's classic pixel sizes, fitting the px-based 0.71 theme).
+- **Font families** — `typography.fontFamilies`, from
+  `WP_DEFAULT_FONT_FAMILIES` (a small 2003-era set; "Serif" is the 0.71
+  theme's own stack).
+- **Spacing sizes** — `spacing.spacingSizes`, from `WP_DEFAULT_SPACING_SIZES`
+  (a pixel spacing scale).
 
-`color.custom: true` keeps the custom-colour picker available alongside the
-presets. Adding a `theme.json` file would do nothing here — WordPress core
-reads `theme.json`, and there is no core in this build.
+Each preset setting must be the multi-origin object shape
+(`{ theme: [...] }`); a bare array is read as `undefined`. The presets go in
+the `theme` origin, which is always shown. `color.custom`,
+`color.customGradient` and `typography.customFontSize` keep the custom
+pickers available alongside the presets.
 
-Showing the swatches is only half of it. When a preset colour is chosen the
-block editor stores the preset **slug** and applies a `has-<slug>-color`
-class — it does **not** write an inline `color`. Those classes resolve to a
-colour only through CSS that a real WordPress install generates from
-`theme.json`. With none generated, a preset pick was *stored but never
-rendered*, while a custom (inline) colour worked.
+The colour palette has one extra wiring: the inline **Highlight** format
+(`@wordpress/format-library`'s `core/text-color`) reads its swatches from the
+legacy top-level `colors` setting (`getSettings().colors`), not from
+`__experimentalFeatures` — so `Editor.jsx` sets `colors` too.
 
-`src/palette.js`'s `buildPresetColorCss()` returns that missing stylesheet —
-the `--wp--preset--color--*` custom properties and the `has-*-color` utility
-classes, the shape WordPress core emits. A Vite plugin (`emitBlockPresetCss`
-in `vite.config.js`) writes it to the build output as `block-presets.css`, a
+### Rendering a preset
+
+Showing the controls is only half of it. When a preset is chosen the block
+editor stores the preset **slug** — it applies a `has-<slug>-*` class
+(colour, gradient, font size, font family) or references `var(--wp--preset--*)`
+inline (spacing). It does **not** write an inline value. Those resolve only
+through CSS that a real WordPress install generates from `theme.json`; with
+none generated a preset pick was *stored but never rendered*, while a custom
+(inline) value worked.
+
+`src/presets.js`'s `buildPresetCss()` returns that missing stylesheet — the
+`--wp--preset--*` custom properties and the `has-*` utility classes, the
+shape WordPress core emits. A Vite plugin (`emitBlockPresetCss` in
+`vite.config.js`) writes it to the build output as `block-presets.css`, a
 fixed filename. `editor.php` links it for the editor canvas and
-`src/index.php` links it for the 0.71 front end, so a preset colour renders
-the same in the editor and on the published page.
+`src/index.php` links it for the 0.71 front end, so a preset renders the same
+in the editor and on the published page.
 
 ## Build
 
@@ -213,7 +230,7 @@ Verified end to end against the Docker blog:
 - **Settings sidebar** — a *Post* panel with a Status control
   (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
   and a *Block* panel with `BlockInspector` for the selected block's
-  attributes (Color, Typography, Dimensions, ...) — see *Colour palette*.
+  attributes (Color, Typography, Dimensions, ...) — see *Presets*.
 - Saving block markup, `post_status` and `post_category` back into 0.71's
   `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
@@ -362,44 +379,62 @@ Vite 既定(esbuild)の CSS minifier はこのルールをセレクタごとの 
 は `__experimentalFeatures` の機能フラグを持つ `settings` オブジェクト
 (`EDITOR_FEATURES`)を `BlockEditorProvider` へ渡すようになった。
 
-## カラーパレット
+## プリセット
 
-`@wordpress/block-editor` の単体ビルドには **カラーパレットが付属しない**。
-実際の WordPress ではカラープリセットはサーバ側の `theme.json` から来るが、
-コアを持たないこのエディタにはそれがない。そのためブロックの **Color**
-パネルと段落のインライン **ハイライト** フォーマットで色見本が表示され
-なかった(Issue #181)。
+`@wordpress/block-editor` の単体ビルドには **プリセットが付属しない**。実際の
+WordPress ではカラーパレット・グラデーション・フォントサイズ・フォント
+ファミリー・余白スケールはすべてサーバ側の `theme.json` から来るが、コアを
+持たないこのエディタにはそれがない。ここで `theme.json` ファイルを置いても
+効果はない — `theme.json` を読むのは WordPress コアであり、このビルドには
+コアがない(Issue #181 / #183)。
 
-代わりにエディタがパレットを直接供給する。WordPress コア標準の 12 色は
-`src/palette.js` の `WP_DEFAULT_COLOR_PALETTE` にあり、`Editor.jsx` が
-エディタへ 2 通りで渡す。エディタは色を 2 か所から読むためである。
+`src/presets.js` が単一の真実の所在である。各プリセット系統を宣言し、
+`Editor.jsx` が `EDITOR_FEATURES` 経由で `BlockEditorProvider` へ渡す。各
+操作子はそれぞれのプリセット一覧で出し分けられるため、一覧がないと操作子
+**自体がまったく描画されない** — **Color** パネル(`useHasColorPanel`)、
+**Font size** / **Font** 操作子(`useHasFontSizeControl` /
+`useHasFontFamilyControl`)などである。
 
-- `EDITOR_FEATURES.color.palette` — ブロックの **Color** パネル
-  (`useHasColorPanel`)が読む `theme.json` 形式の機能。これがないとパネル
-  自体が描画されない。`color.palette` は多オリジン形式のオブジェクト
-  (`{ theme: [...] }`)である必要があり、プリセットは常時表示される
-  `theme` オリジンに置く。
-- 旧来の最上位 `colors` 設定 — インライン **ハイライト** フォーマット
-  (`@wordpress/format-library` の `core/text-color`)は色見本を
-  `__experimentalFeatures` ではなく `getSettings().colors` から読む。
+- **カラー** — `color.palette`、`WP_DEFAULT_COLOR_PALETTE`(WordPress コア
+  標準の 12 色)より。
+- **グラデーション** — `color.gradients`、`WP_DEFAULT_GRADIENTS`(WordPress
+  コア標準のグラデーション)より。
+- **フォントサイズ** — `typography.fontSizes`、`WP_DEFAULT_FONT_SIZES`
+  (WordPress コアの旧来 px サイズ。px ベースの 0.71 テーマに合う)より。
+- **フォントファミリー** — `typography.fontFamilies`、
+  `WP_DEFAULT_FONT_FAMILIES`(2003 年向けの小さな一式。「Serif」は 0.71
+  テーマ自身のスタック)より。
+- **余白サイズ** — `spacing.spacingSizes`、`WP_DEFAULT_SPACING_SIZES`(px の
+  余白スケール)より。
 
-`color.custom: true` により、プリセットと並んでカスタムカラーピッカーも
-利用できる。ここで `theme.json` ファイルを置いても効果はない —
-`theme.json` を読むのは WordPress コアであり、このビルドにはコアがない。
+各プリセット設定は多オリジン形式のオブジェクト(`{ theme: [...] }`)である
+必要があり、素の配列は `undefined` として読まれる。プリセットは常時表示
+される `theme` オリジンに置く。`color.custom`・`color.customGradient`・
+`typography.customFontSize` により、プリセットと並んでカスタムピッカーも
+利用できる。
 
-色見本の表示はその半分にすぎない。プリセット色を選ぶと、ブロックエディタは
-プリセットの **スラッグ** を保存し `has-<slug>-color` クラスを付与する —
-インラインの `color` は**書かない**。これらのクラスが実際の色になるのは、
-本物の WordPress が `theme.json` から生成する CSS を通じてのみである。
-何も生成されないため、プリセットの選択は*保存されても描画されない*一方、
-カスタム（インライン）色は機能していた。
+カラーパレットだけは追加の配線がある。インライン **ハイライト**
+フォーマット(`@wordpress/format-library` の `core/text-color`)は色見本を
+`__experimentalFeatures` ではなく旧来の最上位 `colors` 設定
+(`getSettings().colors`)から読むため、`Editor.jsx` は `colors` も設定する。
 
-`src/palette.js` の `buildPresetColorCss()` が、その欠けていたスタイルシート
-を返す — `--wp--preset--color--*` カスタムプロパティと `has-*-color`
-ユーティリティクラスで、WordPress コアが出力するのと同じ形である。Vite
-プラグイン（`vite.config.js` の `emitBlockPresetCss`）がそれをビルド出力へ
-固定名 `block-presets.css` で書き出す。`editor.php` がエディタキャンバス用に、
-`src/index.php` が 0.71 フロントエンド用にこれをリンクするため、プリセット色は
+### プリセットの描画
+
+操作子の表示はその半分にすぎない。プリセットを選ぶと、ブロックエディタは
+プリセットの **スラッグ** を保存する — `has-<slug>-*` クラス(カラー・
+グラデーション・フォントサイズ・フォントファミリー)を付与するか、
+`var(--wp--preset--*)` をインラインで参照する(余白)。インラインの値は
+**書かない**。これらが実際の値になるのは、本物の WordPress が `theme.json`
+から生成する CSS を通じてのみである。何も生成されないため、プリセットの
+選択は*保存されても描画されない*一方、カスタム（インライン）値は機能して
+いた。
+
+`src/presets.js` の `buildPresetCss()` が、その欠けていたスタイルシートを
+返す — `--wp--preset--*` カスタムプロパティと `has-*` ユーティリティクラス
+で、WordPress コアが出力するのと同じ形である。Vite プラグイン
+(`vite.config.js` の `emitBlockPresetCss`)がそれをビルド出力へ固定名
+`block-presets.css` で書き出す。`editor.php` がエディタキャンバス用に、
+`src/index.php` が 0.71 フロントエンド用にこれをリンクするため、プリセットは
 エディタと公開ページで同じく描画される。
 
 ## ビルド
@@ -457,7 +492,7 @@ Docker のブログに対して端から端まで検証済み:
 - **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
   Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
   ブロックの属性(Color・Typography・Dimensions など)を出す
-  `BlockInspector` の *Block* パネル(*カラーパレット* を参照)。
+  `BlockInspector` の *Block* パネル(*プリセット* を参照)。
 - ブロックマークアップ・`post_status`・`post_category` を 0.71 の
   `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。

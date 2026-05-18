@@ -135,7 +135,7 @@ test.describe( 'Playground block editor', () => {
 		);
 	} );
 
-	test( 'a paragraph block offers the colour palette (Issue #181)', async ( {
+	test( 'a paragraph block renders colour and font size presets (Issues #181, #183)', async ( {
 		page,
 	} ) => {
 		await openPlayground( page );
@@ -239,5 +239,24 @@ test.describe( 'Playground block editor', () => {
 				'.block-editor-block-list__layout p.has-vivid-red-color'
 			)
 		).toHaveCSS( 'color', 'rgb(207, 46, 46)' );
+
+		// Close the colour popover so it does not overlap the sidebar.
+		await colorDropdowns.filter( { hasText: 'Text' } ).click();
+
+		// Font size (Issue #183). The Typography panel's Font size
+		// control renders only when the editor settings carry a
+		// fontSizes preset list -- before #183 it did not render at
+		// all. Picking the "Large" preset applies has-large-font-size,
+		// which block-presets.css renders as 36px.
+		await editorFrame
+			.locator(
+				'.components-font-size-picker [aria-label="Large"]'
+			)
+			.click();
+		await expect(
+			editorFrame.locator(
+				'.block-editor-block-list__layout p.has-large-font-size'
+			)
+		).toHaveCSS( 'font-size', '36px' );
 	} );
 } );
