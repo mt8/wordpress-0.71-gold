@@ -388,18 +388,25 @@ npx 071-now
 `tools/playground` is an npm workspace, so after `npm install` at the
 repository root the `071-now` bin is linked into `node_modules/.bin/` and
 `npx 071-now` works from any directory in the repo — exactly like `npx
-071` and `npx 071-env`. It builds the 071-now overlay, starts the
-playground's Vite server, opens the default browser at the playground
-URL and prints that URL. A `start` subcommand and `--help` are accepted
-as aliases, and `--port <port>` overrides the default port. The launcher
-is `bin/071-now.mjs`.
+071` and `npx 071-env`. It builds the 071-now overlay, builds the
+playground bundle, serves that built bundle with `vite preview`, opens
+the default browser at the playground URL and prints that URL. A `start`
+subcommand and `--help` are accepted as aliases, and `--port <port>`
+overrides the default port. The launcher is `bin/071-now.mjs`.
+
+`npx 071-now` deliberately serves the **built** playground — the same
+configuration the e2e suite verifies and GitHub Pages deploys — rather
+than the Vite dev server. The dev server (`npm run dev`) is an untested
+path where php-wasm boot does not complete, so the launcher builds then
+previews on every run; `build-overlay.mjs` skips the block-editor build
+when its bundle is current, so a rebuild stays cheap (Issue #177).
 
 Building the overlay (the block-editor build) needs **Node ≥ 22.12**.
 
 ## Commands
 
 ```
-npx 071-now        build the overlay, start Vite and open the browser
+npx 071-now        build the overlay, build and preview the bundle, open the browser
 npm run build      build the overlay and the Vite bundle
 npm run dev        Vite dev server
 npm run preview    serve the production build
