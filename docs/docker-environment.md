@@ -65,8 +65,9 @@ After startup, open <http://localhost:8080>. `phpinfo` is available at
 
 ## Database connection
 
-`src/b2config.php` defines the connection. `DB_HOST` is set to `db` — the
-Compose service name of the MySQL container.
+`src/b2config.php` defines the connection. `071-env start` generates that file
+from `src/b2config-sample.php`; `DB_HOST` is set to `db` — the Compose service
+name of the MySQL container.
 
 | Setting | Value |
 |---------|-------|
@@ -168,7 +169,8 @@ docker compose -f tools/env/docker-compose.yml --project-directory . exec web ba
 
 ## データベース接続
 
-接続情報は `src/b2config.php` で定義する。`DB_HOST` は MySQL コンテナの
+接続情報は `src/b2config.php` で定義する。同ファイルは `071-env start` が
+`src/b2config-sample.php` から生成する。`DB_HOST` は MySQL コンテナの
 Compose サービス名である `db` に設定している。
 
 | 設定 | 値 |

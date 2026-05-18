@@ -65,9 +65,11 @@ npx 071-env destroy        # stop and drop the database volume
 | `db`    | `mysql:8.0` (official) | MySQL 8 database `b2` (user `user` / `pass`) |
 
 Both base images are official; the only customization is `tools/env/Dockerfile`
-adding the `mysqli` extension. Database credentials live in `src/b2config.php`
-and match `tools/env/docker-compose.yml`, so no configuration is needed for
-local use.
+adding the `mysqli` extension. `071-env start` generates `src/b2config.php`
+from the committed `src/b2config-sample.php`; the sample's default database
+credentials match `tools/env/docker-compose.yml`, so no configuration is needed
+for local use — per-environment values can be set via the `wpConfig` object of
+`.071-env.json`.
 
 ## Tooling (`tools/`)
 
@@ -290,8 +292,11 @@ npx 071-env destroy        # 停止し DB ボリュームも削除
 | `db`    | `mysql:8.0`(公式) | MySQL 8 データベース `b2`(ユーザー `user` / `pass`) |
 
 ベースイメージはいずれも公式。カスタマイズは `tools/env/Dockerfile` で
-`mysqli` 拡張を追加する 1 点のみ。DB の認証情報は `src/b2config.php` にあり
-`tools/env/docker-compose.yml` と一致しているため、ローカル利用では設定不要。
+`mysqli` 拡張を追加する 1 点のみ。`071-env start` がコミット済みの
+`src/b2config-sample.php` から `src/b2config.php` を生成する。サンプルの
+既定 DB 認証情報は `tools/env/docker-compose.yml` と一致しているため、
+ローカル利用では設定不要 — 環境ごとの値は `.071-env.json` の `wpConfig`
+オブジェクトで設定できる。
 
 ## ツール(`tools/`)
 
