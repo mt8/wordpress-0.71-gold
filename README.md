@@ -31,9 +31,15 @@ runs on a server. Deployed to GitHub Pages from `tools/playground/`; see the
 ```sh
 git clone https://github.com/mt8/wordpress-0.71-gold.git
 cd wordpress-0.71-gold
-npm install                # install the tools/ workspace packages
+npm run setup              # install all tooling (npm, block editor, Composer)
 npx 071-env start          # build and start the PHP 8.3 / MySQL 8 environment
 ```
+
+`npm run setup` runs the three post-clone installs in one step — the
+repository-root npm packages (the `tools/` workspaces, Playwright, husky),
+the block editor's own npm package and its Vite build, and the PHP dev
+tooling via Composer. It installs tooling only; starting the blog is the
+next line.
 
 `npx 071-env start` builds the `web` image and starts the environment. The
 Docker Compose files now live under `tools/env/`, so a plain
@@ -129,7 +135,7 @@ A Playwright end-to-end suite (in `tests/e2e/`) drives the real admin and
 front-end pages of the running Docker blog. It covers the admin flows
 (log in; create / edit / delete a post; add / delete a category) and the
 front end (home page, single post `?p=`, category `?cat=`, monthly archive
-`?m=`, and the RSS .92 / RDF 1.0 / RSS 2.0 feeds), and asserts that no PHP
+`?m=`, and the RSS 2.0 feed), and asserts that no PHP
 `Fatal error` / `Warning` / `Deprecated` text appears on any page. Test data
 is seeded and cleaned up by helpers in `tests/e2e/helpers/`; every seeded row carries
 an `E2E:` title/name prefix and only those rows are removed, so your existing
@@ -251,9 +257,14 @@ PHP 8.3 を WebAssembly へコンパイルし、データベースはブラウ�
 ```sh
 git clone https://github.com/mt8/wordpress-0.71-gold.git
 cd wordpress-0.71-gold
-npm install                # tools/ ワークスペースパッケージを導入
+npm run setup              # ツール一式を導入（npm・ブロックエディタ・Composer）
 npx 071-env start          # PHP 8.3 / MySQL 8 環境をビルドして起動
 ```
+
+`npm run setup` はクローン後の3つの導入を1ステップで実行する — リポジトリ
+直下の npm パッケージ（`tools/` ワークスペース・Playwright・husky）、
+ブロックエディタ自身の npm パッケージと Vite ビルド、Composer による PHP
+開発ツール。導入のみを行い、ブログの起動は次の行で行う。
 
 `npx 071-env start` は `web` イメージをビルドし、環境を起動する。Docker
 Compose ファイルは `tools/env/` 配下へ移ったため、リポジトリ直下での素の
@@ -347,8 +358,8 @@ npm run test:e2e
 Playwright の E2E スイート(`tests/e2e/`)が、稼働中の Docker ブログの実際の
 管理画面・フロントエンドのページを操作する。管理画面フロー(ログイン、投稿の
 作成/編集/削除、カテゴリの追加/削除)とフロントエンド(トップ、単一投稿
-`?p=`、カテゴリ `?cat=`、月別アーカイブ `?m=`、RSS .92 / RDF 1.0 / RSS 2.0
-フィード)を対象とし、どのページにも PHP の `Fatal error` / `Warning` /
+`?p=`、カテゴリ `?cat=`、月別アーカイブ `?m=`、RSS 2.0 フィード)を
+対象とし、どのページにも PHP の `Fatal error` / `Warning` /
 `Deprecated` が出ないことを検証する。テストデータは `tests/e2e/helpers/` の
 ヘルパーが投入・後始末する。投入する行はすべて `E2E:` というタイトル/名前接頭辞を持ち、
 その行のみを削除するため、既存コンテンツに触れることはなく、再実行しても安全
