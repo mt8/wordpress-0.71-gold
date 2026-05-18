@@ -18,6 +18,9 @@ require $abspath . 'wp-links/links.php';
 	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. */ ?>
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
 
+	<?php /* Preset colour CSS (Issue #181) -- the has-*-color classes and --wp--preset--color--* properties -- so a preset colour picked in the block editor renders on the front end, not only as a custom inline colour. */ ?>
+	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" />
+
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
 	<link rel="alternate" type="text/xml" title="RDF" href="<?php bloginfo( 'rdf_url' ); ?>" />
 	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo( 'rss2_url' ); ?>" />

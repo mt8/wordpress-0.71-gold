@@ -134,4 +134,110 @@ test.describe( 'Playground block editor', () => {
 			'the block-editor edit should show on the 0.71 front page'
 		);
 	} );
+
+	test( 'a paragraph block offers the colour palette (Issue #181)', async ( {
+		page,
+	} ) => {
+		await openPlayground( page );
+
+		// Reach a real post id the same way the round-trip test does,
+		// so the editor opens an existing post. The Paragraph block
+		// inserted below -- not that post's content -- is what carries
+		// the colour controls under test.
+		const adminFrame = await gotoBlog(
+			page,
+			'/wp-admin/b2edit.php'
+		);
+		const editorHref = await adminFrame
+			.locator(
+				'a[href*="block-editor/api/editor.php?post="]'
+			)
+			.first()
+			.getAttribute( 'href' );
+		const postId = Number(
+			( editorHref || '' ).match( /post=(\d+)/ )?.[ 1 ]
+		);
+		expect(
+			Number.isInteger( postId ) && postId > 0,
+			`a block-editor post id should be found (saw "${ editorHref }")`
+		).toBe( true );
+
+		const editorFrame = await openBlockEditor( page, postId );
+		await expect(
+			editorFrame.locator( '.be-app' )
+		).not.toHaveCount( 0 );
+
+		// Insert a Paragraph block through the header "+" inserter.
+		// The inserted block is selected, so BlockInspector shows its
+		// controls once the sidebar is on the Block tab.
+		await editorFrame
+			.locator( 'button.be-inserter-toggle' )
+			.click();
+		const inserterSearch = editorFrame.locator(
+			'.block-editor-inserter__search input'
+		);
+		await inserterSearch.waitFor( {
+			state: 'visible',
+			timeout: 15000,
+		} );
+		await inserterSearch.fill( 'Paragraph' );
+		await editorFrame
+			.locator( '.block-editor-block-types-list__item' )
+			.first()
+			.click();
+
+		// Switch the settings sidebar to the Block tab.
+		await editorFrame
+			.locator(
+				'.be-sidebar-tabs button.components-tab-panel__tabs-item'
+			)
+			.filter( { hasText: 'Block' } )
+			.click();
+
+		// The block's Color panel. Before Issue #181 the editor
+		// settings carried no colour palette, so useHasColorPanel()
+		// was false and the panel did not render at all. Its colour
+		// dropdowns being present proves the palette now reaches the
+		// block editor.
+		const colorDropdowns = editorFrame.locator(
+			'button.block-editor-panel-color-gradient-settings__dropdown'
+		);
+		await expect( colorDropdowns.first() ).toBeVisible( {
+			timeout: 15000,
+		} );
+
+		// Open the Text colour control; its popover lists the preset
+		// swatches -- the twelve WordPress-core default colours.
+		await colorDropdowns.filter( { hasText: 'Text' } ).click();
+		const swatches = editorFrame.locator(
+			'button.components-circular-option-picker__option'
+		);
+		await expect( swatches.first() ).toBeVisible( {
+			timeout: 15000,
+		} );
+		expect(
+			await swatches.count(),
+			'the WordPress core default palette has twelve colours'
+		).toBeGreaterThanOrEqual( 12 );
+
+		// Pick the "Vivid red" preset. A preset pick is stored as a
+		// `has-<slug>-color` class, not an inline colour -- it renders
+		// only through the preset stylesheet (block-presets.css) the
+		// build now emits and editor.php links. A custom inline colour
+		// always worked; a preset did not, until Issue #181's follow-up.
+		await editorFrame
+			.locator(
+				'button.components-circular-option-picker__option' +
+					'[aria-label*="Vivid red"]'
+			)
+			.click();
+
+		// The paragraph in the canvas carries the preset class and
+		// renders the WordPress-core "Vivid red" (#cf2e2e).
+		await expect(
+			editorFrame.locator(
+				'.block-editor-block-list__layout p.has-vivid-red-color'
+			)
+		).toHaveCSS( 'color', 'rgb(207, 46, 46)' );
+	} );
 } );

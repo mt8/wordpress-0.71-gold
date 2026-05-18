@@ -44,6 +44,8 @@ import {
 import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
 
+import { WP_DEFAULT_COLOR_PALETTE } from './palette.js';
+
 // The longest edge, in pixels, an uploaded image is downscaled to
 //     before it is sent to the server (Issue #178). A full-resolution
 //     phone photo is often 12 MP or more; sending it untouched pushes a
@@ -221,6 +223,11 @@ const UPLOAD_ERROR_MESSAGES = {
  *     flags are supplied here directly. `appearanceTools` switches on the
  *     common appearance controls; `typography.textAlign` is what makes the
  *     paragraph's Align-text control appear in the floating toolbar.
+ *
+ *     `color.palette` (and the legacy top-level `colors`, set on
+ *     `editorSettings`) supply the preset colour swatches. Without them the
+ *     block Color panel and the paragraph's inline Highlight format render
+ *     no palette at all.
  */
 const EDITOR_FEATURES = {
 	appearanceTools: true,
@@ -235,6 +242,17 @@ const EDITOR_FEATURES = {
 		text: true,
 		background: true,
 		link: true,
+		// Allow the custom-colour picker alongside the presets.
+		custom: true,
+		// `color.palette` must be the multi-origin object shape
+		//     ({ default, theme, custom }); a bare array is read as
+		//     undefined by the block editor. The presets go in the
+		//     `theme` origin, which is always shown -- the `default`
+		//     origin is gated behind a separate `color.defaultPalette`
+		//     toggle.
+		palette: {
+			theme: WP_DEFAULT_COLOR_PALETTE,
+		},
 	},
 	spacing: {
 		margin: true,
@@ -429,6 +447,13 @@ export function Editor( { config } ) {
 				setMessage( `Image upload failed: ${ uploadMessage }` );
 			} ),
 			__experimentalFeatures: EDITOR_FEATURES,
+			// The legacy top-level colour palette. The inline Highlight
+			//     format (@wordpress/format-library's core/text-color)
+			//     reads its swatches from `getSettings().colors`, not
+			//     from __experimentalFeatures, so the same presets are
+			//     supplied here too -- otherwise the Highlight popover
+			//     shows no colours.
+			colors: WP_DEFAULT_COLOR_PALETTE,
 		} ),
 		[]
 	);

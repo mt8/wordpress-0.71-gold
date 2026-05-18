@@ -47,6 +47,14 @@ header( 'Content-Type: text/html; charset=utf-8' );
 <?php foreach ( $css as $href ) : ?>
 <link rel="stylesheet" href="../assets/<?php echo htmlspecialchars( (string) $href, ENT_QUOTES ); ?>" />
 <?php endforeach; ?>
+<?php
+// Issue #181: the preset colour stylesheet -- the --wp--preset--color--*
+// custom properties and has-*-color utility classes that a preset colour
+// pick resolves through. Without it a preset is stored but never rendered.
+// The build emits this file under a fixed name; src/index.php links the
+// same file so the editor canvas and the 0.71 front end match.
+?>
+<link rel="stylesheet" href="../assets/block-presets.css" />
 <style>
 	body { margin: 0; font-family: -apple-system, system-ui, sans-serif; }
 	.be-missing { padding: 2rem; max-width: 50rem; margin: 0 auto; color: #1e1e1e; }
