@@ -45,6 +45,11 @@ test.describe( 'Playground RSS 2.0 feed', () => {
 
 		expect( feed.status ).toBe( 200 );
 		expect( feed.contentType ).toContain( 'text/xml' );
+		// The feed declares UTF-8 (Issue #217) -- on the Content-type
+		// header and in the XML prolog -- so the static export renders
+		// non-ASCII content correctly once published.
+		expect( feed.contentType ).toContain( 'charset=UTF-8' );
+		expect( feed.body ).toContain( 'encoding="UTF-8"' );
 		// The rss root, the channel, and the seeded post as an item.
 		expect( feed.body ).toContain( '<rss version="2.0"' );
 		expect( feed.body ).toContain( '<channel>' );
