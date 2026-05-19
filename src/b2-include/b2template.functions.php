@@ -455,6 +455,42 @@ function the_content_unicode( $more_link_text = '(more...)', $stripteaser = 0, $
 	echo $content;
 }
 
+/**
+ * Strip the block editor's delimiter comments from post content.
+ *
+ * The block editor (tools/block-editor/) stores a post's content with the
+ * `<!-- wp:* -->` and `<!-- /wp:* -->` HTML comments that delimit each
+ * block. WordPress 0.71 has no block system and renders post_content as
+ * plain HTML, so without this those comments survive into the rendered
+ * page. The markup between a block's delimiters is already plain HTML, so
+ * dropping the delimiter comments is all the front end needs; the raw
+ * post_content in the database keeps them, so the editor can still parse
+ * the post back into blocks.
+ *
+ * @param string $content The raw post content.
+ * @return string The content with the block delimiter comments removed.
+ */
+function b2_strip_block_delimiters( $content ) {
+	// An opening or void block delimiter -- `<!-- wp:name ... -->` or
+	//     `<!-- wp:name ... /-->` -- and the newline that ends its line.
+	//     Each delimiter sits alone on its line, so the line's newline is
+	//     dropped with it; otherwise wpautop() would turn the leftover
+	//     newline into a stray <br /> or </p>.
+	$content = (string) preg_replace(
+		'#<!--\s*wp:.*?-->[ \t]*\r?\n?#s',
+		'',
+		(string) $content
+	);
+	// A closing block delimiter -- `<!-- /wp:name -->` -- and the newline
+	//     that begins its line. The blank line between two blocks is left
+	//     intact, so wpautop() still renders them as separate paragraphs.
+	return (string) preg_replace(
+		'#\r?\n?[ \t]*<!--\s*/wp:.*?-->#s',
+		'',
+		$content
+	);
+}
+
 function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more_file = '' ) {
 	global $id, $post, $more, $c, $withcomments, $page, $pages, $multipage, $numpages;
 	global $_SERVER, $preview;
@@ -492,6 +528,12 @@ function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more
 			$output
 		);
 	}
+	// Drop the block editor's `<!-- wp:* -->` delimiter comments so they do
+	//     not survive into the rendered page. get_the_content() is the one
+	//     getter behind the_content() / the_content_rss() /
+	//     the_content_unicode() and the faked excerpt, so this covers them
+	//     all (Issue #215).
+	$output = b2_strip_block_delimiters( $output );
 	return( $output );
 }
 
