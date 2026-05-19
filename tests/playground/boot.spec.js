@@ -195,6 +195,14 @@ test.describe( 'Playground boot and front page', () => {
 		// the post page loads (still served through the worker) with
 		// its CSS and no SQL error.
 		const postLink = frontFrame.locator( 'h3.storytitle a' ).first();
+		// The seed sets archive_mode = 'postbypost', so a post title
+		//     links to the single-post URL index.php?p=<id> (Issue #212),
+		//     not the ?m=YYYYMM month-archive anchor 0.71 defaults to.
+		const postHref = await postLink.getAttribute( 'href' );
+		expect(
+			postHref,
+			`post permalink should be a single-post ?p= URL (saw ${ postHref })`
+		).toMatch( /\?p=\d+/ );
 		await postLink.click();
 		const postFrame = await waitForBlogFrame( page, ( url ) =>
 			url.includes( '?' )
