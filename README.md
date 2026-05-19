@@ -35,11 +35,13 @@ npm run setup              # install all tooling (npm, block editor, Composer)
 npx 071-env start          # build and start the PHP 8.3 / MySQL 8 environment
 ```
 
-`npm run setup` runs the three post-clone installs in one step — the
+`npm run setup` runs the post-clone installs in one step — the
 repository-root npm packages (the `tools/` workspaces, Playwright, husky),
 the block editor's own npm package and its Vite build, and the PHP dev
-tooling via Composer. It installs tooling only; starting the blog is the
-next line.
+tooling via Composer. It then generates a default `src/b2config.php`
+(git-ignored) when none exists, so the files that `require_once` it resolve
+under phpstan. It installs and configures tooling only; starting the blog is
+the next line.
 
 `npx 071-env start` builds the `web` image and starts the environment. The
 Docker Compose files now live under `tools/env/`, so a plain
@@ -263,10 +265,12 @@ npm run setup              # ツール一式を導入（npm・ブロックエデ
 npx 071-env start          # PHP 8.3 / MySQL 8 環境をビルドして起動
 ```
 
-`npm run setup` はクローン後の3つの導入を1ステップで実行する — リポジトリ
+`npm run setup` はクローン後の導入を1ステップで実行する — リポジトリ
 直下の npm パッケージ（`tools/` ワークスペース・Playwright・husky）、
 ブロックエディタ自身の npm パッケージと Vite ビルド、Composer による PHP
-開発ツール。導入のみを行い、ブログの起動は次の行で行う。
+開発ツール。さらに `src/b2config.php`（git 管理外）が無ければ既定のものを
+生成し、`require_once` するファイルが phpstan で解決できるようにする。
+導入と設定のみを行い、ブログの起動は次の行で行う。
 
 `npx 071-env start` は `web` イメージをビルドし、環境を起動する。Docker
 Compose ファイルは `tools/env/` 配下へ移ったため、リポジトリ直下での素の
