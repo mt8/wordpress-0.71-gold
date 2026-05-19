@@ -57,6 +57,9 @@ No CSRF tokens anywhere. State-changing actions (delete post, delete
 user, delete comment) are reachable via GET, so an `<img>` tag is enough to
 trigger them against a logged-in admin.
 
+A follow-up (#201) added the `b2_csrf_check()` / `b2_csrf_field()` pair to
+`b2upload.php`'s image-upload form, which the original #33 work had missed.
+
 ### 4. Authentication & session (#34)
 
 Passwords are stored in plaintext; the lost-password feature emails the
@@ -155,6 +158,9 @@ Issue で追跡し、個別のプルリクエストで修正する。
 
 CSRF トークンが皆無。状態変更操作(投稿削除・ユーザー削除・コメント
 削除)が GET で実行でき、`<img>` タグだけでログイン中の管理者に対し発火する。
+
+フォローアップ(#201)で、当初の #33 対応が漏らしていた `b2upload.php` の
+画像アップロードフォームに `b2_csrf_check()` / `b2_csrf_field()` を追加した。
 
 ### 4. Authentication & session (#34)
 
