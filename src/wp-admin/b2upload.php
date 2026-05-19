@@ -107,7 +107,7 @@ function targetopener(blah, closeme, closeonly) {
 		background-color: #cccccc; filter: alpha(opacity:60);<?php } ?>;">
 <?php
 
-if ( ! $_POST['submit'] ) {
+if ( empty( $_POST['submit'] ) ) {
 	$i = explode( ' ', $fileupload_allowedtypes );
 	$i = implode( ', ', array_slice( $i, 1, count( $i ) - 2 ) );
 	?>
@@ -115,6 +115,7 @@ if ( ! $_POST['submit'] ) {
 	<p>You can upload files of type:<br /><em><?php echo $i; ?></em></p>
 	<p>The maximum size of the file should be:<br /><em><?php echo $fileupload_maxk; ?> KB</em></p>
 	<form action="b2upload.php" method="post" enctype="multipart/form-data">
+	<?php b2_csrf_field( 'b2upload' ); ?>
 	<input type="hidden" name="MAX_FILE_SIZE" value="<?php echo $fileupload_maxk * 1024; ?>" />
 	<input type="file" name="img1" size="30" class="uploadform" />
 	<br /><br />
@@ -147,11 +148,15 @@ if ( ! $_POST['submit'] ) {
 
 if ( ! empty( $_POST ) ) { //$img1_name != "") {
 
-	$imgalt = ( isset( $_POST['imgalt'] ) ) ? $_POST['imgalt'] : $imgalt;
+	// CSRF check -- reject a forged upload (Issue #201, completing the
+	// Issue #33 CSRF coverage which missed b2upload.php).
+	b2_csrf_check( 'b2upload' );
+
+	$imgalt = ( isset( $_POST['imgalt'] ) ) ? $_POST['imgalt'] : '';
 
 	$img1_name = ( strlen( $imgalt ) ) ? $_POST['imgalt'] : $_FILES['img1']['name'];
 	$img1_type = ( strlen( $imgalt ) ) ? $_POST['img1_type'] : $_FILES['img1']['type'];
-	$imgdesc   = str_replace( '"', '&amp;quot;', $_POST['imgdesc'] );
+	$imgdesc   = str_replace( '"', '&amp;quot;', $_POST['imgdesc'] ?? '' );
 
 	// Sanitise the user-supplied file name before it is used in any path.
 	// basename() strips directory components (e.g. "../../etc/passwd"),
@@ -229,6 +234,7 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 	<p> filename '<?php echo $img1; ?>' moved to '<?php echo "$pathtofile2 - $img2_name"; ?>'</p>
 	<p>Confirm or rename:</p>
 	<form action="b2upload.php" method="post" enctype="multipart/form-data">
+		<?php b2_csrf_field( 'b2upload' ); ?>
 	<input type="hidden" name="MAX_FILE_SIZE" value="<?php echo $fileupload_maxk * 1024; ?>" />
 	<input type="hidden" name="img1_type" value="<?php echo $img1_type; ?>" />
 	<input type="hidden" name="img1_name" value="<?php echo $img2_name; ?>" />
@@ -261,6 +267,11 @@ if ( ! empty( $_POST ) ) { //$img1_name != "") {
 		rename( $img1, $pathtofile )
 		or die( "Couldn't Upload Your File to $pathtofile." );
 	}
+
+	// The saved file's size on disk, for the "Image Details" panel
+	// below. $img1_size was previously never assigned, so the panel
+	// always showed a blank size.
+	$img1_size = filesize( $pathtofile );
 }
 
 
