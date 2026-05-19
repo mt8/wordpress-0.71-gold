@@ -337,7 +337,11 @@ browser-based WordPress 0.71.
   showing 0.71's post, category and author rendering — and the reset
   control returns to exactly this state. The newest post keeps the title
   and body the e2e suite expects, so the seed stays in step with the
-  playground e2e specs (`tests/playground/`, Issue #141).
+  playground e2e specs (`tests/playground/`, Issue #141). The seed sets
+  `archive_mode = 'postbypost'`, so post titles link to the single-post
+  URL `index.php?p=<id>` rather than the `?m=YYYYMM` month-archive anchor
+  0.71 defaults to (Issue #212); it remains a `b2settings` value the
+  admin Options page or a blueprint `setOption` step can override.
 - **Loading UI.** php-wasm's boot fetches and starts the ~40 MB PHP 8.3
   WebAssembly runtime, which takes a few seconds. `index.html` shows a
   loading splash — a spinner and a short explanation — over the blank
