@@ -113,12 +113,25 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 			//     post_date in b2edit.php's editpost UPDATE). SQLite reads
 			//     "..." as an identifier first, so convert a double-quoted
 			//     literal with no embedded quote to a single-quoted literal.
-			$sql = preg_replace_callback(
-				'/"([^"\\\\]*)"/',
-				function ( $m ) {
-					return "'" . str_replace( "'", "''", $m[1] ) . "'";
-				},
-				$sql
+			//
+			//     This must run OUTSIDE single-quoted string literals only:
+			//     a value being written can itself contain double quotes --
+			//     a block-editor post body with an image block holds
+			//     `<img src="...">` -- and converting those to single quotes
+			//     would terminate the surrounding '...' value early and
+			//     break the statement (Issue #203). apply_outside_strings()
+			//     skips the '...' literals.
+			$sql = self::apply_outside_strings(
+				$sql,
+				function ( $segment ) {
+					return preg_replace_callback(
+						'/"([^"\\\\]*)"/',
+						function ( $m ) {
+							return "'" . str_replace( "'", "''", $m[1] ) . "'";
+						},
+						$segment
+					);
+				}
 			);
 
 			// A MySQL auto_increment column treats an explicit 0 (or
@@ -191,7 +204,7 @@ if ( ! class_exists( 'WP071_SqlTranslator' ) ) {
 				-1,
 				PREG_SPLIT_DELIM_CAPTURE
 			);
-			$out = '';
+			$out   = '';
 			foreach ( $parts as $i => $part ) {
 				$out .= ( 0 === $i % 2 ) ? call_user_func( $callback, $part ) : $part;
 			}
