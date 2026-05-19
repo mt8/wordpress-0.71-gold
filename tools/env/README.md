@@ -118,6 +118,7 @@ Every field is optional:
 | `phpVersion`       | string                 | `"8.3"` | base PHP image tag (`php:<v>-apache`) |
 | `mappings`         | object (string→string) | `{}`    | extra read-write bind mounts for `web` (container path → host path) |
 | `lifecycleScripts` | object (string→string) | `{}`    | hook name → shell command (`afterStart`, `beforeDestroy`) |
+| `wpConfig`         | object (string→scalar) | `{}`    | per-environment `b2config.php` values, keyed by variable / constant name |
 
 The config is validated -- an unknown key, a wrong type, or an unknown
 lifecycle hook is rejected with a clear error.
@@ -135,6 +136,10 @@ Example `.071-env.json`:
   "lifecycleScripts": {
     "afterStart": "echo environment is up",
     "beforeDestroy": "echo backing up before teardown"
+  },
+  "wpConfig": {
+    "blogname": "my weblog",
+    "admin_email": "you@example.com"
   }
 }
 ```
@@ -157,6 +162,11 @@ How each field is applied:
   right time: `afterStart` after a successful `start`, `beforeDestroy` after
   the destroy confirmation but before Compose tears the environment down. A
   failing `beforeDestroy` aborts the destroy.
+- **`wpConfig`** -- on `start`, `071-env` generates `src/b2config.php` from
+  the committed `src/b2config-sample.php`, replacing each named variable
+  (`$key = ...;`) or constant (`define( 'key', ... )`) with the configured
+  value. `src/b2config.php` is git-ignored; with no `wpConfig` the generated
+  file matches the sample.
 
 A plain `docker compose up` without `071-env` still works -- all defaults are
 preserved -- but it must point at the moved file and set the project
@@ -337,6 +347,7 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
 | `phpVersion`        | 文字列                      | `"8.3"` | ベース PHP イメージのタグ（`php:<v>-apache`） |
 | `mappings`          | オブジェクト（文字列→文字列） | `{}`  | `web` 向けの追加の読み書きバインドマウント（コンテナパス → ホストパス） |
 | `lifecycleScripts`  | オブジェクト（文字列→文字列） | `{}`  | フック名 → シェルコマンド（`afterStart`・`beforeDestroy`） |
+| `wpConfig`          | オブジェクト（文字列→スカラ） | `{}`  | 環境ごとの `b2config.php` の値（変数名／定数名をキーとする） |
 
 設定は検証される -- 未知のキー・誤った型・未知のライフサイクルフックは、
 明確なエラーとともに拒否される。
@@ -354,6 +365,10 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   "lifecycleScripts": {
     "afterStart": "echo environment is up",
     "beforeDestroy": "echo backing up before teardown"
+  },
+  "wpConfig": {
+    "blogname": "my weblog",
+    "admin_email": "you@example.com"
   }
 }
 ```
@@ -375,6 +390,11 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   タイミングで実行する: `afterStart` は `start` 成功後、`beforeDestroy` は
   destroy 確認後・Compose が環境を破棄する前。`beforeDestroy` が失敗したら
   destroy を中止する。
+- **`wpConfig`** -- `start` 時に `071-env` はコミット済みの
+  `src/b2config-sample.php` から `src/b2config.php` を生成し、指定された
+  各変数（`$key = ...;`）または定数（`define( 'key', ... )`）を設定値で
+  置き換える。`src/b2config.php` は git 管理外。`wpConfig` が無ければ
+  生成ファイルはサンプルと一致する。
 
 `071-env` を介さない素の `docker compose up` も動作する -- すべての既定値が
 保持される -- が、移動したファイルを指定しプロジェクトディレクトリを設定

@@ -33,6 +33,13 @@ playwright-report/
 /.071-env.override.json
 /docker-compose.071-mappings.yml
 
+# Generated b2config.php, Issue #195 / 生成される b2config.php
+# Environment-specific config (DB credentials, blog settings). The
+# committed template is src/b2config-sample.php; `071-env start`
+# generates src/b2config.php from it, applying the `wpConfig` overrides
+# of `.071-env.json`.
+/src/b2config.php
+
 # Uploaded media (src/wp-content/uploads/), Issue #93 / アップロード済みメディア
 # Files uploaded through the block editor are user content, not source.
 # The wp-content/uploads/YYYY/MM/ tree is created on demand by upload.php.

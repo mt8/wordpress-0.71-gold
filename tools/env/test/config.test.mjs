@@ -29,6 +29,7 @@ test( 'defaultConfig: reproduces PR #110 behaviour (8080/3306, PHP 8.3)', () => 
 	assert.equal( config.phpVersion, '8.3' );
 	assert.deepEqual( config.mappings, {} );
 	assert.deepEqual( config.lifecycleScripts, {} );
+	assert.deepEqual( config.wpConfig, {} );
 } );
 
 test( 'defaultConfig: returns a fresh object each call (no shared state)', () => {
@@ -136,6 +137,30 @@ test( 'validateConfig: afterStart and beforeDestroy are accepted hooks', () => {
 	for ( const hook of LIFECYCLE_HOOKS ) {
 		assert.doesNotThrow( () => validateConfig( { lifecycleScripts: { [ hook ]: 'echo' } } ) );
 	}
+} );
+
+test( 'validateConfig: wpConfig must be a JSON object', () => {
+	assert.throws( () => validateConfig( { wpConfig: [] } ), /'wpConfig' must be a JSON object/ );
+	assert.throws( () => validateConfig( { wpConfig: 'x' } ), /'wpConfig' must be a JSON object/ );
+} );
+
+test( 'validateConfig: wpConfig values may be string, number or boolean', () => {
+	assert.doesNotThrow( () =>
+		validateConfig( {
+			wpConfig: { blogname: 'my weblog', start_of_week: 1, use_preview: true },
+		} )
+	);
+} );
+
+test( 'validateConfig: a wpConfig value of another type is rejected', () => {
+	assert.throws(
+		() => validateConfig( { wpConfig: { smilies: { ':)': 'x' } } } ),
+		/'wpConfig.smilies' must be a string, number or boolean/
+	);
+	assert.throws(
+		() => validateConfig( { wpConfig: { tags: [ 'a' ] } } ),
+		/'wpConfig.tags' must be a string, number or boolean/
+	);
 } );
 
 test( 'validateConfig: the error message names the source file', () => {
