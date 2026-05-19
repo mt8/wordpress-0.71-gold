@@ -77,6 +77,58 @@ final class TemplateFunctionsTest extends TestCase
         $this->assertSame('Teaser<a name="more5"></a>Rest', get_the_content());
     }
 
+    public function testGetTheContentStripsBlockEditorDelimiters(): void
+    {
+        $content = "<!-- wp:paragraph -->\n<p>Welcome to WordPress.</p>\n<!-- /wp:paragraph -->";
+        $this->primeLoopGlobals($content, [$content]);
+        // the block delimiter comments, and the newlines that were part
+        // of their lines, are gone -- get_the_content() returns just the
+        // block's own HTML, with no leftover blank line.
+        $this->assertSame('<p>Welcome to WordPress.</p>', get_the_content());
+    }
+
+    public function testBlockContentRendersCleanlyThroughWpautop(): void
+    {
+        // the reported bug: a block-delimited post left a stray </p> once
+        // wpautop() ran over the delimiters' leftover newlines (Issue
+        // #215). Stripping each delimiter with its line's newline keeps
+        // the rendered paragraph clean.
+        $content = "<!-- wp:paragraph -->\n"
+            . "<p>Welcome to WordPress. This is the first post.</p>\n"
+            . '<!-- /wp:paragraph -->';
+        $this->primeLoopGlobals($content, [$content]);
+        $this->assertSame(
+            "<p>Welcome to WordPress. This is the first post.</p>\n",
+            wpautop(get_the_content())
+        );
+    }
+
+    public function testStripBlockDelimitersRemovesEveryDelimiterShape(): void
+    {
+        $content = '<!-- wp:heading {"level":3} --><h3>Title</h3><!-- /wp:heading -->'
+            . '<!-- wp:spacer /-->';
+        // an opening delimiter with JSON attributes, a closing delimiter
+        // and a self-closing void-block delimiter are all removed.
+        $this->assertSame('<h3>Title</h3>', b2_strip_block_delimiters($content));
+    }
+
+    public function testStripBlockDelimitersKeepsTheBlankLineBetweenBlocks(): void
+    {
+        $content = "<!-- wp:paragraph -->\n<p>A</p>\n<!-- /wp:paragraph -->\n\n"
+            . "<!-- wp:paragraph -->\n<p>B</p>\n<!-- /wp:paragraph -->";
+        // the blank line separating two blocks survives, so wpautop()
+        // still renders them as two distinct paragraphs.
+        $this->assertSame("<p>A</p>\n\n<p>B</p>", b2_strip_block_delimiters($content));
+    }
+
+    public function testStripBlockDelimitersLeavesOtherCommentsAlone(): void
+    {
+        // the b2-loop's own <!--more--> / <!--noteaser--> markers are not
+        // block delimiters and must survive untouched.
+        $content = 'Teaser<!--more-->Rest<!--noteaser-->';
+        $this->assertSame($content, b2_strip_block_delimiters($content));
+    }
+
     public function testGetTheExcerptReturnsTheStoredExcerpt(): void
     {
         $GLOBALS['post']               = new stdClass();
