@@ -139,7 +139,8 @@ Example `.071-env.json`:
   },
   "wpConfig": {
     "blogname": "my weblog",
-    "admin_email": "you@example.com"
+    "admin_email": "you@example.com",
+    "DB_NAME": "myblog"
   }
 }
 ```
@@ -166,7 +167,10 @@ How each field is applied:
   the committed `src/b2config-sample.php`, replacing each named variable
   (`$key = ...;`) or constant (`define( 'key', ... )`) with the configured
   value. `src/b2config.php` is git-ignored; with no `wpConfig` the generated
-  file matches the sample.
+  file matches the sample. `DB_NAME`, `DB_USER` and `DB_PASSWORD` are also
+  passed to the MySQL container (`docker-compose.yml`'s `MYSQL_DATABASE` /
+  `MYSQL_USER` / `MYSQL_PASSWORD`), so the blog config and the database
+  container always agree -- set the database name once, in `wpConfig`.
 
 A plain `docker compose up` without `071-env` still works -- all defaults are
 preserved -- but it must point at the moved file and set the project
@@ -368,7 +372,8 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   },
   "wpConfig": {
     "blogname": "my weblog",
-    "admin_email": "you@example.com"
+    "admin_email": "you@example.com",
+    "DB_NAME": "myblog"
   }
 }
 ```
@@ -394,7 +399,10 @@ docker compose … exec web php /opt/071-cli/php/071-cli.php post list --path=/v
   `src/b2config-sample.php` から `src/b2config.php` を生成し、指定された
   各変数（`$key = ...;`）または定数（`define( 'key', ... )`）を設定値で
   置き換える。`src/b2config.php` は git 管理外。`wpConfig` が無ければ
-  生成ファイルはサンプルと一致する。
+  生成ファイルはサンプルと一致する。`DB_NAME`・`DB_USER`・`DB_PASSWORD` は
+  MySQL コンテナ（`docker-compose.yml` の `MYSQL_DATABASE` / `MYSQL_USER` /
+  `MYSQL_PASSWORD`）にも渡されるため、ブログ設定とデータベースコンテナは
+  常に一致する -- データベース名は `wpConfig` に一度書けばよい。
 
 `071-env` を介さない素の `docker compose up` も動作する -- すべての既定値が
 保持される -- が、移動したファイルを指定しプロジェクトディレクトリを設定
