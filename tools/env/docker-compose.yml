@@ -8,12 +8,14 @@
 #     the first `-f` file's directory; pass `--project-directory .` from the
 #     repository root (071-env does this automatically) so they resolve there.
 #
-#     The host ports and the PHP version use Compose variable substitution with
-#     defaults (`${VAR:-default}`), so a plain `docker compose up` is unchanged
-#     while 071-env can override them from `.071-env.json` by passing WP_PORT /
-#     DB_PORT / PHP_VERSION in the environment. Compose appends port lists
-#     across `-f` files, so a layered override file cannot change a port --
-#     variable substitution is the correct mechanism.
+#     The host ports, the PHP version and the MySQL database name /
+#     credentials use Compose variable substitution with defaults
+#     (`${VAR:-default}`), so a plain `docker compose up` is unchanged while
+#     071-env can override them from `.071-env.json` by passing WP_PORT /
+#     DB_PORT / PHP_VERSION / DB_NAME / DB_USER / DB_PASSWORD in the
+#     environment. Compose appends port lists across `-f` files, so a layered
+#     override file cannot change a port -- variable substitution is the
+#     correct mechanism.
 services:
   # Apache + PHP web server, built from tools/env/Dockerfile.
   web:
@@ -33,13 +35,17 @@ services:
     depends_on:
       - db
 
-  # MySQL 8 database. Credentials match src/b2config.php.
+  # MySQL 8 database. The database name and credentials match
+  #     src/b2config.php; 071-env passes DB_NAME / DB_USER / DB_PASSWORD from
+  #     the `wpConfig` object of .071-env.json, so one setting drives both the
+  #     blog config and the container. A plain `docker compose up` without
+  #     071-env falls back to the b2config-sample.php defaults.
   db:
     image: mysql:8.0
     environment:
-      MYSQL_DATABASE: b2
-      MYSQL_USER: user
-      MYSQL_PASSWORD: pass
+      MYSQL_DATABASE: "${DB_NAME:-b2}"
+      MYSQL_USER: "${DB_USER:-user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-pass}"
       MYSQL_ROOT_PASSWORD: rootpass
     ports:
       - "${DB_PORT:-3306}:3306"
