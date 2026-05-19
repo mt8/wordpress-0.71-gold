@@ -46,6 +46,11 @@ User-controlled data is echoed into HTML without escaping (reflected:
 `HTTP_REFERER`, `PHP_SELF`, `$_POST` values; stored: post/comment content).
 Escaping is applied inconsistently across files.
 
+A follow-up (#197) escaped the user-profile fields echoed by `b2profile.php`'s
+profile view and edit form (`htmlspecialchars()`), closing a stored XSS where
+a crafted profile field ran script in the admin page of anyone opening that
+user's profile popup.
+
 ### 3. Cross-site request forgery (#33)
 
 No CSRF tokens anywhere. State-changing actions (delete post, delete
@@ -140,6 +145,11 @@ Issue で追跡し、個別のプルリクエストで修正する。
 ユーザー制御データが未エスケープで HTML 出力される(反射型:
 `HTTP_REFERER`・`PHP_SELF`・`$_POST` 値、蓄積型: 投稿/コメント本文)。
 エスケープはファイル間で不統一。
+
+フォローアップ(#197)で、`b2profile.php` のプロフィール表示と編集フォームが
+出力するユーザープロフィール項目を `htmlspecialchars()` でエスケープし、
+細工したプロフィール項目がそのユーザーのプロフィールポップアップを開いた
+管理者のページでスクリプトを実行する蓄積型 XSS を塞いだ。
 
 ### 3. Cross-site request forgery (#33)
 
