@@ -24,6 +24,11 @@ import { PHP, PHPRequestHandler, ProcessIdAllocator } from '@php-wasm/universal'
 import { wpFiles } from './wp-files.js';
 import { DatabasePersistence } from './persistence.js';
 import { MediaPersistence } from './media-persistence.js';
+import {
+	loadBlueprint,
+	applyBlueprint,
+	blueprintLandingPage,
+} from './blueprint.js';
 import { detectInAppBrowser } from './inapp-browser.js';
 
 // Document root inside the php-wasm virtual filesystem.
@@ -914,6 +919,31 @@ async function boot() {
 	//     the seeded post survives the very first reload.
 	await persistIfChanged();
 
+	// Apply a blueprint (Issue #209) when one is requested via
+	//     ?blueprint=<url> and this is a fresh boot. The steps run
+	//     against the freshly seeded database; a boot that restored a
+	//     persisted environment skips the blueprint, so a reload never
+	//     re-applies it (and never duplicates inserted rows). When the
+	//     blueprint names a landingPage it replaces /index.php as the
+	//     page the blog opens on.
+	let landingPage = '/index.php';
+	let blueprintApplied = false;
+	try {
+		const blueprint = await loadBlueprint( APP_BASE );
+		if ( blueprint && ! restored ) {
+			setStatus( 'applying the blueprint…' );
+			await applyBlueprint( php, requestHandler, blueprint );
+			await persistIfChanged();
+			landingPage = blueprintLandingPage( blueprint );
+			blueprintApplied = true;
+		}
+	} catch ( error ) {
+		setStatus(
+			`blueprint failed: ${ error && error.message }`,
+			'err'
+		);
+	}
+
 	// Point the iframe at the real scoped path. The navigation and
 	//     every asset request and link click inside it are intercepted
 	//     by the service worker and served through php-wasm -- so the
@@ -925,7 +955,7 @@ async function boot() {
 	//     A fallback timer hides it regardless after a few seconds, so a
 	//     missed load event can never leave the splash stuck over a
 	//     rendered blog.
-	const frontPageUrl = SCOPE_PREFIX + '/index.php';
+	const frontPageUrl = SCOPE_PREFIX + landingPage;
 	blogEl.addEventListener( 'load', hideSplash, { once: true } );
 	setTimeout( hideSplash, 4000 );
 	blogEl.src = frontPageUrl;
@@ -1096,6 +1126,10 @@ async function boot() {
 		html: frontPage.text,
 		persistenceBackend: persistence.backend,
 		databaseRestored: restored,
+		// Whether a ?blueprint=<url> blueprint was applied on this boot
+		//     (Issue #209). False when no blueprint was requested, or on
+		//     a boot that restored a persisted environment.
+		blueprintApplied,
 		// The number of uploaded-media files restored from the
 		//     persistent store at boot (Issue #124). The verifier reads
 		//     this after a reload to confirm an uploaded image was

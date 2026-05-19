@@ -204,6 +204,41 @@ of the SQLite file in the browser:
 `src/` is untouched: the persistence layer, the boot-time restore and
 the reset all live under `tools/playground/`.
 
+## Blueprints
+
+The official WordPress Playground provisions an environment from a
+declarative `blueprint.json`. 071-now supports a focused subset, fitting
+WordPress 0.71 — which has no plugins, themes or `theme.json`, so most of
+the official step types do not apply (Issue #209).
+
+A blueprint is delivered through a `?blueprint=<url>` query parameter —
+open the playground at `?blueprint=example-blueprint.json` to provision a
+fresh environment from the bundled `public/example-blueprint.json` (the
+URL may also be an absolute one the blueprint is hosted at). The
+blueprint runs once, on a fresh boot, after the database is seeded and
+before the blog is shown; a boot that restored a persisted environment
+skips it, so a reload never re-applies a blueprint, and never duplicates
+rows it inserted.
+
+A blueprint is a JSON object with two keys:
+
+- **`landingPage`** — the blog-relative path the playground opens after
+  boot, instead of `/index.php`.
+- **`steps`** — an array of step objects, applied in order:
+  - `{ "step": "runSql", "sql": <string | string[]> }` — run one or more
+    SQL statements against the SQLite database.
+  - `{ "step": "runPHP", "code": "<?php …" }` — run a PHP snippet.
+  - `{ "step": "setOption", "option": <name>, "value": <value> }` — set a
+    WordPress 0.71 setting (a `b2settings` column: `posts_per_page`,
+    `what_to_show`, `archive_mode`, `time_difference`, `AutoBR`,
+    `time_format`, `date_format`).
+
+Each step runs as a real request through the same request handler the
+blog uses — its PHP is written into the document root, requested, and
+removed — so its database writes land in the environment the blog serves
+and are persisted exactly like a post created through the admin. The
+loader and step runner live in `src/blueprint.js`.
+
 ## Image upload
 
 WordPress 0.71's classic admin has an upload page
