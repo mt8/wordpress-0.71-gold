@@ -79,7 +79,7 @@ function cli_print_usage(): void {
 		'  comment   list | get <id> | delete <id>',
 		'  link      list | get <id> | create | delete <id>',
 		'  option    list | get <name> | set <name> <value>',
-		'  db        query <sql> | tables',
+		'  db        query <sql> | tables | export <file> | import <file>',
 		'  export    run',
 		'',
 		'Global flags:',
@@ -94,6 +94,7 @@ function cli_print_usage(): void {
 		'  071 post get 1 --format=json',
 		'  071 option get posts_per_page',
 		'  071 db query "SELECT COUNT(*) FROM b2posts"',
+		'  071 db export dump.sql',
 		'  071 export',
 	);
 
