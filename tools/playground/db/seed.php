@@ -150,11 +150,16 @@ $catStmt = null;
 
 // The b2settings row. what_to_show = 'posts' keeps the front page
 //     on the simple "latest N posts" path (blog.header.php), avoiding
-//     the date-window path. date_format / time_format are 0.71 defaults.
+//     the date-window path. archive_mode = 'postbypost' makes
+//     permalink_link() emit the single-post URL index.php?p=<id> rather
+//     than the ?m=YYYYMM#<id> month-archive anchor 0.71 defaults to
+//     (Issue #212); it stays a b2settings value, so the admin Options
+//     page or a blueprint setOption step can still override it.
+//     date_format / time_format are 0.71 defaults.
 $pdo->exec(
 	"INSERT INTO $tablesettings
 	  (ID, posts_per_page, what_to_show, archive_mode, time_difference, AutoBR, time_format, date_format)
-	  VALUES (1, 20, 'posts', 'monthly', 0, 1, 'g:i a', 'n/j/Y')"
+	  VALUES (1, 20, 'posts', 'postbypost', 0, 1, 'g:i a', 'n/j/Y')"
 );
 
 // The admin user (post_author 1 references this row).
