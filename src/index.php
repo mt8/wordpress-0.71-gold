@@ -8,8 +8,8 @@ require $abspath . 'wp-links/links.php';
 <head>
 	<title><?php bloginfo( 'name' ); ?><?php single_post_title( ' :: ' ); ?><?php single_cat_title( ' :: ' ); ?><?php single_month_title( ' :: ' ); ?></title>
 	
-	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
-	<meta name="generator" content="WordPress" /> <!-- version removed (Issue #37) so the exact release is not disclosed publicly. -->
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<meta name="generator" content="WordPress 0.71-gold" /> <!-- Issue #37 dropped the version for a live install; this site is published statically (no running PHP or database), so the 0.71-gold edition is named deliberately (Issue #218). -->
 
 	<style type="text/css" media="screen">
 		@import url( <?php echo $siteurl; ?>/layout2b.css );

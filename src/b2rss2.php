@@ -1,7 +1,7 @@
 <?php /* These first lines are the first part of a WordPress template.
 			In every template you do, you got to copy them before the CafeLog 'loop' */
 $blog = 1; // enter your blog's ID
-header( 'Content-type: text/xml' );
+header( 'Content-type: text/xml; charset=UTF-8' );
 require 'blog.header.php';
 if ( ! isset( $rss_language ) ) {
 	$rss_language = 'en'; }
@@ -10,7 +10,7 @@ if ( ! isset( $rss_encoded_html ) ) {
 if ( ! isset( $rss_excerpt_length ) || ( 1 == $rss_encoded_html ) ) {
 	$rss_excerpt_length = 0; }
 ?>
-<?php echo '<?xml version="1.0"?' . '>'; ?>
+<?php echo '<?xml version="1.0" encoding="UTF-8"?' . '>'; ?>
 <!-- version removed from the generator string (Issue #37). -->
 <!-- generator="wordpress" -->
 <rss version="2.0" 

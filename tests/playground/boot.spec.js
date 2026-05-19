@@ -90,6 +90,17 @@ test.describe( 'Playground boot and front page', () => {
 		expect( bootState.html ).toContain( EXPECTED_TITLE );
 		expect( bootState.html ).toContain( EXPECTED_BODY );
 
+		// The front page declares UTF-8 (Issue #217), so the static
+		// export renders non-ASCII content correctly once published on a
+		// host that sends no charset of its own.
+		expect( bootState.html ).toContain( 'charset=UTF-8' );
+		expect( bootState.html ).not.toContain( 'iso-8859-1' );
+
+		// The generator meta names the 0.71-gold edition deliberately --
+		// the published site is static, so there is no live install
+		// whose exact version needs hiding (Issue #218).
+		expect( bootState.html ).toContain( 'content="WordPress 0.71-gold"' );
+
 		// The blog renders inside the iframe at a real scoped
 		// same-origin path served through the service worker.
 		const frontFrame = await waitForBlogFrame( page, ( url ) =>
