@@ -152,6 +152,7 @@ switch ( $action ) {
 
 <h2>View Profile &#8220;
 		<?php
+		$r = '';
 		switch ( $profiledata->user_idmode ) {
 			case 'nickname':
 				$r = $profiledata->user_nickname;
@@ -172,13 +173,13 @@ switch ( $action ) {
 				$r = $profiledata->user_lastname . ' ' . $profiledata->user_firstname;
 				break;
 		}
-		echo $r;
+		echo htmlspecialchars( $r, ENT_QUOTES );
 		?>
 	&#8221;</h2>
 	  
 	<div id="profile">
 <p> 
-	<strong>Login</strong> <?php echo $profiledata->user_login; ?>
+	<strong>Login</strong> <?php echo htmlspecialchars( $profiledata->user_login, ENT_QUOTES ); ?>
 	| <strong>User #</strong> <?php echo $profiledata->ID; ?> | <strong>Level</strong> 
 		<?php echo $profiledata->user_level; ?> | <strong>Posts</strong> 
 		<?php
@@ -187,16 +188,16 @@ switch ( $action ) {
 		?>
 </p>
 
-<p> <strong>First:</strong> <?php echo $profiledata->user_firstname; ?> </p>
+<p> <strong>First:</strong> <?php echo htmlspecialchars( $profiledata->user_firstname, ENT_QUOTES ); ?> </p>
   
-<p> <strong>Last:</strong> <?php echo $profiledata->user_lastname; ?> </p>
+<p> <strong>Last:</strong> <?php echo htmlspecialchars( $profiledata->user_lastname, ENT_QUOTES ); ?> </p>
   
-<p> <strong>Nickname:</strong> <?php echo $profiledata->user_nickname; ?> </p>
+<p> <strong>Nickname:</strong> <?php echo htmlspecialchars( $profiledata->user_nickname, ENT_QUOTES ); ?> </p>
   
-<p> <strong>Email:</strong> <?php echo make_clickable( $profiledata->user_email ); ?> 
+<p> <strong>Email:</strong> <?php echo make_clickable( htmlspecialchars( $profiledata->user_email, ENT_QUOTES ) ); ?>
 </p>
   
-<p> <strong>URL:</strong> <?php echo $profiledata->user_url; ?> </p>
+<p> <strong>URL:</strong> <?php echo htmlspecialchars( $profiledata->user_url, ENT_QUOTES ); ?> </p>
   
 <p> <strong>ICQ:</strong> 
 		<?php
@@ -205,12 +206,12 @@ switch ( $action ) {
 		?>
 </p>
   
-<p> <strong>AIM:</strong> <?php echo make_clickable( 'aim:' . $profiledata->user_aim ); ?> 
+<p> <strong>AIM:</strong> <?php echo make_clickable( 'aim:' . htmlspecialchars( $profiledata->user_aim, ENT_QUOTES ) ); ?>
 </p>
   
-<p> <strong>MSN IM:</strong> <?php echo $profiledata->user_msn; ?> </p>
+<p> <strong>MSN IM:</strong> <?php echo htmlspecialchars( $profiledata->user_msn, ENT_QUOTES ); ?> </p>
   
-<p> <strong>Yahoo IM:</strong> <?php echo $profiledata->user_yim; ?> </p>
+<p> <strong>Yahoo IM:</strong> <?php echo htmlspecialchars( $profiledata->user_yim, ENT_QUOTES ); ?> </p>
   
 </div>
 
@@ -283,48 +284,49 @@ switch ( $action ) {
 		$posts = get_usernumposts( $user_ID );
 		echo $posts;
 		?>
-	| <strong>Login:</strong> <?php echo $profiledata->user_login; ?></p>
+	| <strong>Login:</strong> <?php echo htmlspecialchars( $profiledata->user_login, ENT_QUOTES ); ?></p>
 	<div class="left">
 	<p>
 	<label for="newuser_firstname">First:</label>
-	<input type="text" name="newuser_firstname" id="newuser_firstname" value="<?php echo $profiledata->user_firstname; ?>" />
+	<input type="text" name="newuser_firstname" id="newuser_firstname" value="<?php echo htmlspecialchars( $profiledata->user_firstname, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="">Last:</label>
-	<input type="text" name="newuser_lastname" id="newuser_lastname" value="<?php echo $profiledata->user_lastname; ?>" />
+	<input type="text" name="newuser_lastname" id="newuser_lastname" value="<?php echo htmlspecialchars( $profiledata->user_lastname, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_nickname">Nickname:</label> 
-	<input type="text" name="newuser_nickname" id="newuser_nickname" value="<?php echo $profiledata->user_nickname; ?>" />
+	<input type="text" name="newuser_nickname" id="newuser_nickname" value="<?php echo htmlspecialchars( $profiledata->user_nickname, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_email">Email:</label> 
-	<input type="text" name="newuser_email" id="newuser_email" value="<?php echo $profiledata->user_email; ?>" />
+	<input type="text" name="newuser_email" id="newuser_email" value="<?php echo htmlspecialchars( $profiledata->user_email, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_url">URL:</label>
-	<input type="text" name="newuser_url" id="newuser_url" value="<?php echo $profiledata->user_url; ?>" />
+	<input type="text" name="newuser_url" id="newuser_url" value="<?php echo htmlspecialchars( $profiledata->user_url, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_icq">ICQ:</label> 
-	<input type="text" name="newuser_icq" id="newuser_icq" value="
 		<?php
-		if ( $profiledata->user_icq > 0 ) {
-			echo $profiledata->user_icq; }
+		// Issue #197 -- the ICQ value stays on one line. When the ICQ is 0,
+		// the multi-line form left whitespace in value="", which the update
+		// handler's numeric ICQ check then rejected, blocking the whole
+		// profile save.
 		?>
-		" />
+	<input type="text" name="newuser_icq" id="newuser_icq" value="<?php echo $profiledata->user_icq > 0 ? (int) $profiledata->user_icq : ''; ?>" />
 	</p>
 	<p>
 	<label for="newuser_aim">AIM:</label>
-	<input type="text" name="newuser_aim" id="newuser_aim" value="<?php echo $profiledata->user_aim; ?>" />
+	<input type="text" name="newuser_aim" id="newuser_aim" value="<?php echo htmlspecialchars( $profiledata->user_aim, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_msn">MSN IM:</label>
-	<input type="text" name="newuser_msn" id="newuser_msn" value="<?php echo $profiledata->user_msn; ?>" />
+	<input type="text" name="newuser_msn" id="newuser_msn" value="<?php echo htmlspecialchars( $profiledata->user_msn, ENT_QUOTES ); ?>" />
 	</p>
 	<p>
 	<label for="newuser_yim">Yahoo IM:</label> 
-	<input type="text" name="newuser_yim" id="newuser_yim" value="<?php echo $profiledata->user_yim; ?>" />
+	<input type="text" name="newuser_yim" id="newuser_yim" value="<?php echo htmlspecialchars( $profiledata->user_yim, ENT_QUOTES ); ?>" />
 	</p>
 	</div>
 	<div class="right">
@@ -336,42 +338,42 @@ switch ( $action ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_nickname; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_nickname, ENT_QUOTES ); ?></option>
 		<option value="login"
 		<?php
 		if ( 'login' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_login; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_login, ENT_QUOTES ); ?></option>
 		<option value="firstname"
 		<?php
 		if ( 'firstname' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_firstname; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_firstname, ENT_QUOTES ); ?></option>
 		<option value="lastname"
 		<?php
 		if ( 'lastname' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_lastname; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_lastname, ENT_QUOTES ); ?></option>
 		<option value="namefl"
 		<?php
 		if ( 'namefl' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_firstname . ' ' . $profiledata->user_lastname; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_firstname . ' ' . $profiledata->user_lastname, ENT_QUOTES ); ?></option>
 		<option value="namelf"
 		<?php
 		if ( 'namelf' == $profiledata->user_idmode ) {
 			echo ' selected';
 		}
 		?>
-		><?php echo $profiledata->user_lastname . ' ' . $profiledata->user_firstname; ?></option>
+		><?php echo htmlspecialchars( $profiledata->user_lastname . ' ' . $profiledata->user_firstname, ENT_QUOTES ); ?></option>
 	</select>
 	</p>
 	<p> <br />
