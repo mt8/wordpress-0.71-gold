@@ -192,6 +192,14 @@ of the SQLite file in the browser:
   re-registers the service worker, re-boots php-wasm, the boot shim
   re-seeds a fresh database and the virtual filesystem starts empty: the
   playground comes back exactly as a brand-new first visit.
+- **Export / Import.** The toolbar's *Export* button (and
+  `window.__071now.exportEnvironment()`) downloads the environment — the
+  SQLite database and the uploaded-media tree — as a JSON envelope
+  (`071-now-environment.json`, binary parts base64-encoded). *Import*
+  (and `window.__071now.importEnvironment()`) reads such a file back into
+  the persistent store and reloads, so the boot-time restore brings the
+  imported environment up. It is the 071-now counterpart of the official
+  WordPress Playground's environment export / import (Issue #207).
 
 `src/` is untouched: the persistence layer, the boot-time restore and
 the reset all live under `tools/playground/`.

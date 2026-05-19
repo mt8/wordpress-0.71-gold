@@ -58,14 +58,15 @@
 			#toolbar.err #status { color: #ffb3b3; }
 			#toolbar.ok { background: #00450c; }
 			#toolbar.err { background: #5c0000; }
-			#reset {
-				margin: 4px 12px; padding: 3px 12px; cursor: pointer;
+			#toolbar button {
+				margin: 4px 0; padding: 3px 12px; cursor: pointer;
 				font: 12px/1.5 system-ui, sans-serif;
 				background: #2271b1; color: #fff;
 				border: 0; border-radius: 3px;
 			}
-			#reset:hover:not(:disabled) { background: #135e96; }
-			#reset:disabled { opacity: 0.5; cursor: default; }
+			#reset { margin-right: 12px; }
+			#toolbar button:hover:not(:disabled) { background: #135e96; }
+			#toolbar button:disabled { opacity: 0.5; cursor: default; }
 
 			/*
 			 * #stage holds the blog iframe and the loading splash; the
@@ -175,20 +176,29 @@
 			</a>
 		</header>
 		<!--
-		  The toolbar holds the boot status line and the reset
-		      control. Reset is a full environment reset (Issue #144): it
-		      clears every piece of the playground's persistent and cached
-		      state -- the persisted SQLite database and uploaded media,
-		      the service worker and its Cache API caches, and the
-		      sessionStorage / localStorage the playground sets -- then
-		      reloads, so the playground comes back exactly as a brand-new
-		      first visit.
+		  The toolbar holds the boot status line and the environment
+		      controls. Export downloads the environment (the SQLite
+		      database and uploaded media) as a file; Import replaces it
+		      from such a file. Reset is a full environment reset (Issue
+		      #144): it clears every piece of the playground's persistent
+		      and cached state -- the persisted SQLite database and
+		      uploaded media, the service worker and its Cache API caches,
+		      and the sessionStorage / localStorage the playground sets --
+		      then reloads, so the playground comes back exactly as a
+		      brand-new first visit.
 		-->
 		<div id="toolbar">
 			<div id="status">071-now: booting php-wasm&hellip;</div>
+			<button id="export" type="button" title="Download the environment (database and uploaded media) as a file">
+				Export
+			</button>
+			<button id="import" type="button" title="Replace the environment from an exported file">
+				Import
+			</button>
 			<button id="reset" type="button" title="Clear all playground state and reload as a brand-new first visit">
 				Reset
 			</button>
+			<input id="import-file" type="file" accept="application/json,.json" hidden />
 		</div>
 		<div id="stage">
 			<!--

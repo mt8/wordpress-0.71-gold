@@ -99,6 +99,9 @@ const SCOPE_PREFIX = `${ APP_BASE }scope:${ Math.random()
 const statusEl = document.getElementById( 'status' );
 const blogEl = document.getElementById( 'blog' );
 const resetButtonEl = document.getElementById( 'reset' );
+const exportButtonEl = document.getElementById( 'export' );
+const importButtonEl = document.getElementById( 'import' );
+const importFileEl = document.getElementById( 'import-file' );
 const splashEl = document.getElementById( 'splash' );
 const splashPhaseEl = document.getElementById( 'splash-phase' );
 const inAppNoticeEl = document.getElementById( 'inapp-notice' );
@@ -567,6 +570,67 @@ function readDatabaseBytes( php ) {
 }
 
 /**
+ * The format marker an exported environment file carries, so an
+ * imported file can be recognised as a 071-now export (Issue #207).
+ */
+const ENVIRONMENT_FORMAT = '071-now-environment';
+
+/**
+ * Encode a byte array as base64.
+ *
+ * The bytes are converted in chunks: String.fromCharCode applied to a
+ * whole large array at once overflows the call stack.
+ *
+ * @param {Uint8Array} bytes The bytes to encode.
+ * @return {string} The base64 string.
+ */
+function bytesToBase64( bytes ) {
+	let binary = '';
+	const chunkSize = 0x8000;
+	for ( let i = 0; i < bytes.length; i += chunkSize ) {
+		binary += String.fromCharCode.apply(
+			null,
+			bytes.subarray( i, i + chunkSize )
+		);
+	}
+	return btoa( binary );
+}
+
+/**
+ * Decode a base64 string to a byte array.
+ *
+ * @param {string} base64 The base64 string.
+ * @return {Uint8Array} The decoded bytes.
+ */
+function base64ToBytes( base64 ) {
+	const binary = atob( base64 );
+	const bytes = new Uint8Array( binary.length );
+	for ( let i = 0; i < binary.length; i++ ) {
+		bytes[ i ] = binary.charCodeAt( i );
+	}
+	return bytes;
+}
+
+/**
+ * Trigger a browser download of a text file.
+ *
+ * @param {string} filename The download file name.
+ * @param {string} text     The file contents.
+ * @param {string} mimeType The MIME type.
+ */
+function downloadTextFile( filename, text, mimeType ) {
+	const blob = new Blob( [ text ], { type: mimeType } );
+	const url = URL.createObjectURL( blob );
+	const link = document.createElement( 'a' );
+	link.href = url;
+	link.download = filename;
+	document.body.appendChild( link );
+	link.click();
+	link.remove();
+	URL.revokeObjectURL( url );
+}
+
+/**
  * Whether two byte arrays hold identical content.
  *
  * Used to skip persisting the database when a request did not change it
@@ -867,6 +931,70 @@ async function boot() {
 	blogEl.src = frontPageUrl;
 
 	/**
+	 * Export the environment -- the SQLite database and the uploaded
+	 * media tree -- as a JSON envelope string (Issue #207).
+	 *
+	 * Binary parts are base64-encoded. Pending changes are flushed
+	 * first so the export reflects the latest state.
+	 *
+	 * @return {Promise<string>} The environment envelope as JSON.
+	 */
+	async function exportEnvironment() {
+		await persistIfChanged();
+		const dbBytes   = readDatabaseBytes( php );
+		const mediaTree = readMediaTree( php );
+		const media     = {};
+		for ( const [ path, bytes ] of Object.entries( mediaTree ) ) {
+			media[ path ] = bytesToBase64( bytes );
+		}
+		return JSON.stringify( {
+			format: ENVIRONMENT_FORMAT,
+			version: 1,
+			exportedAt: new Date().toISOString(),
+			database: dbBytes ? bytesToBase64( dbBytes ) : null,
+			media,
+		} );
+	}
+
+	/**
+	 * Import an environment from an exported envelope and reload.
+	 *
+	 * The database and uploaded media are written into the persistent
+	 * store; the reload's boot-time restore then brings the imported
+	 * environment up. Throws when the text is not a 071-now export.
+	 *
+	 * @param {string} text The environment envelope JSON.
+	 * @return {Promise<void>}
+	 */
+	async function importEnvironment( text ) {
+		let envelope;
+		try {
+			envelope = JSON.parse( text );
+		} catch ( error ) {
+			throw new Error( 'the file is not valid JSON.' );
+		}
+		if ( ! envelope || envelope.format !== ENVIRONMENT_FORMAT ) {
+			throw new Error(
+				'the file is not a 071-now environment export.'
+			);
+		}
+		if ( envelope.database ) {
+			await persistence.save( base64ToBytes( envelope.database ) );
+		}
+		const mediaTree = {};
+		for ( const [ path, encoded ] of Object.entries(
+			envelope.media || {}
+		) ) {
+			mediaTree[ path ] = base64ToBytes( encoded );
+		}
+		// Clear first so media from the replaced environment cannot
+		//     linger alongside the imported tree.
+		await mediaPersistence.clear();
+		await mediaPersistence.save( mediaTree );
+		location.reload();
+	}
+
+	/**
 	 * Reset the playground to a brand-new first-visit state (Issue
 	 * #122, #124; full environment reset since Issue #144).
 	 *
@@ -910,6 +1038,53 @@ async function boot() {
 		} );
 	} );
 
+	exportButtonEl.addEventListener( 'click', () => {
+		exportButtonEl.disabled = true;
+		setStatus( 'exporting the environment…' );
+		exportEnvironment()
+			.then( ( envelope ) => {
+				downloadTextFile(
+					'071-now-environment.json',
+					envelope,
+					'application/json'
+				);
+				setStatus( 'environment exported.', 'ok' );
+			} )
+			.catch( ( error ) => {
+				setStatus(
+					`export failed: ${ error && error.message }`,
+					'err'
+				);
+			} )
+			.finally( () => {
+				exportButtonEl.disabled = false;
+			} );
+	} );
+
+	// Import opens the hidden file picker; its change event does the
+	//     work. importEnvironment() reloads the page on success.
+	importButtonEl.addEventListener( 'click', () => {
+		importFileEl.click();
+	} );
+	importFileEl.addEventListener( 'change', () => {
+		const file = importFileEl.files && importFileEl.files[ 0 ];
+		importFileEl.value = '';
+		if ( ! file ) {
+			return;
+		}
+		importButtonEl.disabled = true;
+		setStatus( 'importing the environment…' );
+		file.text()
+			.then( ( text ) => importEnvironment( text ) )
+			.catch( ( error ) => {
+				importButtonEl.disabled = false;
+				setStatus(
+					`import failed: ${ error && error.message }`,
+					'err'
+				);
+			} );
+	} );
+
 	// Expose a hook the headless verifier reads to confirm the boot,
 	//     plus a fetch-style bridge for direct request-handler probes and
 	//     the persistence controls (the backend in use and the reset).
@@ -951,6 +1126,21 @@ async function boot() {
 		 * @return {Promise<void>}
 		 */
 		reset: resetPlayground,
+		/**
+		 * Export the environment (the SQLite database and uploaded
+		 * media) as a JSON envelope string.
+		 *
+		 * @return {Promise<string>}
+		 */
+		exportEnvironment,
+		/**
+		 * Import an environment from an exported envelope string, then
+		 * reload so the boot-time restore brings it up.
+		 *
+		 * @param {string} text The environment envelope JSON.
+		 * @return {Promise<void>}
+		 */
+		importEnvironment,
 	};
 
 	if ( frontPage.httpStatusCode === 200 ) {
