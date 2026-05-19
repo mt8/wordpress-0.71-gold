@@ -8,7 +8,7 @@ require $abspath . 'wp-links/links.php';
 <head>
 	<title><?php bloginfo( 'name' ); ?><?php single_post_title( ' :: ' ); ?><?php single_cat_title( ' :: ' ); ?><?php single_month_title( ' :: ' ); ?></title>
 	
-	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<meta name="generator" content="WordPress" /> <!-- version removed (Issue #37) so the exact release is not disclosed publicly. -->
 
 	<style type="text/css" media="screen">
