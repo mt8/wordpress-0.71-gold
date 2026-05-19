@@ -259,4 +259,59 @@ test.describe( 'Playground block editor', () => {
 			)
 		).toHaveCSS( 'font-size', '36px' );
 	} );
+
+	test( 'saves a title containing a double quote (Issue #203)', async ( {
+		page,
+	} ) => {
+		// A double quote is the character an inserted image block also
+		// puts in the saved content (<img src="...">). The playground's
+		// MySQL->SQLite translator used to convert double quotes that
+		// sit inside a single-quoted SQL value, terminating the value
+		// early and making save.php fail with a database error -- so a
+		// post with an image (or any double quote) could not be saved.
+		const quotedTitle = `071-now "quote test" ${ Date.now() }`;
+
+		await openPlayground( page );
+
+		const adminFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+		const editorHref = await adminFrame
+			.locator( 'a[href*="block-editor/api/editor.php?post="]' )
+			.first()
+			.getAttribute( 'href' );
+		const postId = Number(
+			( editorHref || '' ).match( /post=(\d+)/ )?.[ 1 ]
+		);
+		expect(
+			Number.isInteger( postId ) && postId > 0,
+			`a block-editor post id should be found (saw "${ editorHref }")`
+		).toBe( true );
+
+		const editorFrame = await openBlockEditor( page, postId );
+
+		// Save a title with double quotes; the save must SUCCEED, not
+		// fail with the "not valid JSON" database-error response.
+		await editorFrame.fill( 'input.be-title', quotedTitle );
+		await editorFrame
+			.locator( 'button.is-primary', { hasText: 'Save' } )
+			.first()
+			.click();
+		await expect(
+			editorFrame.locator(
+				'.be-notice .components-notice.is-success'
+			)
+		).toBeVisible( { timeout: 20000 } );
+
+		// The double-quoted title round-trips from the database.
+		const reopened = await openBlockEditor( page, postId );
+		const reopenedTitle = await reopened.evaluate(
+			() =>
+				/** @type {HTMLInputElement} */ (
+					document.querySelector( 'input.be-title' )
+				).value
+		);
+		expect(
+			reopenedTitle,
+			'the double-quoted title should persist to the database'
+		).toBe( quotedTitle );
+	} );
 } );
