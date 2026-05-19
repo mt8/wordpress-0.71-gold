@@ -19,7 +19,7 @@ design in [`docs/071-tooling.md`](../../docs/071-tooling.md) sections 2 and 3.
 | `comment`  | `list` / `get <id>` / `delete <id>` |
 | `link`     | `list` / `get <id>` / `create` / `delete <id>` |
 | `option`   | `list` / `get <name>` / `set <name> <value>` |
-| `db`       | `query <sql>` / `tables` |
+| `db`       | `query <sql>` / `tables` / `export <file>` / `import <file>` |
 | `export`   | `run` (the default) |
 
 Global flags: `--format=table|json|csv|count|ids` (default `table`),
@@ -135,7 +135,7 @@ The test-database connection defaults to `127.0.0.1:3307` / `b2_test` /
 | `comment`  | `list` / `get <id>` / `delete <id>` |
 | `link`     | `list` / `get <id>` / `create` / `delete <id>` |
 | `option`   | `list` / `get <name>` / `set <name> <value>` |
-| `db`       | `query <sql>` / `tables` |
+| `db`       | `query <sql>` / `tables` / `export <file>` / `import <file>` |
 | `export`   | `run`（既定） |
 
 グローバルフラグ: `--format=table|json|csv|count|ids`（既定 `table`）・
