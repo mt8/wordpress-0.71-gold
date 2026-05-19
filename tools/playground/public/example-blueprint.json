@@ -1,0 +1,15 @@
+{
+	"_description": "Example 071-now blueprint (Issue #209). Open the playground with ?blueprint=example-blueprint.json to provision a fresh environment from it.",
+	"landingPage": "/index.php",
+	"steps": [
+		{ "step": "setOption", "option": "date_format", "value": "Y-m-d" },
+		{
+			"step": "runSql",
+			"sql": "INSERT INTO b2posts (post_author, post_date, post_content, post_title, post_category, post_excerpt, post_status, comment_status, ping_status, post_password) VALUES (1, '2003-05-27 12:00:00', 'This post was added by the 071-now example blueprint.', 'Blueprint demo post', 1, '', 'publish', 'open', 'open', '')"
+		},
+		{
+			"step": "runPHP",
+			"code": "<?php error_log( '071-now: the example blueprint runPHP step ran.' );"
+		}
+	]
+}
