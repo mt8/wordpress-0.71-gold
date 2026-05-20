@@ -4,10 +4,22 @@
  *     arranges the surrounding chrome -- the top bar, the fixed block toolbar,
  *     the Document Overview panel, the canvas and the settings sidebar.
  */
+/*
+ * The editor shell. height: 100vh -- a definite container size -- is what
+ *     grounds the `flex: 1` / `min-height: 0` chain that runs down to
+ *     `.block-editor-writing-flow`'s `overflow: auto` below. With only
+ *     `min-height: 100vh` the chain has nothing to ground on, so a long
+ *     post grows the app past the viewport and the whole page scrolls --
+ *     carrying the settings sidebar off the top of the screen with it.
+ *     Capping the app at viewport height keeps the writing flow as the
+ *     scroll region and the sidebar pinned to the viewport. The narrow
+ *     viewport media query (<=782px) restores `height: auto` so the whole
+ *     page can scroll on a phone, which is the stacked-layout design.
+ */
 .be-app {
 	display: flex;
 	flex-direction: column;
-	min-height: 100vh;
+	height: 100vh;
 }
 
 .be-toolbar {
@@ -293,6 +305,19 @@
  *     the full viewport width. The desktop layout is untouched.
  */
 @media ( max-width: 782px ) {
+	/*
+	 * Restore the page-scroll design for the narrow stacked layout. The
+	 *     desktop rule caps the app at viewport height so the writing flow
+	 *     scrolls internally and the sidebar stays put, but the phone
+	 *     layout below stacks the canvas / sidebar / overview into one
+	 *     column and lets the whole page scroll, which needs the app to
+	 *     grow with its content.
+	 */
+	.be-app {
+		height: auto;
+		min-height: 100vh;
+	}
+
 	/*
 	 * Tighter title size and padding for the phone width. The title sits
 	 *     inside .be-canvas, so its horizontal padding matches the writing
