@@ -2,13 +2,14 @@
 require_once 'blog.header.php';
 require $abspath . 'wp-links/links.php';
 ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<!DOCTYPE html>
+<html lang="<?php echo $rss_language; ?>">
 
 <head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
 	<title><?php bloginfo( 'name' ); ?><?php single_post_title( ' :: ' ); ?><?php single_cat_title( ' :: ' ); ?><?php single_month_title( ' :: ' ); ?></title>
-	
-	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
 	<meta name="generator" content="WordPress 0.71-gold" /> <!-- Issue #37 dropped the version for a live install; this site is published statically (no running PHP or database), so the 0.71-gold edition is named deliberately (Issue #218). -->
 
 	<style type="text/css" media="screen">
