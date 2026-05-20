@@ -747,6 +747,36 @@ function make_url_footnote( $content ) {
 }
 
 /*
+ * Build a cache-busting URL for a project-relative static asset (Issue #229).
+ *
+ * Returns "<siteurl>/<rel>?v=<mtime>" where mtime is the on-disk
+ * filemtime() of the asset, so a CDN that keys its cache on the full URL
+ * including the query string treats every CSS / image edit as a new
+ * resource and pulls it from origin on first hit. Falling back to "0"
+ * when the file is missing keeps the URL well-formed during the static
+ * export crawl, where the crawler resolves the on-disk file from
+ * $abspath; a missing asset will surface elsewhere (a 404 in the
+ * fetched page) rather than as a fatal here.
+ *
+ * The function is called inside template output (after blog.header.php
+ * has loaded the configuration) so $siteurl and $abspath are in scope
+ * via `global`.
+ *
+ * @param string $rel Blog-relative asset path, with or without a
+ *                    leading slash (e.g. "layout2b.css",
+ *                    "block-editor/assets/block-library.css").
+ * @return string The versioned absolute URL.
+ */
+function asset_url( $rel ) {
+	global $siteurl, $abspath;
+	$rel   = ltrim( (string) $rel, '/' );
+	$abs   = rtrim( (string) $abspath, '/' ) . '/' . $rel;
+	$mtime = @filemtime( $abs );
+	$ver   = ( false !== $mtime ) ? (string) $mtime : '0';
+	return $siteurl . '/' . $rel . '?v=' . $ver;
+}
+
+/*
  * Read a project-relative file from $abspath and return its contents
  * verbatim (Issue #251), or '' when the file is missing / unreadable.
  *
