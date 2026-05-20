@@ -314,4 +314,78 @@ test.describe( 'Playground block editor', () => {
 			'the double-quoted title should persist to the database'
 		).toBe( quotedTitle );
 	} );
+
+	test( 'the Date control mounts with the loaded post_date and lays out date-above-time (Issue #220)', async ( {
+		page,
+	} ) => {
+		// Issue #220 adds a Date control to the Post tab. The component
+		// is composed of a DatePicker calendar with a TimePicker row
+		// beneath it ("date on top, time below"); load.php now returns
+		// the post's post_date so the picker mounts at the right value.
+		await openPlayground( page );
+
+		const adminFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+		const editorHref = await adminFrame
+			.locator( 'a[href*="block-editor/api/editor.php?post="]' )
+			.first()
+			.getAttribute( 'href' );
+		const postId = Number(
+			( editorHref || '' ).match( /post=(\d+)/ )?.[ 1 ]
+		);
+		expect(
+			Number.isInteger( postId ) && postId > 0,
+			`a block-editor post id should be found (saw "${ editorHref }")`
+		).toBe( true );
+
+		const editorFrame = await openBlockEditor( page, postId );
+		await expect(
+			editorFrame.locator( '.be-app' )
+		).not.toHaveCount( 0 );
+
+		// The Date control container is in the DOM and visible -- it
+		// would not be there before Issue #220.
+		const dateControl = editorFrame.locator( '.be-post-date' );
+		await expect( dateControl ).toBeVisible( { timeout: 15000 } );
+
+		// The calendar (DatePicker) and the time row (TimePicker) are
+		// both rendered, and the calendar sits above the time row.
+		const calendar = editorFrame.locator(
+			'.be-post-date .components-datetime__date'
+		);
+		const time = editorFrame.locator(
+			'.be-post-date .components-datetime__time'
+		);
+		await expect( calendar ).toBeVisible();
+		await expect( time ).toBeVisible();
+		const datePos = await calendar.boundingBox();
+		const timePos = await time.boundingBox();
+		expect(
+			datePos && timePos
+				? datePos.y + datePos.height <= timePos.y + 1
+				: false,
+			'the date picker should sit above the time picker'
+		).toBe( true );
+
+		// load.php returns the post's stored post_date; the picker
+		// reflects it. The seeded sample posts carry a valid datetime,
+		// so the hour and minute inputs both carry a non-empty value
+		// (rather than the empty state load.php would emit for a
+		// 0000-00-00 sentinel).
+		const timeValues = await editorFrame.evaluate( () => {
+			const inputs = document.querySelectorAll(
+				'.be-post-date .components-datetime__time input[type="number"]'
+			);
+			return Array.from( inputs ).map(
+				( el ) => /** @type {HTMLInputElement} */ ( el ).value
+			);
+		} );
+		expect(
+			timeValues.length,
+			'the time row should expose at least an hour and a minute input'
+		).toBeGreaterThanOrEqual( 2 );
+		expect(
+			timeValues.every( ( v ) => v !== '' ),
+			`load.php should pre-fill the picker (saw "${ timeValues.join( ', ' ) }")`
+		).toBe( true );
+	} );
 } );
