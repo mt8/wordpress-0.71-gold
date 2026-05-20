@@ -199,23 +199,44 @@ p, li {
  *     and reserves 160px of right margin on #content for it. On a
  *     390px-wide phone that leaves the post text barely 70px wide --
  *     one word per line. Below the 782px breakpoint (the same
- *     breakpoint the block editor already uses) the menu drops out
- *     of the absolute column and becomes a full-width collapsible
- *     band below the content; #content's right margin is reset so
- *     the post gets the full viewport. The <summary> inside #menu
- *     is the tappable disclosure header; the menu starts collapsed
- *     (set by the inline script in src/index.php) so the page opens
- *     to the post text first.
+ *     breakpoint the block editor already uses) the menu becomes a
+ *     full-width band pinned to the bottom of the viewport so it is
+ *     always reachable without scrolling -- a bottom-nav pattern.
+ *     #content's right margin is reset (the post gets the full
+ *     viewport) and a padding-bottom is reserved so the last line of
+ *     the post is not permanently covered by the fixed band.
+ *     Inside the band, <details> is a column-reverse flex container
+ *     so the <summary> stays anchored to the very bottom edge (the
+ *     tap target) and the menu list, when expanded, opens upward
+ *     above it; max-height + overflow-y keep a long list from
+ *     swallowing the whole page.
  */
 @media ( max-width: 782px ) {
 	#content {
 		margin: 0 10px;
+		padding-bottom: 64px;
 	}
 
 	#menu {
-		position: static;
+		position: fixed;
+		top: auto;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		width: auto;
+		padding-bottom: 0;
 		border-left: 0;
 		border-top: 3px solid #666;
+		max-height: 70vh;
+		overflow-y: auto;
+	}
+
+	#menu details {
+		display: flex;
+		flex-direction: column-reverse;
+	}
+
+	#menu summary {
+		padding: 12px 10px;
 	}
 }
