@@ -64,6 +64,10 @@ if ( $posts ) {
 
 <div id="menu">
 
+<?php /* Native <details> disclosure (Issue #226) -- on desktop the summary toggle is hidden by CSS and the menu shows as before; on a phone the summary becomes the tappable header and the menu collapses. The HTML defaults to <details open> so the menu degrades cleanly without JavaScript. See src/layout2b.css and the inline script below for the per-viewport behaviour. */ ?>
+<details id="menu-toggle" open>
+<summary>Menu</summary>
+
 <ul>
 <li>Links:
 	<ul>
@@ -94,7 +98,39 @@ if ( $posts ) {
 </li>
 </ul>
 
+</details>
+
 </div>
+
+<script>
+// Sync the menu disclosure's [open] state to the viewport (Issue #226).
+// On desktop the summary toggle is hidden by CSS and the menu always
+// shows; on a phone the menu starts collapsed so the post text gets
+// the full viewport. Setting [open] from JS keeps the underlying state
+// consistent with what is rendered, so a screen reader announces the
+// disclosure correctly. The matchMedia 'change' listener re-syncs on a
+// real breakpoint crossing, not on every resize, so a user's manual
+// toggle within one breakpoint is respected. Without JS the page
+// degrades cleanly: <details open> in the HTML keeps the menu expanded
+// everywhere.
+( function () {
+	var menu = document.getElementById( 'menu-toggle' );
+	if ( ! menu || ! window.matchMedia ) {
+		return;
+	}
+	var phone = window.matchMedia( '(max-width: 782px)' );
+	function sync() {
+		menu.open = ! phone.matches;
+	}
+	sync();
+	if ( phone.addEventListener ) {
+		phone.addEventListener( 'change', sync );
+	} else if ( phone.addListener ) {
+		// Safari <14 still needs the legacy addListener API.
+		phone.addListener( sync );
+	}
+} )();
+</script>
 
 
 </body>
