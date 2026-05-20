@@ -16,6 +16,12 @@
  * category list, so the editor can render its sidebar without loading an
  * existing row.
  *
+ * Issue #220 also returns `date`, the post's `post_date` in MySQL DATETIME
+ * form (`YYYY-MM-DD HH:MM:SS`), so the editor's settings sidebar can
+ * surface a date picker. A new post returns the same "now" value 0.71's
+ * own `case 'post'` handler computes (gmtime adjusted by the blog's
+ * `time_difference` setting).
+ *
  * @package wordpress-0.71-gold
  */
 
@@ -51,8 +57,12 @@ if ( is_array( $category_rows ) ) {
 // present (b2's seeded "General" category, normally id 1, falling back to
 // 0 if the table is somehow empty). The status defaults to draft so a
 // half-written new post is not published before the author intends it.
+// The date is "now" adjusted by the blog's time_difference setting, the
+// same value 0.71's own b2edit.php uses when no explicit date is given.
 if ( $is_new ) {
 	$default_category = ( ! empty( $categories ) ) ? (int) $categories[0]['id'] : 0;
+	$time_difference  = (int) get_settings( 'time_difference' );
+	$default_date     = gmdate( 'Y-m-d H:i:s', time() + ( $time_difference * 3600 ) );
 
 	be_json(
 		200,
@@ -62,6 +72,7 @@ if ( $is_new ) {
 			'content'    => '',
 			'status'     => 'draft',
 			'category'   => $default_category,
+			'date'       => $default_date,
 			'categories' => $categories,
 			'isNew'      => true,
 		)
@@ -77,6 +88,8 @@ if ( ! $post ) {
 // post_content / post_title are stored slash-escaped by 0.71's
 // format_to_post(); strip the slashes so the editor receives clean text.
 // status / category are the post's single post_status and post_category.
+// date is post_date verbatim (MySQL DATETIME, the blog's local time);
+// get_postdata() exposes it under the 'Date' key.
 be_json(
 	200,
 	array(
@@ -85,6 +98,7 @@ be_json(
 		'content'    => stripslashes( (string) $post['Content'] ),
 		'status'     => (string) $post['post_status'],
 		'category'   => (int) $post['Category'],
+		'date'       => (string) $post['Date'],
 		'categories' => $categories,
 		'isNew'      => false,
 	)
