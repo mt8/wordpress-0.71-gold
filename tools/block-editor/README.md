@@ -45,14 +45,19 @@ Three small PHP files, served by the existing Docker blog:
   `wordpresspass`, the `b2users` table) — the same trust source as
   `b2verifauth.php`.
 - `load.php` — `GET load.php?post=ID` → JSON
-  `{ id, title, content, status, category, categories }`. `category` is the
-  post's single `b2posts.post_category` cat_ID; `categories` is the full
+  `{ id, title, content, status, category, date, categories }`. `category` is
+  the post's single `b2posts.post_category` cat_ID; `date` is its `post_date`
+  in MySQL DATETIME form (`YYYY-MM-DD HH:MM:SS`); `categories` is the full
   `b2categories` list (`{ id, name }`) for the sidebar selector.
 - `save.php` — `POST save.php` with a JSON body
-  `{ post, title, content, status, category }` → writes the block markup into
-  `b2posts.post_content` and persists `post_status` / `post_category`.
-  `status` is whitelisted (`publish` / `draft` / `private`) and `category` is
-  verified to exist in `b2categories`.
+  `{ post, title, content, status, category, date }` → writes the block
+  markup into `b2posts.post_content` and persists `post_status` /
+  `post_category` / `post_date`. `status` is whitelisted (`publish` / `draft`
+  / `private`), `category` is verified to exist in `b2categories`, and `date`
+  is parsed with a strict `Y-m-d H:i:s` format. Date editing is gated on
+  `user_level > 4`, the same threshold `wp-admin/b2edit.php` uses for its
+  `edit_date` branch; a non-privileged user's supplied date is silently
+  dropped (the row gets "now" on INSERT, or keeps the stored date on UPDATE).
 - `editor.php` — the boot page. `editor.php?post=ID` serves an HTML shell that
   loads the bundle and mounts the editor for that post.
 
@@ -237,11 +242,13 @@ Verified end to end against the Docker blog:
 - **Document Overview** — a toggleable list-view panel (the block outline),
   plus a `BlockBreadcrumb` under the canvas.
 - **Settings sidebar** — a *Post* panel with a Status control
-  (`publish` / `draft` / `private`) and a Category selector (`b2categories`),
-  and a *Block* panel with `BlockInspector` for the selected block's
+  (`publish` / `draft` / `private`), a Category selector (`b2categories`),
+  and a Date control (a `DatePicker` calendar with a `TimePicker` row
+  beneath it — "date on top, time below" — that writes `post_date`), plus
+  a *Block* panel with `BlockInspector` for the selected block's
   attributes (Color, Typography, Dimensions, ...) — see *Presets*.
-- Saving block markup, `post_status` and `post_category` back into 0.71's
-  `b2posts` (`serialize()`).
+- Saving block markup, `post_status`, `post_category` and `post_date` back
+  into 0.71's `b2posts` (`serialize()`).
 - The 0.71 front end rendering the saved post unchanged.
 - Cookie-based auth and the `b2edit.php`-equivalent ownership check.
 - **Responsive layout** — on a desktop the body is a three-column layout
@@ -319,14 +326,19 @@ Vite は React **と** 全 `@wordpress/*` パッケージを 1 つのスタン�
   `wordpresspass`、`b2users` テーブル)を再利用する — `b2verifauth.php` と
   同じ信頼源。
 - `load.php` — `GET load.php?post=ID` → JSON
-  `{ id, title, content, status, category, categories }`。`category` は
-  投稿の単一の `b2posts.post_category` の cat_ID、`categories` はサイド
-  バーのセレクタ用に `b2categories` 全件(`{ id, name }`)。
-- `save.php` — JSON ボディ `{ post, title, content, status, category }` の
-  `POST save.php` → ブロックマークアップを `b2posts.post_content` へ
-  書き込み、`post_status` / `post_category` を保存する。`status` は
+  `{ id, title, content, status, category, date, categories }`。`category`
+  は投稿の単一の `b2posts.post_category` の cat_ID、`date` は `post_date`
+  の MySQL DATETIME 文字列(`YYYY-MM-DD HH:MM:SS`)、`categories` は
+  サイドバーのセレクタ用に `b2categories` 全件(`{ id, name }`)。
+- `save.php` — JSON ボディ
+  `{ post, title, content, status, category, date }` の `POST save.php`
+  → ブロックマークアップを `b2posts.post_content` へ書き込み、
+  `post_status` / `post_category` / `post_date` を保存する。`status` は
   ホワイトリスト(`publish` / `draft` / `private`)、`category` は
-  `b2categories` に存在するか検証する。
+  `b2categories` に存在するか検証する。`date` は厳密な `Y-m-d H:i:s`
+  形式で解析する。日付の編集は `wp-admin/b2edit.php` の `edit_date`
+  分岐と同じ閾値 `user_level > 4` でゲートされ、権限の無いユーザーが
+  指定した日付は無視される(新規時は「現在時刻」、更新時は既存値を保持)。
 - `editor.php` — 起動ページ。`editor.php?post=ID` がバンドルを読み込み、
   その投稿に対してエディタをマウントする HTML シェルを配信する。
 
@@ -507,12 +519,14 @@ Docker のブログに対して端から端まで検証済み:
   (`@wordpress/format-library`)や段落の **テキスト配置** 操作子を含む。
 - **ドキュメント概観** — 切り替え可能なリストビューパネル(ブロックの
   アウトライン)と、キャンバス下の `BlockBreadcrumb`。
-- **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)と
-  Category セレクタ(`b2categories`)を持つ *Post* パネル、および選択
-  ブロックの属性(Color・Typography・Dimensions など)を出す
-  `BlockInspector` の *Block* パネル(*プリセット* を参照)。
-- ブロックマークアップ・`post_status`・`post_category` を 0.71 の
-  `b2posts` へ保存し戻す(`serialize()`)。
+- **設定サイドバー** — Status 操作子(`publish` / `draft` / `private`)・
+  Category セレクタ(`b2categories`)・Date 操作子(カレンダーの
+  `DatePicker` の下に `TimePicker` の時刻行を配置した「日付が上、
+  時刻が下」のレイアウトで `post_date` を書き込む)を持つ *Post*
+  パネル、および選択ブロックの属性(Color・Typography・Dimensions
+  など)を出す `BlockInspector` の *Block* パネル(*プリセット* を参照)。
+- ブロックマークアップ・`post_status`・`post_category`・`post_date` を
+  0.71 の `b2posts` へ保存し戻す(`serialize()`)。
 - 0.71 のフロントエンドが保存済み投稿を変更なく描画する。
 - クッキーベース認証と `b2edit.php` 相当の所有者チェック。
 

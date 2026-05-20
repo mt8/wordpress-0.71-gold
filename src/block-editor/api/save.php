@@ -17,6 +17,13 @@
  * b2posts row -- mirroring WordPress 0.71's own `case 'post'` handler in
  * wp-admin/b2edit.php -- and responds with the new id so the editor adopts
  * it; subsequent saves then UPDATE the same post.
+ *
+ * Issue #220 also accepts a "date" field (MySQL DATETIME form,
+ * `YYYY-MM-DD HH:MM:SS`) and writes it into post_date. The classic
+ * editor in b2edit.php gates date editing on user_level > 4; the same
+ * gate is applied here, so a non-privileged user's supplied date is
+ * silently ignored (the row gets "now" on INSERT, or keeps the stored
+ * date on UPDATE).
  *     { "post": ID, "content": "<!-- wp:* --> ...", "title": "..." } を受け取り、
  *     ブロックマークアップを WordPress 0.71 の既存 post_content カラムへ
  *     書き込む。`<!-- wp:* -->` 区切りは HTML コメントなので、0.71 の
@@ -71,6 +78,27 @@ if ( ! in_array( $status, $allowed_statuses, true ) ) {
 	be_json( 400, array( 'error' => 'invalid_status' ) );
 }
 
+// The optional date is in MySQL DATETIME form -- the same shape stored in
+// post_date. Parse it strictly with DateTime::createFromFormat so a typo
+// (e.g. an empty string, a half-formed value) cannot land in the column.
+// An omitted / empty / unparseable value drops the editor back onto the
+// classic editor's behaviour (server-generated "now" on INSERT, no
+// change on UPDATE). The privilege gate (user_level > 4, the same one
+// b2edit.php's edit_date branch uses) is applied after parsing, so a
+// reader who lacks the privilege quietly gets the default.
+$requested_date     = isset( $data['date'] ) ? (string) $data['date'] : '';
+$has_requested_date = false;
+
+if ( '' !== $requested_date ) {
+	$parsed = DateTime::createFromFormat( 'Y-m-d H:i:s', $requested_date );
+	if ( ! ( $parsed instanceof DateTime ) || $parsed->format( 'Y-m-d H:i:s' ) !== $requested_date ) {
+		be_json( 400, array( 'error' => 'invalid_date' ) );
+	}
+	if ( (int) $current_user->user_level > 4 ) {
+		$has_requested_date = true;
+	}
+}
+
 // For an existing post, verify it exists and that the user may edit it.
 // For a new post there is no row yet; the only gate is being able to
 // post at all -- mirrors b2edit.php's `case 'post'`, which rejects
@@ -112,23 +140,29 @@ if ( $category_count < 1 ) {
 // mysqli_real_escape_string(). No autobr / format_to_post() here: block
 // markup must be stored verbatim, byte-for-byte, or parse() breaks.
 // status is from a validated whitelist and category is (int)-cast.
+// The requested date is already validated against the strict
+// Y-m-d H:i:s pattern above, so it is safe to escape and interpolate.
 $escaped_content = $wpdb->escape( $content );
 $escaped_title   = $wpdb->escape( $title );
 $escaped_status  = $wpdb->escape( $status );
+$escaped_date    = $has_requested_date ? $wpdb->escape( $requested_date ) : '';
 
 if ( $is_new ) {
 	// New-post path -- INSERT a fresh b2posts row, mirroring the columns
 	// set by 0.71's own `case 'post'` handler in wp-admin/b2edit.php:
 	// post_author is the logged-in user, post_date is "now" adjusted by
-	// the blog's time_difference setting, and comment_status / ping_status
-	// / post_password / post_excerpt take 0.71's defaults. post_author is
-	// (int)-cast and post_date is a code-generated timestamp, so both are
+	// the blog's time_difference setting (or the user-supplied date when
+	// the privileged date branch took effect), and comment_status /
+	// ping_status / post_password / post_excerpt take 0.71's defaults.
+	// post_author is (int)-cast and post_date is either a code-generated
+	// timestamp or the strictly validated request value, so both are
 	// safe to interpolate unquoted; the text columns are escaped above.
 	$author_id       = (int) $current_user->ID;
 	$time_difference = (int) get_settings( 'time_difference' );
 	$now             = gmdate( 'Y-m-d H:i:s', time() + ( $time_difference * 3600 ) );
+	$post_date       = $has_requested_date ? $escaped_date : $now;
 
-	$query = "INSERT INTO $tableposts (post_author, post_date, post_content, post_title, post_category, post_excerpt, post_status, comment_status, ping_status, post_password) VALUES ($author_id, '$now', '$escaped_content', '$escaped_title', $category, '', '$escaped_status', 'open', 'open', '')";
+	$query = "INSERT INTO $tableposts (post_author, post_date, post_content, post_title, post_category, post_excerpt, post_status, comment_status, ping_status, post_password) VALUES ($author_id, '$post_date', '$escaped_content', '$escaped_title', $category, '', '$escaped_status', 'open', 'open', '')";
 
 	$result = $wpdb->query( $query );
 
@@ -141,7 +175,12 @@ if ( $is_new ) {
 	// the connection's insert id.
 	$post_id = (int) $wpdb->get_var( "SELECT ID FROM $tableposts ORDER BY ID DESC LIMIT 1" );
 } else {
-	$query = "UPDATE $tableposts SET post_content = '$escaped_content', post_title = '$escaped_title', post_status = '$escaped_status', post_category = $category WHERE ID = $post_id";
+	// On UPDATE, only privileged users can change post_date -- a plain
+	// editor's supplied date is silently dropped so the stored value
+	// stays put, mirroring b2edit.php's edit_date gate.
+	$date_modif = $has_requested_date ? ", post_date = '$escaped_date'" : '';
+
+	$query = "UPDATE $tableposts SET post_content = '$escaped_content', post_title = '$escaped_title', post_status = '$escaped_status', post_category = $category$date_modif WHERE ID = $post_id";
 
 	$result = $wpdb->query( $query );
 
@@ -149,6 +188,11 @@ if ( $is_new ) {
 		be_json( 500, array( 'error' => 'db_error' ) );
 	}
 }
+
+// Echo the post_date that ended up on the row so the editor can show
+// the authoritative server value (the new-post path may have written
+// "now" rather than the supplied value).
+$saved_date = (string) $wpdb->get_var( "SELECT post_date FROM $tableposts WHERE ID = $post_id" );
 
 be_json(
 	200,
@@ -160,5 +204,6 @@ be_json(
 		'title'    => $title,
 		'status'   => $status,
 		'category' => $category,
+		'date'     => $saved_date,
 	)
 );
