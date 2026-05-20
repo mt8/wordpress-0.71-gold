@@ -201,6 +201,19 @@
 	gap: 0.4rem;
 }
 
+/*
+ * The Post tab's Date control composes DatePicker (calendar, on top) and
+ *     TimePicker (hour:minute, below) as two stacked elements so the
+ *     calendar reads as the primary input and the time row sits under it,
+ *     matching the Issue #220 request "DATEが上、TIMEが下" (date on top,
+ *     time on the bottom).
+ */
+.be-post-date {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
 .be-state {
 	padding: 2rem;
 	font-family: -apple-system, system-ui, sans-serif;

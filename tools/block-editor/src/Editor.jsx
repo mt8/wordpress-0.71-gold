@@ -40,6 +40,9 @@ import {
 	PanelBody,
 	TabPanel,
 	Icon,
+	DatePicker,
+	TimePicker,
+	BaseControl,
 } from '@wordpress/components';
 import { blockDefault, listView, page, plus, wordpress } from '@wordpress/icons';
 import { ShortcutProvider } from '@wordpress/keyboard-shortcuts';
@@ -442,6 +445,45 @@ const STATUS_OPTIONS = [
 ];
 
 /**
+ * Convert a WordPress 0.71 post_date (MySQL DATETIME, the blog's local
+ *     time) into the ISO 8601 string @wordpress/components' DateTimePicker
+ *     expects (`YYYY-MM-DDTHH:MM:SS`). post_date arrives as
+ *     `YYYY-MM-DD HH:MM:SS`; the picker treats the value as local time and
+ *     a missing 'T' separator is rejected. An empty or "zero" date (the
+ *     0000-00-00 sentinel MySQL writes for an unset column) maps to null
+ *     so the picker shows its empty state.
+ *
+ * @param {string} mysqlDate The MySQL DATETIME string.
+ * @return {string|null} The ISO 8601 string, or null when unset.
+ */
+function mysqlToIso( mysqlDate ) {
+	if ( ! mysqlDate || mysqlDate.startsWith( '0000-00-00' ) ) {
+		return null;
+	}
+	return mysqlDate.replace( ' ', 'T' );
+}
+
+/**
+ * Convert the ISO 8601 string DateTimePicker emits back into the MySQL
+ *     DATETIME shape post_date is stored in. The picker may include
+ *     fractional seconds (`.000`) or a timezone offset (`+09:00`); save.php
+ *     parses with a strict `Y-m-d H:i:s` format, so both must be stripped.
+ *     The picker hands back local time, which is what 0.71 already stores.
+ *
+ * @param {string} iso The ISO 8601 string from DateTimePicker.
+ * @return {string} The MySQL DATETIME string.
+ */
+function isoToMysql( iso ) {
+	if ( ! iso ) {
+		return '';
+	}
+	// Drop the timezone offset (`Z`, `+09:00`, `-05:30`) and any
+	//     fractional seconds, then turn the 'T' separator into a space.
+	const trimmed = iso.replace( /(?:\.\d+)?(?:Z|[+-]\d{2}:?\d{2})?$/, '' );
+	return trimmed.replace( 'T', ' ' );
+}
+
+/**
  * An editor instance bound to one WordPress 0.71 post.
  * @param {Object} props        Component props.
  * @param {Object} props.config Boot config from editor.php.
@@ -463,6 +505,7 @@ export function Editor( { config } ) {
 	// Post settings surfaced in the sidebar's Post panel.
 	const [ postStatus, setPostStatus ] = useState( 'publish' );
 	const [ postCategory, setPostCategory ] = useState( 0 );
+	const [ postDate, setPostDate ] = useState( '' );
 	const [ categories, setCategories ] = useState( [] );
 
 	// Toggle for the Document Overview (list-view) panel. It starts off,
@@ -521,6 +564,7 @@ export function Editor( { config } ) {
 				setBlocks( parse( data.content || '' ) );
 				setPostStatus( data.status || 'publish' );
 				setPostCategory( Number( data.category ) || 0 );
+				setPostDate( data.date || '' );
 				setCategories(
 					Array.isArray( data.categories )
 						? data.categories
@@ -552,6 +596,10 @@ export function Editor( { config } ) {
 				content,
 				status: postStatus,
 				category: postCategory,
+				// Empty when the picker has never been touched (a legacy
+				//     post with an unparseable / zero stored date); save.php
+				//     falls back to its default-date behaviour in that case.
+				date: postDate || '',
 			} ),
 		} )
 			.then( ( res ) => {
@@ -568,6 +616,14 @@ export function Editor( { config } ) {
 				if ( savedId > 0 ) {
 					setPostId( savedId );
 				}
+				// Adopt the post_date the server actually stored. The
+				//     new-post path may have written "now" rather than the
+				//     editor's empty value, and a non-privileged user's
+				//     supplied date is dropped server-side -- echoing the
+				//     stored value back keeps the picker honest.
+				if ( data && typeof data.date === 'string' ) {
+					setPostDate( data.date );
+				}
 				setStatus( 'ready' );
 				setMessage( 'Saved.' );
 			} )
@@ -580,6 +636,7 @@ export function Editor( { config } ) {
 		title,
 		postStatus,
 		postCategory,
+		postDate,
 		config.saveEndpoint,
 		postId,
 	] );
@@ -814,6 +871,36 @@ export function Editor( { config } ) {
 													}
 													__nextHasNoMarginBottom
 												/>
+												{ /* DateTimePicker out of the box renders the
+												       TimePicker above the calendar; we want DATE
+												       on top and TIME on the bottom, so DatePicker
+												       and TimePicker are composed manually here in
+												       that order. is12Hour=false picks the same
+												       24-hour layout 0.71's own date inputs
+												       (aa/mm/jj/hh/mn/ss) use. BaseControl gives
+												       the picker a label and a stable id, matching
+												       the look of the Status / Category fields. */ }
+												<BaseControl
+													__nextHasNoMarginBottom
+													id="be-post-date"
+													label="Date"
+												>
+													<div className="be-post-date">
+														<DatePicker
+															currentDate={ mysqlToIso( postDate ) }
+															onChange={ ( iso ) =>
+																setPostDate( isoToMysql( iso ) )
+															}
+														/>
+														<TimePicker
+															currentTime={ mysqlToIso( postDate ) }
+															onChange={ ( iso ) =>
+																setPostDate( isoToMysql( iso ) )
+															}
+															is12Hour={ false }
+														/>
+													</div>
+												</BaseControl>
 											</div>
 										) : (
 											<BlockInspector />
