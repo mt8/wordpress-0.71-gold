@@ -51,11 +51,16 @@ function cli_export_static_name( string $rel, array $asset_extensions ): ?string
 
 	// a plain static asset is exported under its own path. parse_url() is
 	//     used directly: this command runs standalone and does not bootstrap
-	//     WordPress 0.71, so wp_parse_url() is not available.
+	//     WordPress 0.71, so wp_parse_url() is not available. A query string
+	//     is stripped from the on-disk filename but is intentionally allowed
+	//     in the asset URL so the cache-busting "?v=<mtime>" appended by
+	//     asset_url() (Issue #229) reaches the rewritten HTML; the dedup
+	//     keys on the path-only target so the same asset reached with
+	//     different "?v=" values is fetched and written exactly once.
 	$path = parse_url( $rel, PHP_URL_PATH ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url
 	$ext  = strtolower( pathinfo( ( is_string( $path ) && '' !== $path ) ? $path : $rel, PATHINFO_EXTENSION ) );
-	if ( in_array( $ext, $asset_extensions, true ) && ! str_contains( $rel, '?' ) ) {
-		return $rel;
+	if ( in_array( $ext, $asset_extensions, true ) ) {
+		return ( is_string( $path ) && '' !== $path ) ? ltrim( $path, '/' ) : $rel;
 	}
 
 	return null;
