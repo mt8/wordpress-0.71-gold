@@ -169,3 +169,74 @@ p, li {
 #menu ul ul li a:hover {
 	border-bottom: 1px solid #ccc;
 }
+
+/*
+ * The menu disclosure (Issue #226). On desktop the summary is hidden
+ *     by the media query below so the menu shows exactly as before --
+ *     an inline script in src/index.php keeps [open]=true at that
+ *     viewport. On a phone the summary becomes a tappable header (see
+ *     the narrow-viewport rules below).
+ */
+#menu summary {
+	color: #ccc;
+	cursor: pointer;
+	font-variant: small-caps;
+	font-weight: bold;
+	padding: 5px 10px;
+}
+
+@media ( min-width: 783px ) {
+	#menu summary {
+		/* Desktop: the menu always shows, so no toggle is rendered. */
+		display: none;
+	}
+}
+
+/*
+ * Phone layout for the front-end menu sidebar (Issue #226).
+ *
+ *     The desktop layout puts #menu in an absolute 150px right rail
+ *     and reserves 160px of right margin on #content for it. On a
+ *     390px-wide phone that leaves the post text barely 70px wide --
+ *     one word per line. Below the 782px breakpoint (the same
+ *     breakpoint the block editor already uses) the menu becomes a
+ *     full-width band pinned to the bottom of the viewport so it is
+ *     always reachable without scrolling -- a bottom-nav pattern.
+ *     #content's right margin is reset (the post gets the full
+ *     viewport) and a padding-bottom is reserved so the last line of
+ *     the post is not permanently covered by the fixed band.
+ *     Inside the band, <details> is a column-reverse flex container
+ *     so the <summary> stays anchored to the very bottom edge (the
+ *     tap target) and the menu list, when expanded, opens upward
+ *     above it; max-height + overflow-y keep a long list from
+ *     swallowing the whole page.
+ */
+@media ( max-width: 782px ) {
+	#content {
+		margin: 0 10px;
+		padding-bottom: 64px;
+	}
+
+	#menu {
+		position: fixed;
+		top: auto;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		width: auto;
+		padding-bottom: 0;
+		border-left: 0;
+		border-top: 3px solid #666;
+		max-height: 70vh;
+		overflow-y: auto;
+	}
+
+	#menu details {
+		display: flex;
+		flex-direction: column-reverse;
+	}
+
+	#menu summary {
+		padding: 12px 10px;
+	}
+}
