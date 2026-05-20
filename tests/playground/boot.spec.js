@@ -92,14 +92,30 @@ test.describe( 'Playground boot and front page', () => {
 
 		// The front page declares UTF-8 (Issue #217), so the static
 		// export renders non-ASCII content correctly once published on a
-		// host that sends no charset of its own.
-		expect( bootState.html ).toContain( 'charset=UTF-8' );
+		// host that sends no charset of its own. The modern <meta charset>
+		// form (Issue #224) quotes the value, so allow either form.
+		expect( bootState.html ).toMatch( /charset=["']?UTF-8/i );
 		expect( bootState.html ).not.toContain( 'iso-8859-1' );
 
 		// The generator meta names the 0.71-gold edition deliberately --
 		// the published site is static, so there is no live install
 		// whose exact version needs hiding (Issue #218).
 		expect( bootState.html ).toContain( 'content="WordPress 0.71-gold"' );
+
+		// Minimum modern-web baseline on the rendered head (Issue #224).
+		// The HTML5 doctype is at the very top of the document, the html
+		// element declares its language (sourced from the rss_language
+		// config so RSS and HTML stay in sync), and the viewport meta
+		// makes a phone render the page at device width instead of the
+		// desktop default. (The 0.71 footer still carries a "Valid XHTML"
+		// badge for the 2003-era aesthetic; that is visible UI, not the
+		// document's declared doctype, so the assertion is anchored to
+		// the start of the document with /^\s*<!DOCTYPE html>/.)
+		expect( bootState.html ).toMatch( /^\s*<!DOCTYPE html>/i );
+		expect( bootState.html ).toMatch( /<html\s+lang="[^"]+"/i );
+		expect( bootState.html ).toContain(
+			'name="viewport" content="width=device-width, initial-scale=1"'
+		);
 
 		// The blog renders inside the iframe at a real scoped
 		// same-origin path served through the service worker.
