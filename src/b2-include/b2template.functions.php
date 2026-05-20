@@ -62,6 +62,33 @@ function get_bloginfo( $show = '' ) {
 	return( $output );
 }
 
+/*
+ * Return the first <img src="..."> URL found in $content, or '' when
+ * none is present (Issue #231). Used to populate the og:image meta tag
+ * on a single-post page; the OGP block is suppressed when this returns
+ * the empty string, so a social card without an image is never emitted.
+ *
+ * The regex is anchored on `<img` so attributes like `srcset` on other
+ * tags are not picked up, and it accepts both single- and double-quoted
+ * `src` values -- the block-editor markup stored in post_content uses
+ * either form depending on how a block was authored. The match is
+ * case-insensitive for the tag name (HTML5 is case-insensitive) and
+ * does not interpret HTML entities in the URL -- callers HTML-escape
+ * for the attribute value at the point of output.
+ *
+ * @param string $content Raw post_content (block markup + HTML).
+ * @return string The first image URL, or '' when none was found.
+ */
+function first_image_url( $content ) {
+	if ( ! is_string( $content ) || '' === $content ) {
+		return '';
+	}
+	if ( preg_match( '~<img\b[^>]*\bsrc\s*=\s*(["\'])(.*?)\1~i', $content, $m ) ) {
+		return $m[2];
+	}
+	return '';
+}
+
 function single_post_title( $prefix = '', $display = true ) {
 	global $p;
 	if ( intval( $p ) ) {
