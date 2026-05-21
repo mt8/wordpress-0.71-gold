@@ -807,6 +807,84 @@ function generate_webp_sibling( $source, $quality = 80 ) {
 }
 
 /*
+ * Encode a resized WebP variant of $source at the requested pixel width
+ * (Issue #247). Writes "<source>.<width>.webp" next to the original;
+ * returns true on success, false on any failure (GD missing, WebP
+ * unsupported, unreadable source, unwritable destination, or the
+ * source already narrower than the target -- the helper never
+ * upscales).
+ *
+ * Used by the CLI backfill (and the later upload-time hook) to
+ * produce a small set of width variants -- 480 w, 1024 w -- that the
+ * render-side wrap_img_with_webp_picture() then lists in srcset.
+ *
+ * @param string $source  Absolute path to a PNG or JPEG file on disk.
+ * @param int    $width   Target pixel width.
+ * @param int    $quality Encoder quality, 0..100 (default 80).
+ * @return bool True when the resized .webp variant was written; false
+ *              otherwise (including no-op when the source is already
+ *              narrower than $width).
+ */
+function generate_webp_resized( $source, $width, $quality = 80 ) {
+	if ( ! is_string( $source ) || '' === $source || (int) $width <= 0 ) {
+		return false;
+	}
+	if ( ! is_readable( $source ) || ! is_file( $source ) ) {
+		return false;
+	}
+	if ( ! function_exists( 'imagewebp' ) ) {
+		return false;
+	}
+
+	$ext = strtolower( (string) pathinfo( $source, PATHINFO_EXTENSION ) );
+	if ( 'png' === $ext ) {
+		$src = @imagecreatefrompng( $source );
+	} elseif ( 'jpg' === $ext || 'jpeg' === $ext ) {
+		$src = @imagecreatefromjpeg( $source );
+	} else {
+		return false;
+	}
+	if ( false === $src ) {
+		return false;
+	}
+
+	$src_w = imagesx( $src );
+	$src_h = imagesy( $src );
+	$tgt_w = (int) $width;
+	if ( $src_w <= $tgt_w ) {
+		// no upscaling -- the original is already smaller or equal.
+		imagedestroy( $src );
+		return false;
+	}
+	// preserve aspect ratio.
+	$tgt_h = (int) max( 1, round( $src_h * ( $tgt_w / $src_w ) ) );
+
+	$dst = imagecreatetruecolor( $tgt_w, $tgt_h );
+	if ( false === $dst ) {
+		imagedestroy( $src );
+		return false;
+	}
+	// keep PNG alpha through the resize -- without these, a transparent
+	//     source ends up with a solid black background in the WebP.
+	imagealphablending( $dst, false );
+	imagesavealpha( $dst, true );
+	$transparent = imagecolorallocatealpha( $dst, 0, 0, 0, 127 );
+	imagefilledrectangle( $dst, 0, 0, $tgt_w, $tgt_h, $transparent );
+
+	if ( ! imagecopyresampled( $dst, $src, 0, 0, 0, 0, $tgt_w, $tgt_h, $src_w, $src_h ) ) {
+		imagedestroy( $src );
+		imagedestroy( $dst );
+		return false;
+	}
+
+	$dest = $source . '.' . $tgt_w . '.webp';
+	$ok   = @imagewebp( $dst, $dest, max( 0, min( 100, (int) $quality ) ) );
+	imagedestroy( $src );
+	imagedestroy( $dst );
+	return (bool) $ok;
+}
+
+/*
 balanceTags
 
 Balances Tags of string using a modified stack.
