@@ -739,13 +739,47 @@ function wrap_img_with_webp_picture( $content ) {
 			if ( ! $cache[ $abs_webp ] ) {
 				return $tag;
 			}
-			// build the WebP URL on the path portion so a `?v=` cache-bust
+			// build the WebP URL(s) on the path portion so a `?v=` cache-bust
 			//     on the src does not become part of the filename.
-			$prefix   = preg_match( '~^https?://~i', $url )
+			$prefix    = preg_match( '~^https?://~i', $url )
 				? substr( $url, 0, strlen( (string) $site ) )
 				: '';
-			$webp_url = htmlspecialchars( $prefix . $path . '.webp', ENT_QUOTES, 'UTF-8' );
-			return '<picture><source srcset="' . $webp_url . '" type="image/webp" />' . $tag . '</picture>';
+			$webp_base = $prefix . $path;
+			// collect any width variants the CLI backfill produced (Issue
+			//     #247). 480 w matches the phone column; 1024 w matches a
+			//     tablet / small desktop. Variants that have not been
+			//     generated for this image are simply not listed.
+			$srcset_parts = array();
+			foreach ( array( 480, 1024 ) as $vw ) {
+				$variant_abs = $root . $rel . '.' . $vw . '.webp';
+				if ( ! array_key_exists( $variant_abs, $cache ) ) {
+					$cache[ $variant_abs ] = is_file( $variant_abs );
+				}
+				if ( $cache[ $variant_abs ] ) {
+					$srcset_parts[] = htmlspecialchars( $webp_base . '.' . $vw . '.webp', ENT_QUOTES, 'UTF-8' )
+						. ' ' . $vw . 'w';
+				}
+			}
+			$full_url_esc = htmlspecialchars( $webp_base . '.webp', ENT_QUOTES, 'UTF-8' );
+			if ( empty( $srcset_parts ) ) {
+				// no width variants on disk -- single-URL fallback (the
+				//     pre-Issue-247 form, kept so a fresh install without
+				//     variants still wraps).
+				return '<picture><source srcset="' . $full_url_esc . '" type="image/webp" />' . $tag . '</picture>';
+			}
+			// reuse the original width that add_image_dimensions() already
+			//     injected as the descriptor on the full-width WebP.
+			$orig_w = 0;
+			if ( preg_match( '~\bwidth\s*=\s*["\'](\d+)["\']~i', $tag, $w_match ) ) {
+				$orig_w = (int) $w_match[1];
+			}
+			$srcset_parts[] = ( $orig_w > 0 ) ? $full_url_esc . ' ' . $orig_w . 'w' : $full_url_esc;
+			$srcset         = implode( ', ', $srcset_parts );
+			return '<picture>'
+				. '<source srcset="' . $srcset . '" type="image/webp"'
+				. ' sizes="(max-width: 782px) 100vw, 600px" />'
+				. $tag
+				. '</picture>';
 		},
 		$content
 	);
