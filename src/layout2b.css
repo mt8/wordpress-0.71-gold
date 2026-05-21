@@ -90,7 +90,10 @@ p, li {
 }
 
 .meta, .meta a {
-	color: #808080;
+	/* Darkened from #808080 (3.95:1 on white -- fails WCAG AA) to #666
+	 *     (5.74:1 -- comfortably passes AA without changing the
+	 *     typographic feel). Issue #257. */
+	color: #666;
 	font-size: small;
 }
 

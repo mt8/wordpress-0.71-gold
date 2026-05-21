@@ -34,8 +34,8 @@ if ( $ogp_p > 0 ) {
 		if ( '' !== $ogp_image ) {
 			$ogp_title = strip_tags( stripslashes( (string) $ogp_post['Title'] ) );
 			?>
-			<?php /* Preload the LCP candidate (Issue #239) -- same URL the og:image meta uses. The preload scanner kicks off the fetch from <head>, in parallel with the stylesheets, instead of waiting for the parser to reach the body <img>. */ ?>
-	<link rel="preload" as="image" href="<?php echo htmlspecialchars( $ogp_image, ENT_QUOTES, 'UTF-8' ); ?>" />
+			<?php /* Preload the LCP candidate (Issue #239) -- same URL the og:image meta uses. The preload scanner kicks off the fetch from <head>, in parallel with the stylesheets, instead of waiting for the parser to reach the body <img>. fetchpriority="high" tells the browser this is the LCP target (Issue #257) so it does not have to discover that via heuristics. */ ?>
+	<link rel="preload" as="image" fetchpriority="high" href="<?php echo htmlspecialchars( $ogp_image, ENT_QUOTES, 'UTF-8' ); ?>" />
 	<meta property="og:title" content="<?php echo htmlspecialchars( $ogp_title, ENT_QUOTES, 'UTF-8' ); ?>" />
 	<meta property="og:type" content="article" />
 			<?php if ( '' !== $ogp_desc ) : ?>
@@ -71,7 +71,7 @@ if ( $ogp_p > 0 ) {
 <body>
 <h1 id="header"><a href="<?php echo $siteurl; ?>" title="<?php bloginfo( 'name' ); ?>"><?php bloginfo( 'name' ); ?></a></h1>
 
-<div id="content">
+<main id="content">
 
 <?php
 if ( $posts ) {
@@ -81,7 +81,7 @@ if ( $posts ) {
 			<?php the_date( '', '<h2>', '</h2>' ); ?>
 
 <h3 class="storytitle">
-	<a href="<?php permalink_link(); ?>" rel="bookmark"><?php the_title(); ?></a> 
+	<a href="<?php permalink_link(); ?>" rel="bookmark"><?php the_title(); ?></a>
 	<span class="meta"><a href="?cat=<?php the_category_ID(); ?>" title="Category: <?php the_category(); ?>">[<?php the_category(); ?>]</a> &#8212; <?php the_author(); ?> @ <?php the_time(); ?>
 	</span>
 </h3>
@@ -99,7 +99,7 @@ if ( $posts ) {
 } // end foreach, end if any posts
 ?>
 
-</div>
+</main>
 
 <p class="credit"><?php timer_stop( 1 ); ?> <cite>Powered by <a href="http://wordpress.org"><strong>WordPress</strong></a></cite></p>
 

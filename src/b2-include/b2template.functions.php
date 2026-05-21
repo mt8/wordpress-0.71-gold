@@ -621,7 +621,9 @@ function add_image_dimensions( $content ) {
  *
  * The first <img> is the most likely LCP candidate, so it gets only
  * `decoding="async"` -- `loading="lazy"` on the LCP image pushes LCP
- * later. Every other <img> gets both `loading="lazy"` and
+ * later -- plus `fetchpriority="high"` (Issue #257) so the browser
+ * knows it is the LCP target without having to discover that via
+ * heuristics. Every other <img> gets both `loading="lazy"` and
  * `decoding="async"` so the browser defers the fetch and decode until
  * the image scrolls into view, which is exactly the gain PageSpeed's
  * "Defer offscreen images" audit measures. `decoding="async"` is safe
@@ -629,10 +631,12 @@ function add_image_dimensions( $content ) {
  * delay the fetch), so adding it on the first image too is a net win.
  *
  * Each attribute is only added when missing -- a manually authored
- * `loading="eager"` or `decoding="auto"` is preserved verbatim.
+ * `loading="eager"`, `decoding="auto"`, or `fetchpriority="low"` is
+ * preserved verbatim.
  *
  * @param string $content The post content.
- * @return string The content with loading / decoding hints injected.
+ * @return string The content with loading / decoding / fetchpriority
+ *                hints injected.
  */
 function add_image_loading_hints( $content ) {
 	if ( ! is_string( $content ) || false === stripos( $content, '<img' ) ) {
@@ -647,10 +651,14 @@ function add_image_loading_hints( $content ) {
 			$is_first   = false;
 			$needs_lazy = ! $first && ! preg_match( '~\bloading\s*=~i', $tag );
 			$needs_dec  = ! preg_match( '~\bdecoding\s*=~i', $tag );
-			if ( ! $needs_lazy && ! $needs_dec ) {
+			$needs_fp   = $first && ! preg_match( '~\bfetchpriority\s*=~i', $tag );
+			if ( ! $needs_lazy && ! $needs_dec && ! $needs_fp ) {
 				return $tag;
 			}
 			$inject = '';
+			if ( $needs_fp ) {
+				$inject .= ' fetchpriority="high"';
+			}
 			if ( $needs_lazy ) {
 				$inject .= ' loading="lazy"';
 			}
