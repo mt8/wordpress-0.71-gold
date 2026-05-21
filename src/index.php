@@ -56,9 +56,8 @@ if ( $ogp_p > 0 ) {
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/layout2b.css" />
 	<?php endif; ?>
 
-	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. Deferred via the media="print" onload swap (Issue #251): the browser loads the file at low priority and applies it once it arrives, so it does not block FCP. The <noscript> fallback keeps the stylesheet functional when JavaScript is disabled. */ ?>
-	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" onload="this.media='all'" />
-	<noscript><link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" /></noscript>
+	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. Loaded render-blocking (Issue #259 reverted the Issue #251 media="print" onload defer): the file affects box dimensions of every layout block (columns flip to flex, button padding, etc.), so deferring it caused a CLS of 0.756 when the late-arriving CSS reflowed the body. The file is already trimmed to ~47 KB by Issue #249 + #255, so the render-blocking cost is small. block-presets.css below stays deferred -- it carries only preset colour / font values that do not change box dimensions and therefore do not contribute to CLS. */ ?>
+	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
 
 	<?php /* Preset colour CSS (Issue #181) -- the has-*-color classes and --wp--preset--color--* properties -- so a preset colour picked in the block editor renders on the front end, not only as a custom inline colour. Same defer pattern as block-library.css above (Issue #251). */ ?>
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" onload="this.media='all'" />
