@@ -38,9 +38,8 @@ if ( $ogp_p > 0 ) {
 }
 ?>
 
-	<style type="text/css" media="screen">
-		@import url( <?php echo $siteurl; ?>/layout2b.css );
-	</style>
+	<?php /* layout2b.css is the main theme stylesheet (Issue #233 dropped the original <style>@import</style> wrapper -- the @import inside an inline <style> hides the URL behind an extra parse step and costs an extra round trip before render). */ ?>
+	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/layout2b.css" />
 
 	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. */ ?>
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
