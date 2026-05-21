@@ -243,6 +243,190 @@ function cli_export_absolutify_ogp( string $body, string $publish_url ): string 
 }
 
 /**
+ * Collect every `wp-block-NAME` class referenced in HTML (Issue #249).
+ *
+ * Scans `class="..."` attributes across the export tree and pulls out the
+ *     bare block-name suffix after `wp-block-` so the purge step below can
+ *     compare against block-library.css selectors. Returns a sorted, deduped
+ *     list -- order is irrelevant to the purge but makes the unit tests
+ *     stable.
+ * @param string $html Concatenated HTML to scan.
+ * @return array<int, string> Sorted list of block names actually used.
+ */
+function cli_export_collect_used_blocks( string $html ): array {
+	$used = array();
+	if ( preg_match_all( '~class\s*=\s*["\']([^"\']+)["\']~i', $html, $m ) ) {
+		foreach ( $m[1] as $classes ) {
+			if ( preg_match_all( '~\bwp-block-([\w-]+)~', $classes, $names ) ) {
+				foreach ( $names[1] as $name ) {
+					$used[ $name ] = true;
+				}
+			}
+		}
+	}
+	$keys = array_keys( $used );
+	sort( $keys );
+	return $keys;
+}
+
+/**
+ * Decide whether a CSS rule whose selector list is $selectors is alive
+ * (Issue #249).
+ *
+ * The selector list is split on commas; each comma-separated selector is
+ *     examined independently. A selector with no `.wp-block-*` reference is
+ *     treated as general styling and forces the rule to be kept. A selector
+ *     that references at least one used block forces a keep too. Only when
+ *     every selector references some `.wp-block-*` AND every referenced
+ *     block is unused is the rule dropped.
+ * @param string             $selectors  Raw selector list (everything before
+ *                                       the rule's opening `{`).
+ * @param array<int, string> $used_blocks Block names actually used.
+ * @return bool True when the rule should be kept.
+ */
+function cli_export_rule_is_alive( string $selectors, array $used_blocks ): bool {
+	$used_set = array_flip( $used_blocks );
+	foreach ( explode( ',', $selectors ) as $sel ) {
+		if ( ! preg_match_all( '~\.wp-block-([\w-]+)~', $sel, $m ) ) {
+			// no .wp-block-* in this selector -- general styling, keep the rule.
+			return true;
+		}
+		foreach ( $m[1] as $block ) {
+			if ( isset( $used_set[ $block ] ) ) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
+ * Purge unused rules from block-library.css (Issue #249).
+ *
+ * The CSS has a predictable shape -- top-level rules and @media / @keyframes
+ *     / @supports blocks. A small brace-tracking parser walks the file,
+ *     splits it into rule blocks, and applies the keep / drop decision per
+ *     block (see cli_export_rule_is_alive). At-rules with inner blocks are
+ *     recursed into so a media query containing only dead rules disappears
+ *     completely; @keyframes blocks are kept verbatim because their inner
+ *     "0% { ... }" "steps" do not carry `.wp-block-*` selectors and would
+ *     otherwise be wrongly dropped.
+ * @param string             $css         The block-library.css body.
+ * @param array<int, string> $used_blocks Block names actually used.
+ * @return string The purged CSS body.
+ */
+function cli_export_purge_block_library_css( string $css, array $used_blocks ): string {
+	$len = strlen( $css );
+	$out = '';
+	$i   = 0;
+	while ( $i < $len ) {
+		$ch = $css[ $i ];
+		// Comments are kept as-is.
+		if ( '/' === $ch && $i + 1 < $len && '*' === $css[ $i + 1 ] ) {
+			$end = strpos( $css, '*/', $i + 2 );
+			if ( false === $end ) {
+				$out .= substr( $css, $i );
+				break;
+			}
+			$out .= substr( $css, $i, $end - $i + 2 );
+			$i    = $end + 2;
+			continue;
+		}
+		// Whitespace passes through.
+		if ( ctype_space( $ch ) ) {
+			$out .= $ch;
+			++$i;
+			continue;
+		}
+		// @-rule.
+		if ( '@' === $ch ) {
+			$semi  = strpos( $css, ';', $i );
+			$brace = strpos( $css, '{', $i );
+			if ( false === $brace || ( false !== $semi && $semi < $brace ) ) {
+				// statement at-rule (e.g. @import, @charset).
+				$end  = ( false === $semi ) ? $len - 1 : $semi;
+				$out .= substr( $css, $i, $end - $i + 1 );
+				$i    = $end + 1;
+				continue;
+			}
+			$prelude = substr( $css, $i, $brace - $i );
+			$close   = cli_export_find_matching_brace( $css, $brace );
+			$inner   = substr( $css, $brace + 1, $close - $brace - 1 );
+			$lead    = strtolower( ltrim( $prelude ) );
+			if ( str_starts_with( $lead, '@keyframes' ) || str_starts_with( $lead, '@font-face' ) ) {
+				// keep verbatim -- inner does not carry .wp-block-* selectors.
+				$out .= substr( $css, $i, $close - $i + 1 );
+			} else {
+				$purged_inner = cli_export_purge_block_library_css( $inner, $used_blocks );
+				if ( '' !== trim( $purged_inner ) ) {
+					$out .= $prelude . '{' . $purged_inner . '}';
+				}
+			}
+			$i = $close + 1;
+			continue;
+		}
+		// Regular rule -- selector list { declarations }.
+		$brace = strpos( $css, '{', $i );
+		if ( false === $brace ) {
+			$out .= substr( $css, $i );
+			break;
+		}
+		$selectors = substr( $css, $i, $brace - $i );
+		$close     = cli_export_find_matching_brace( $css, $brace );
+		if ( cli_export_rule_is_alive( $selectors, $used_blocks ) ) {
+			$out .= substr( $css, $i, $close - $i + 1 );
+		}
+		$i = $close + 1;
+	}
+	return $out;
+}
+
+/**
+ * Find the matching `}` for an opening `{` at $start, ignoring nested
+ * braces inside strings and comments (Issue #249).
+ *
+ * @param string $css   The CSS body.
+ * @param int    $start Index of the `{` to match.
+ * @return int Index of the matching `}` (or strlen-1 on a malformed input,
+ *             so the caller still terminates).
+ */
+function cli_export_find_matching_brace( string $css, int $start ): int {
+	$len   = strlen( $css );
+	$depth = 1;
+	$i     = $start + 1;
+	while ( $i < $len && $depth > 0 ) {
+		$ch = $css[ $i ];
+		if ( '/' === $ch && $i + 1 < $len && '*' === $css[ $i + 1 ] ) {
+			$end = strpos( $css, '*/', $i + 2 );
+			$i   = ( false === $end ) ? $len : $end + 2;
+			continue;
+		}
+		if ( '"' === $ch || "'" === $ch ) {
+			$quote = $ch;
+			++$i;
+			while ( $i < $len && $css[ $i ] !== $quote ) {
+				if ( '\\' === $css[ $i ] && $i + 1 < $len ) {
+					++$i;
+				}
+				++$i;
+			}
+			++$i;
+			continue;
+		}
+		if ( '{' === $ch ) {
+			++$depth;
+		} elseif ( '}' === $ch ) {
+			--$depth;
+			if ( 0 === $depth ) {
+				return $i;
+			}
+		}
+		++$i;
+	}
+	return $len - 1;
+}
+
+/**
  * Write a single exported file, creating any missing parent directories.
  *
  * @param string $out_dir The export output directory.
@@ -423,13 +607,39 @@ function cli_export_run( array $flags ): int {
 		cli_fail( "cannot create output directory $out_dir" );
 	}
 
+	$rewritten_pages = array();
 	foreach ( $pages as $target => $body ) {
-		$rewritten = cli_export_rewrite( $body, $blog_url );
-		$rewritten = cli_export_absolutify_ogp( $rewritten, $publish_url );
+		$rewritten                  = cli_export_rewrite( $body, $blog_url );
+		$rewritten                  = cli_export_absolutify_ogp( $rewritten, $publish_url );
+		$rewritten_pages[ $target ] = $rewritten;
 		cli_export_write_file( $out_dir, (string) $target, $rewritten );
 	}
 	foreach ( $assets as $target => $body ) {
 		cli_export_write_file( $out_dir, (string) $target, $body );
+	}
+
+	// Trim block-library.css to only the rules the exported HTML actually
+	//     uses (Issue #249). Same operator-visible step as the
+	//     absolutify-ogp / write-asset passes above; reports the before /
+	//     after byte size when the file is present, no-op when it is not.
+	$block_lib_rel = 'block-editor/assets/block-library.css';
+	$block_lib_abs = $out_dir . '/' . $block_lib_rel;
+	if ( is_file( $block_lib_abs ) ) {
+		$used   = cli_export_collect_used_blocks( implode( "\n", $rewritten_pages ) );
+		$css    = (string) file_get_contents( $block_lib_abs );
+		$pruned = cli_export_purge_block_library_css( $css, $used );
+		file_put_contents( $block_lib_abs, $pruned );
+		fwrite(
+			STDOUT,
+			sprintf(
+				"  trimmed: %s (%d -> %d bytes, %d used block class%s)\n",
+				$block_lib_rel,
+				strlen( $css ),
+				strlen( $pruned ),
+				count( $used ),
+				1 === count( $used ) ? '' : 'es'
+			)
+		);
 	}
 
 	fwrite( STDOUT, '  pages  : ' . count( $pages ) . "\n" );
