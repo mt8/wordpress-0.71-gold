@@ -747,6 +747,66 @@ function make_url_footnote( $content ) {
 }
 
 /*
+ * Encode a WebP copy of $source next to it (Issue #245).
+ *
+ * Loads the source through GD's PNG / JPEG reader, then writes
+ * <source>.webp via imagewebp() at the given quality. Returns true on
+ * success / false on any failure (GD missing, WebP unsupported, unreadable
+ * source, unwritable destination). The helper is pure: no globals, no
+ * side effects beyond the on-disk write, so the CLI backfill and the
+ * later upload-time hook can both call it.
+ *
+ * The destination is always "<source>.webp" -- i.e. for "img.png" it is
+ * "img.png.webp" so the original extension stays in the filename. That
+ * lets the render-side wrapper recover the WebP URL from the original
+ * <img src> by appending ".webp", and a non-PNG asset (a .css, an
+ * existing .webp) is left untouched because its name does not match
+ * the PNG / JPEG suffix set the caller passes in.
+ *
+ * @param string $source  Absolute path to a PNG or JPEG file on disk.
+ * @param int    $quality Encoder quality, 0..100. Defaults to 80
+ *                        (visually lossless for web display).
+ * @return bool True when the .webp sibling was written; false otherwise.
+ */
+function generate_webp_sibling( $source, $quality = 80 ) {
+	if ( ! is_string( $source ) || '' === $source ) {
+		return false;
+	}
+	if ( ! is_readable( $source ) || ! is_file( $source ) ) {
+		return false;
+	}
+	if ( ! function_exists( 'imagewebp' ) ) {
+		return false;
+	}
+
+	$ext = strtolower( (string) pathinfo( $source, PATHINFO_EXTENSION ) );
+	if ( 'png' === $ext ) {
+		$image = @imagecreatefrompng( $source );
+	} elseif ( 'jpg' === $ext || 'jpeg' === $ext ) {
+		$image = @imagecreatefromjpeg( $source );
+	} else {
+		return false;
+	}
+	if ( false === $image ) {
+		return false;
+	}
+
+	// Preserve PNG alpha through the conversion -- without
+	//     imagepalettetotruecolor + alpha-blending off, a transparent PNG
+	//     comes out as solid black in the WebP.
+	if ( 'png' === $ext && function_exists( 'imagepalettetotruecolor' ) ) {
+		@imagepalettetotruecolor( $image );
+		@imagealphablending( $image, false );
+		@imagesavealpha( $image, true );
+	}
+
+	$dest = $source . '.webp';
+	$ok   = @imagewebp( $image, $dest, max( 0, min( 100, (int) $quality ) ) );
+	imagedestroy( $image );
+	return (bool) $ok;
+}
+
+/*
 balanceTags
 
 Balances Tags of string using a modified stack.
