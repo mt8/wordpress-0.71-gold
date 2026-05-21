@@ -21,9 +21,16 @@ if ( $ogp_p > 0 ) {
 		$ogp_image = first_image_url( $ogp_post['Content'] );
 		if ( '' !== $ogp_image ) {
 			$ogp_title = strip_tags( stripslashes( (string) $ogp_post['Title'] ) );
+			$ogp_desc  = post_excerpt_for_ogp(
+				isset( $ogp_post['Excerpt'] ) ? (string) $ogp_post['Excerpt'] : '',
+				(string) $ogp_post['Content']
+			);
 			?>
 	<meta property="og:title" content="<?php echo htmlspecialchars( $ogp_title, ENT_QUOTES, 'UTF-8' ); ?>" />
 	<meta property="og:type" content="article" />
+			<?php if ( '' !== $ogp_desc ) : ?>
+	<meta property="og:description" content="<?php echo htmlspecialchars( $ogp_desc, ENT_QUOTES, 'UTF-8' ); ?>" />
+			<?php endif; ?>
 	<meta property="og:image" content="<?php echo htmlspecialchars( $ogp_image, ENT_QUOTES, 'UTF-8' ); ?>" />
 			<?php
 		}
