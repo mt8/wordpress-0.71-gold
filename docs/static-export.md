@@ -86,6 +86,30 @@ blog over HTTP, which the database-only Behat harness does not provide, so the
 full run is verified manually against the running Docker environment with
 `071 export`.
 
+## CSS minifier and calc() (Issue #265)
+
+`cli_export_minify_css()` in `tools/cli/php/commands/export.php` is a regex
+minifier that collapses whitespace around CSS punctuation. The set of
+punctuation it collapses around deliberately excludes `+` and the closing
+paren `)`:
+
+- The CSS calc() spec requires whitespace on both sides of `+` and `-`.
+  Stripping it broke `padding: calc(0.667em + 2px) calc(1.333em + 2px)` into
+  the unparseable `padding:calc(0.667em+2px)calc(1.333em+2px)`, dropping the
+  whole `padding` declaration on the static-export side -- the core/button
+  block then rendered with no horizontal padding (the text touched the
+  rounded pill edge). The minifier now keeps a single space around `+`
+  everywhere, paying a couple of bytes per adjacent-sibling selector
+  (`.c + .d` instead of `.c+.d`) to avoid the calc() break.
+- The closing paren `)` strips only leading whitespace (`calc( 1em )` ->
+  `calc(1em)`), not trailing -- so two adjacent function-call values such
+  as `calc(...) calc(...)` keep their shorthand separator and the parser
+  sees two values, not one glued token.
+
+Regression coverage lives in
+`tests/phpunit/tests/ExportMinifyTest.php::testCssPreservesCalcOperatorSpaces`
+and friends.
+
 ---
 
 # 静的書き出し
@@ -175,3 +199,25 @@ CDN、GitHub Pages、素の Web サーバー など)へアップロードする�
 稼働中のブログを HTTP でクロールするが、データベース専用の Behat ハーネスは
 それを提供しないため、完全な実行は稼働中の Docker 環境に対して `071 export`
 で手動検証する。
+
+## CSS ミニファイヤと calc() (Issue #265)
+
+`tools/cli/php/commands/export.php` 内の `cli_export_minify_css()` は、CSS の
+句読点周りの空白を畳む正規表現ミニファイヤである。畳む対象から `+` および
+閉じ括弧 `)` は意図的に外している:
+
+- CSS calc() 仕様では `+` / `-` の両側に空白が必須である。これを削ると
+  `padding: calc(0.667em + 2px) calc(1.333em + 2px)` がパース不能な
+  `padding:calc(0.667em+2px)calc(1.333em+2px)` に潰れ、`padding` 宣言ごと
+  破棄される。その結果、静的書き出し側で core/button が左右パディングを失い、
+  テキストがピル背景の丸み際にくっついて表示されていた (PR #264 マージ後に
+  顕在化した症状の原因はこれ)。ミニファイヤは `+` の両側の空白を常に 1 個
+  残すようになり、隣接兄弟セレクタは `.c + .d` (`.c+.d` ではなく) として
+  出力される。数バイトの増加と引き換えに calc() が壊れないことを優先する。
+- 閉じ括弧 `)` は **前** の空白のみ畳む (`calc( 1em )` -> `calc(1em)`)。
+  後ろの空白は保持し、`calc(...) calc(...)` のような shorthand 値ペアが
+  1 つのトークンに連結されないようにする。
+
+回帰テストは
+`tests/phpunit/tests/ExportMinifyTest.php::testCssPreservesCalcOperatorSpaces`
+他に置いている。
