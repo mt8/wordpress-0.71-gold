@@ -22,18 +22,24 @@ final class AddImageLoadingHintsTest extends TestCase
         $this->assertSame($content, add_image_loading_hints($content));
     }
 
-    public function testFirstImageGetsDecodingButNotLoading(): void
+    public function testFirstImageGetsFetchpriorityAndDecodingButNotLoading(): void
     {
-        // a single-image post -- the only image is the LCP candidate and
-        //     must not be lazy.
+        // a single-image post -- the only image is the LCP candidate so
+        //     it must NOT be lazy, gets decoding="async" off the main
+        //     thread, and gets fetchpriority="high" (Issue #257) so the
+        //     browser knows it is the LCP target.
         $content = '<img src="a.png" alt="" />';
         $out     = add_image_loading_hints($content);
+        $this->assertStringContainsString(' fetchpriority="high"', $out);
         $this->assertStringContainsString(' decoding="async"', $out);
         $this->assertStringNotContainsString('loading=', $out);
-        $this->assertStringContainsString(' decoding="async" />', $out);
+        $this->assertStringContainsString(
+            ' fetchpriority="high" decoding="async" />',
+            $out
+        );
     }
 
-    public function testSubsequentImagesGetBothLazyAndAsync(): void
+    public function testSubsequentImagesGetBothLazyAndAsyncWithoutFetchpriority(): void
     {
         $content =
             '<img src="a.png" alt="" />'
@@ -42,25 +48,44 @@ final class AddImageLoadingHintsTest extends TestCase
             . '<img src="c.png" alt="" />';
         $out = add_image_loading_hints($content);
 
-        // first img: decoding only, no loading.
+        // first img: fetchpriority + decoding only, no loading.
         $this->assertSame(
             1,
-            preg_match('~<img src="a\.png"[^>]* decoding="async" />~', $out),
-            'first image gets decoding but not loading'
+            preg_match('~<img src="a\.png"[^>]* fetchpriority="high" decoding="async" />~', $out),
+            'first image gets fetchpriority + decoding but not loading'
         );
         $this->assertSame(
             0,
             preg_match('~<img src="a\.png"[^>]*\bloading=~', $out)
         );
-        // second + third img: both attributes.
+        // second + third img: both lazy + decoding, but NOT fetchpriority
+        //     (only the LCP candidate gets the high priority hint).
         $this->assertSame(
             1,
             preg_match('~<img src="b\.png"[^>]* loading="lazy" decoding="async" />~', $out)
         );
         $this->assertSame(
+            0,
+            preg_match('~<img src="b\.png"[^>]*\bfetchpriority=~', $out)
+        );
+        $this->assertSame(
             1,
             preg_match('~<img src="c\.png"[^>]* loading="lazy" decoding="async" />~', $out)
         );
+        $this->assertSame(
+            0,
+            preg_match('~<img src="c\.png"[^>]*\bfetchpriority=~', $out)
+        );
+    }
+
+    public function testPreservesExistingFetchpriority(): void
+    {
+        // a manually authored fetchpriority is preserved verbatim --
+        //     the helper only adds the high hint when missing.
+        $content = '<img src="a.png" fetchpriority="low" alt="" />';
+        $out     = add_image_loading_hints($content);
+        $this->assertStringContainsString('fetchpriority="low"', $out);
+        $this->assertStringNotContainsString('fetchpriority="high"', $out);
     }
 
     public function testPreservesExistingLoadingAttribute(): void
@@ -85,9 +110,16 @@ final class AddImageLoadingHintsTest extends TestCase
 
     public function testPreservesExistingDecodingAttribute(): void
     {
+        // a first-image tag that already has decoding still gets
+        //     fetchpriority="high" injected (Issue #257) -- the LCP
+        //     hint is independent of decoding. A tag that carries all
+        //     three of fetchpriority / loading / decoding stays
+        //     verbatim, but a missing fetchpriority is added.
         $content = '<img src="a.png" decoding="auto" alt="" />';
         $out     = add_image_loading_hints($content);
-        $this->assertSame($content, $out, 'tag already complete -- no change');
+        $this->assertStringContainsString('decoding="auto"', $out);
+        $this->assertStringContainsString('fetchpriority="high"', $out);
+        $this->assertStringNotContainsString('decoding="async"', $out);
     }
 
     public function testHandlesUnclosedImgTag(): void
@@ -98,7 +130,7 @@ final class AddImageLoadingHintsTest extends TestCase
         $out     = add_image_loading_hints($content);
         $this->assertSame(
             1,
-            preg_match('~<img src="a\.png" alt="" decoding="async">~', $out)
+            preg_match('~<img src="a\.png" alt="" fetchpriority="high" decoding="async">~', $out)
         );
         $this->assertSame(
             1,
