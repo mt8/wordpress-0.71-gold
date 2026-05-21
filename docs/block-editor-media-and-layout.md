@@ -178,6 +178,25 @@ The widths in `WP_DEFAULT_LAYOUT` (`presets.js`) remain the single
 source of truth: `Editor.jsx` reads them at render time and the static
 canvas / front end rules keep the same `840px` / `1100px` constants.
 
+### Follow-ups still inside Issue #263
+
+- **Don't centre `.alignleft` / `.alignright`.** The canvas auto-margin
+  rule from the first round of fixes hijacked floated blocks. The
+  selector now reads
+  `.block-editor-block-list__layout > :where(:not(.alignleft):not(.alignright))`
+  so an Image / Gallery / Quote at `.alignleft` keeps its float and the
+  surrounding text wraps next to it, as it does on the published page.
+- **Caption text-alignment toolbar.** The core image block has no
+  built-in control for the figcaption's `text-align`, so a small
+  `.alignleft` image leaves its multi-line caption wrapping in a thin
+  column on the left. `tools/block-editor/src/image-caption-align.jsx`
+  registers a block-filter extension: a `captionAlign` attribute, an
+  `AlignmentControl` in the image block's toolbar (only shown once the
+  caption has any text), and a `has-caption-align-<value>` class on the
+  saved figure. Matching rules in `src/layout2b.css` and `app.css` apply
+  the alignment to the figcaption on both the front end and inside the
+  editor canvas.
+
 ---
 
 # ブロックエディタ: 画像アップロードとレイアウト整合性
@@ -357,3 +376,22 @@ mediaUpload( { filesList, allowedTypes, additionalData, onFileChange, onError } 
 `WP_DEFAULT_LAYOUT` (`presets.js`) の幅は唯一の真実源として維持される。
 `Editor.jsx` が実行時にそれを参照し、キャンバスとフロントエンドの
 静的ルールも同じ `840px` / `1100px` の定数を共有する。
+
+### Issue #263 内の追加対応
+
+- **`.alignleft` / `.alignright` を中央寄せしない。** 上記第1弾の修正で
+  キャンバスに入れた auto-margin が float ブロックまで巻き込んでいた。
+  セレクタを
+  `.block-editor-block-list__layout > :where(:not(.alignleft):not(.alignright))`
+  に変更し、`.alignleft` の画像 / ギャラリー / 引用は本来の float 挙動を
+  保ち、周辺テキストが横に回り込むようにした (公開ページと同じ振る舞い)。
+- **キャプションのテキスト揃えツールバー。** core 画像ブロックには
+  figcaption の `text-align` を選ぶ仕組みが無いため、小さな
+  `.alignleft` 画像では複数行のキャプションが左の細い縦カラムで折り
+  返されてしまう。`tools/block-editor/src/image-caption-align.jsx` で
+  ブロック フィルター拡張を登録する: `captionAlign` 属性、画像ブロック
+  のツールバーへ `AlignmentControl` (キャプションに何か入力された
+  ときだけ表示)、保存される `<figure>` への `has-caption-align-<value>`
+  クラス付与。`src/layout2b.css` と `app.css` の対応ルールがフロント
+  エンド側とエディタ キャンバス側の両方で figcaption の text-align に
+  反映する。
