@@ -663,6 +663,94 @@ function add_image_loading_hints( $content ) {
 	);
 }
 
+/*
+ * Wrap every <img> whose on-disk source has a .webp sibling in a
+ * <picture><source srcset="..webp" type="image/webp">...</picture>
+ * (Issue #245). A WebP-supporting browser fetches the smaller variant
+ * via <source>; older browsers fall back to the original <img> -- the
+ * <picture> element makes the fallback automatic, so the wrap is safe
+ * even when the user agent lacks WebP support.
+ *
+ * The wrap is skipped when the <img>:
+ *   - has no `src`,
+ *   - points at an SVG / GIF (WebP cannot improve them; GIFs may be
+ *     animated and the static <picture> path would drop the animation),
+ *   - is already a .webp,
+ *   - points at a remote host (cannot check disk),
+ *   - has no .webp sibling on disk yet (the CLI backfill creates these).
+ *
+ * The check uses a per-request static cache keyed on the on-disk
+ * sibling path so the same image used twice in a post hits the
+ * filesystem once.
+ *
+ * The webp URL is the original src with ".webp" appended -- i.e.
+ * "img.png" pairs with "img.png.webp". Matches the file-naming the
+ * encoder (generate_webp_sibling) writes, so the wrap and the encoder
+ * stay in sync without an extra mapping.
+ *
+ * @param string $content The post content.
+ * @return string The content with <picture> wrappers around images
+ *                whose .webp sibling exists on disk.
+ */
+function wrap_img_with_webp_picture( $content ) {
+	global $siteurl, $abspath;
+	if ( ! is_string( $content ) || false === stripos( $content, '<img' ) ) {
+		return (string) $content;
+	}
+	$site  = isset( $siteurl ) ? (string) $siteurl : '';
+	$root  = isset( $abspath ) ? rtrim( (string) $abspath, '/' ) . '/' : '';
+	$cache = array();
+	return (string) preg_replace_callback(
+		'~<img\b[^>]*>~i',
+		static function ( array $m ) use ( $site, $root, &$cache ) {
+			$tag = $m[0];
+			if ( ! preg_match( '~\bsrc\s*=\s*(["\'])(.*?)\1~i', $tag, $src ) ) {
+				return $tag;
+			}
+			$url = $src[2];
+			// path-only portion of the URL -- a possible query string on
+			//     the src (e.g. an asset_url cache-bust) must not leak
+			//     into the on-disk path or the .webp filename.
+			$path = parse_url( $url, PHP_URL_PATH );
+			if ( ! is_string( $path ) || '' === $path ) {
+				return $tag;
+			}
+			$ext = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
+			// WebP cannot improve SVG / WebP; GIF may be animated and a
+			//     static <picture> path would drop the animation -- skip all
+			//     three.
+			if ( 'svg' === $ext || 'gif' === $ext || 'webp' === $ext ) {
+				return $tag;
+			}
+			if ( preg_match( '~^https?://~i', $url ) ) {
+				if ( '' === $site || ! str_starts_with( $url, $site ) ) {
+					// remote -- cannot check disk for a sibling.
+					return $tag;
+				}
+			}
+			$rel = ltrim( $path, '/' );
+			if ( '' === $root || '' === $rel ) {
+				return $tag;
+			}
+			$abs_webp = $root . $rel . '.webp';
+			if ( ! array_key_exists( $abs_webp, $cache ) ) {
+				$cache[ $abs_webp ] = is_file( $abs_webp );
+			}
+			if ( ! $cache[ $abs_webp ] ) {
+				return $tag;
+			}
+			// build the WebP URL on the path portion so a `?v=` cache-bust
+			//     on the src does not become part of the filename.
+			$prefix   = preg_match( '~^https?://~i', $url )
+				? substr( $url, 0, strlen( (string) $site ) )
+				: '';
+			$webp_url = htmlspecialchars( $prefix . $path . '.webp', ENT_QUOTES, 'UTF-8' );
+			return '<picture><source srcset="' . $webp_url . '" type="image/webp" />' . $tag . '</picture>';
+		},
+		$content
+	);
+}
+
 function b2_strip_block_delimiters( $content ) {
 	// An opening or void block delimiter -- `<!-- wp:name ... -->` or
 	//     `<!-- wp:name ... /-->` -- and the newline that ends its line.
@@ -738,6 +826,11 @@ function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more
 	//     likely LCP candidate; lazy on LCP pushes LCP later). Targets
 	//     PageSpeed's "Defer offscreen images" audit -- Issue #237.
 	$output = add_image_loading_hints( $output );
+	// Wrap every <img> whose on-disk source has a .webp sibling in a
+	//     <picture> so WebP-supporting browsers fetch the smaller variant
+	//     (Issue #245). Older browsers fall back to the original <img>
+	//     automatically through the <picture> element.
+	$output = wrap_img_with_webp_picture( $output );
 	return( $output );
 }
 

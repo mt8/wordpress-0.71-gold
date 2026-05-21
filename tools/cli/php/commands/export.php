@@ -123,6 +123,21 @@ function cli_export_extract_refs( string $html ): array {
 	if ( preg_match_all( '~(?:href|src)\s*=\s*["\']([^"\']+)["\']~i', $html, $m ) ) {
 		$refs = array_merge( $refs, $m[1] );
 	}
+	// srcset attributes carry one or more comma-separated URLs, each
+	//     optionally followed by a descriptor (` 300w`, ` 2x`). The
+	//     <picture><source srcset=".webp"> wrap added by Issue #245 uses
+	//     the single-URL form; the descriptor strip below keeps the
+	//     parser future-proof for a multi-width srcset.
+	if ( preg_match_all( '~srcset\s*=\s*["\']([^"\']+)["\']~i', $html, $m ) ) {
+		foreach ( $m[1] as $srcset ) {
+			foreach ( explode( ',', $srcset ) as $candidate ) {
+				$url = (string) preg_replace( '~\s+\S+$~', '', trim( $candidate ) );
+				if ( '' !== $url ) {
+					$refs[] = $url;
+				}
+			}
+		}
+	}
 	if ( preg_match_all( '~@import\s+url\(\s*["\']?([^"\')]+)["\']?\s*\)~i', $html, $m ) ) {
 		$refs = array_merge( $refs, $m[1] );
 	}
@@ -328,7 +343,7 @@ function cli_export_run( array $flags ): int {
 	$out_dir     = cli_export_out_dir( $flags );
 	$publish_url = cli_export_publish_url( $flags );
 
-	$asset_extensions = array( 'css', 'js', 'gif', 'png', 'jpg', 'jpeg', 'ico', 'svg' );
+	$asset_extensions = array( 'css', 'js', 'gif', 'png', 'jpg', 'jpeg', 'ico', 'svg', 'webp' );
 
 	fwrite( STDOUT, "Static export / 静的書き出し\n" );
 	fwrite( STDOUT, "  blog   : $blog_url\n" );

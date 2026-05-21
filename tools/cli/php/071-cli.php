@@ -81,6 +81,7 @@ function cli_print_usage(): void {
 		'  option    list | get <name> | set <name> <value>',
 		'  db        query <sql> | tables | export <file> | import <file>',
 		'  export    run',
+		'  image     backfill-webp',
 		'',
 		'Global flags:',
 		'  --format=table|json|csv|count|ids   output format (default: table)',
@@ -121,7 +122,7 @@ function cli_main( array $argv ): int {
 		return 0;
 	}
 
-	$groups = array( 'post', 'user', 'category', 'comment', 'link', 'option', 'db', 'export' );
+	$groups = array( 'post', 'user', 'category', 'comment', 'link', 'option', 'db', 'export', 'image' );
 
 	if ( ! in_array( $group, $groups, true ) ) {
 		fwrite( STDERR, "Error: unknown command group '$group'.\n\n" );
