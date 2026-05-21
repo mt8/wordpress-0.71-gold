@@ -427,6 +427,133 @@ function cli_export_find_matching_brace( string $css, int $start ): int {
 }
 
 /**
+ * Minify a CSS body (Issue #255).
+ *
+ * Pure regex; strips C-style block comments, collapses whitespace
+ *     around CSS punctuation (`{};:,>+~`), drops the optional `;` before
+ *     `}`, then collapses any remaining whitespace runs to a single
+ *     space. Idempotent: a second run on already-minified input is a
+ *     no-op. Does not track string literals, so a literal whitespace
+ *     sequence inside `content: "..."` or `font-family: "..."` is
+ *     collapsed to a single space -- acceptable for the block-library /
+ *     layout2b CSS the export ships, none of which depend on byte-exact
+ *     whitespace inside a string.
+ * @param string $css The CSS body.
+ * @return string The minified CSS.
+ */
+function cli_export_minify_css( string $css ): string {
+	// Strip /* ... */ block comments.
+	$css = (string) preg_replace( '~/\*.*?\*/~s', '', $css );
+	// Collapse whitespace around CSS punctuation. The set covers
+	//     block braces, statement terminators, the colon between
+	//     property and value, comma separators, combinator selectors
+	//     and the parens around function arguments / @-rule preludes
+	//     like `@media (max-width:782px)`.
+	$css = (string) preg_replace( '#\s*([{};:,>+~()])\s*#', '$1', $css );
+	// Drop the optional ; before }.
+	$css = str_replace( ';}', '}', $css );
+	// Collapse remaining whitespace.
+	$css = (string) preg_replace( '~\s+~', ' ', $css );
+	return trim( $css );
+}
+
+/**
+ * Minify a JavaScript body conservatively (Issue #255).
+ *
+ * Strips C-style block comments and `// ...` line comments
+ *     (line-anchored: a line that starts with optional whitespace and
+ *     then `//`, or trailing `//` after a run of whitespace on the same
+ *     line -- avoids most `//` matches inside string literals), then
+ *     trims per-line whitespace and collapses blank lines. Line breaks
+ *     between statements are preserved so JavaScript's automatic
+ *     semicolon insertion still does the right thing -- this minifier
+ *     never reflows expressions, never renames identifiers, never
+ *     reformats code. Conservative on purpose: the inline menu-toggle
+ *     script and any future small script must survive verbatim.
+ * @param string $js The JS body.
+ * @return string The minified JS.
+ */
+function cli_export_minify_js( string $js ): string {
+	// Strip /* ... */ block comments.
+	$js = (string) preg_replace( '~/\*.*?\*/~s', '', $js );
+	// Strip leading-of-line line comments (optional whitespace then //).
+	$js = (string) preg_replace( '~^\s*//[^\n]*\n?~m', '', $js );
+	// Strip trailing line comments after code on the same line (preceded
+	//     by at least one whitespace char so `//` inside a string is not
+	//     captured -- string literals never carry an unescaped whitespace
+	//     right before `//` in the menu-toggle script).
+	$js = (string) preg_replace( '~[ \t]+//[^\n]*$~m', '', $js );
+	// Trim per-line whitespace.
+	$js = (string) preg_replace( '~^[ \t]+~m', '', $js );
+	$js = (string) preg_replace( '~[ \t]+$~m', '', $js );
+	// Collapse blank lines.
+	$js = (string) preg_replace( "~\n\n+~", "\n", $js );
+	return trim( $js );
+}
+
+/**
+ * Minify the contents of inline <style> / <script> blocks in an HTML
+ * page (Issue #255). Applied as the last step of the page rewrite
+ * pipeline so the rewrite chain stays one pass per page.
+ * @param string $html The page body.
+ * @return string The page with inline asset contents minified.
+ */
+function cli_export_minify_inline_assets( string $html ): string {
+	$html = (string) preg_replace_callback(
+		'~(<style\b[^>]*>)(.*?)(</style>)~is',
+		static function ( array $m ): string {
+			return $m[1] . cli_export_minify_css( $m[2] ) . $m[3];
+		},
+		$html
+	);
+	$html = (string) preg_replace_callback(
+		'~(<script\b[^>]*>)(.*?)(</script>)~is',
+		static function ( array $m ): string {
+			return $m[1] . cli_export_minify_js( $m[2] ) . $m[3];
+		},
+		$html
+	);
+	return $html;
+}
+
+/**
+ * Walk every *.css under $out_dir and minify it in place (Issue #255).
+ *
+ * Returns the list of files where the minified body is strictly smaller
+ * than the original (a file already minified is reported as unchanged
+ * and skipped). The caller prints the before / after byte sizes for
+ * operator visibility.
+ * @param string $out_dir The export output directory.
+ * @return array<int, array{rel:string,before:int,after:int}>
+ */
+function cli_export_minify_css_assets( string $out_dir ): array {
+	$results = array();
+	if ( ! is_dir( $out_dir ) ) {
+		return $results;
+	}
+	$iter = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $out_dir, RecursiveDirectoryIterator::SKIP_DOTS )
+	);
+	foreach ( $iter as $file ) {
+		if ( ! $file->isFile() || strtolower( $file->getExtension() ) !== 'css' ) {
+			continue;
+		}
+		$path = $file->getPathname();
+		$orig = (string) file_get_contents( $path );
+		$min  = cli_export_minify_css( $orig );
+		if ( strlen( $min ) < strlen( $orig ) ) {
+			file_put_contents( $path, $min );
+			$results[] = array(
+				'rel'    => substr( $path, strlen( $out_dir ) + 1 ),
+				'before' => strlen( $orig ),
+				'after'  => strlen( $min ),
+			);
+		}
+	}
+	return $results;
+}
+
+/**
  * Write a single exported file, creating any missing parent directories.
  *
  * @param string $out_dir The export output directory.
@@ -611,6 +738,7 @@ function cli_export_run( array $flags ): int {
 	foreach ( $pages as $target => $body ) {
 		$rewritten                  = cli_export_rewrite( $body, $blog_url );
 		$rewritten                  = cli_export_absolutify_ogp( $rewritten, $publish_url );
+		$rewritten                  = cli_export_minify_inline_assets( $rewritten );
 		$rewritten_pages[ $target ] = $rewritten;
 		cli_export_write_file( $out_dir, (string) $target, $rewritten );
 	}
@@ -638,6 +766,24 @@ function cli_export_run( array $flags ): int {
 				strlen( $pruned ),
 				count( $used ),
 				1 === count( $used ) ? '' : 'es'
+			)
+		);
+	}
+
+	// Minify standalone .css assets in the export tree (Issue #255).
+	//     Inline <style> / <script> blocks in the page bodies have
+	//     already been minified during the page rewrite chain above;
+	//     this final pass covers the standalone files browsers load via
+	//     <link>.
+	$css_min = cli_export_minify_css_assets( $out_dir );
+	foreach ( $css_min as $m ) {
+		fwrite(
+			STDOUT,
+			sprintf(
+				"  minified: %s (%d -> %d bytes)\n",
+				$m['rel'],
+				$m['before'],
+				$m['after']
 			)
 		);
 	}
