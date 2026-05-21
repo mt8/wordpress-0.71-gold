@@ -147,6 +147,37 @@ matters for a tool people actually write in.
 Both are investigation outcomes only. Implementation would be follow-up
 Issues under #78.
 
+## 4. Alignment toolbar and content centring (Issue #263)
+
+A separate follow-up to Section 2 covers the **Wide / Full / Center**
+alignment toolbar and the centring of content in the editor canvas. The
+custom editor previously exposed neither: the wide/full toolbar buttons
+were filtered out, and top-level blocks rendered full canvas width.
+
+- `tools/block-editor/src/Editor.jsx` now sets
+  `editorSettings.alignWide = true`. `@wordpress/block-editor`'s
+  `useAvailableAlignments` reads `settings.alignWide ?? false`, so this
+  is what brings the wide/full buttons back on blocks that declare
+  `supports.align: [ 'wide', 'full', ... ]` (Image, Group, Cover, ...).
+- The same file passes
+  `layout={ { type: 'constrained', contentSize, wideSize } }` to the
+  root `<BlockList />`. The block editor's layout system only auto-emits
+  layout CSS for nested layout-aware blocks, so the **editor canvas CSS**
+  in `tools/block-editor/src/app.css` constrains
+  `.block-editor-block-list__layout > *` to `contentSize` (840px),
+  widens `.alignwide` to `wideSize` (1100px), and lets `.alignfull`
+  break out (`max-width: none`).
+- The **front end CSS** in `src/layout2b.css` adds the matching
+  `.aligncenter` / `.alignwide` / `.alignfull` rules scoped to
+  `.storycontent`. Per project decision `.alignfull` is **100% of
+  `#content`** -- the 2003 right-sidebar layout (the 160px `#content`
+  margin reserved for `#menu`) is preserved, so no block can paint over
+  the menu rail.
+
+The widths in `WP_DEFAULT_LAYOUT` (`presets.js`) remain the single
+source of truth: `Editor.jsx` reads them at render time and the static
+canvas / front end rules keep the same `840px` / `1100px` constants.
+
 ---
 
 # ブロックエディタ: 画像アップロードとレイアウト整合性
@@ -295,3 +326,34 @@ mediaUpload( { filesList, allowedTypes, additionalData, onFileChange, onError } 
 | レイアウト整合性 | **選択肢 A・段階的** -- 当面はレイアウト不要ブロックを受け入れる。レイアウトブロックを有効化する際は `@wordpress/block-library` のフロント用 `style.css` を `index.php` から配信し、`layout2b.css` をエディタキャンバスに読み込む。静的書き出しの変更は不要。 |
 
 いずれも調査結果のみ。実装は #78 配下の後続 Issue とする。
+
+## 4. 配置ツールバーとコンテンツの中央寄せ (Issue #263)
+
+第 2 節の後続として、ツールバーの **幅広 / 全幅 / 中央寄せ** と
+エディタキャンバスのコンテンツ中央寄せに対応する。従前は幅広 / 全幅の
+トグルが除外され、トップレベル ブロックがキャンバス全幅で描画されて
+いた。
+
+- `tools/block-editor/src/Editor.jsx` の `editorSettings` に
+  `alignWide: true` を設定する。`@wordpress/block-editor` の
+  `useAvailableAlignments` は `settings.alignWide ?? false` を参照する
+  ため、これによって `supports.align: [ 'wide', 'full', ... ]` を宣言する
+  ブロック (画像 / グループ / カバー …) で幅広 / 全幅のボタンが復活する。
+- 同ファイルのルート `<BlockList />` に
+  `layout={ { type: 'constrained', contentSize, wideSize } }` を渡す。
+  ブロックエディタのレイアウト系統はレイアウト対応の入れ子ブロックに
+  対してのみ CSS を自動出力するため、エディタキャンバスについては
+  `tools/block-editor/src/app.css` で
+  `.block-editor-block-list__layout > *` を `contentSize` (840px) に
+  制限し、`.alignwide` で `wideSize` (1100px) に広げ、`.alignfull` で
+  `max-width: none` として全幅扱いとする。
+- フロントエンドの `src/layout2b.css` には対応する
+  `.aligncenter` / `.alignwide` / `.alignfull` を `.storycontent` の
+  スコープで追加する。プロジェクト判断により `.alignfull` は
+  **`#content` の 100% 幅** とし、2003 年の右サイドバー レイアウト
+  (`#menu` のために確保した `#content` の右 160px マージン) は温存する。
+  これによりどのブロックも `#menu` レールに被さらない。
+
+`WP_DEFAULT_LAYOUT` (`presets.js`) の幅は唯一の真実源として維持される。
+`Editor.jsx` が実行時にそれを参照し、キャンバスとフロントエンドの
+静的ルールも同じ `840px` / `1100px` の定数を共有する。
