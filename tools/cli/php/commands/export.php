@@ -559,6 +559,83 @@ function cli_export_minify_css_assets( string $out_dir ): array {
 }
 
 /**
+ * Replace the block-library.css <link> tag in $html with an inline
+ * <style> block carrying $css (Issue #261). A no-op when the tag is
+ * not present.
+ *
+ * Pure string transform with no I/O so the unit tests can exercise
+ * the substitution directly. The on-disk walker
+ * (cli_export_inline_block_library) handles the file traversal and
+ * I/O around it.
+ *
+ * The regex matches the exact shape the front-end template emits:
+ *     <link rel="stylesheet" type="text/css" media="screen"
+ *           href=".../block-editor/assets/block-library.css?v=NNN" />
+ * with any leading whitespace and the trailing self-closing slash
+ * optional, and the `?v=...` cache-bust suffix consumed but discarded
+ * (it varies per deploy).
+ * @param string $html The exported HTML page body.
+ * @param string $css  The CSS body to inline.
+ * @return string The HTML with the link replaced (or unchanged when
+ *                no matching link was found).
+ */
+function cli_export_inline_block_library_in_html( string $html, string $css ): string {
+	return (string) preg_replace(
+		'~<link\s+rel="stylesheet"\s+type="text/css"\s+media="screen"\s+href="[^"]*block-editor/assets/block-library\.css(?:\?[^"]*)?"\s*/?>~i',
+		'<style type="text/css">' . $css . '</style>',
+		$html,
+		1
+	);
+}
+
+/**
+ * Inline the export tree's block-library.css into every HTML page
+ * (Issue #261). Returns the number of pages where the inline
+ * happened; the on-disk CSS file is left in place so any external
+ * consumer (an RSS reader following an absolute URL, a hand-typed
+ * bookmark) still resolves to a valid stylesheet.
+ *
+ * Runs after cli_export_minify_css_assets() in cli_export_run() so
+ * the bytes inlined are the already-minified + purged ones.
+ *
+ * @param string $out_dir The export output directory.
+ * @return array{pages:int,css_bytes:int} Pages touched + the inlined
+ *                                        CSS body size (0/0 when the
+ *                                        on-disk CSS is missing -- a
+ *                                        no-op).
+ */
+function cli_export_inline_block_library( string $out_dir ): array {
+	$css_path = $out_dir . '/block-editor/assets/block-library.css';
+	if ( ! is_file( $css_path ) ) {
+		return array(
+			'pages'     => 0,
+			'css_bytes' => 0,
+		);
+	}
+	$css   = (string) file_get_contents( $css_path );
+	$pages = 0;
+	$iter  = new RecursiveIteratorIterator(
+		new RecursiveDirectoryIterator( $out_dir, RecursiveDirectoryIterator::SKIP_DOTS )
+	);
+	foreach ( $iter as $file ) {
+		if ( ! $file->isFile() || strtolower( $file->getExtension() ) !== 'html' ) {
+			continue;
+		}
+		$path = $file->getPathname();
+		$html = (string) file_get_contents( $path );
+		$out  = cli_export_inline_block_library_in_html( $html, $css );
+		if ( $out !== $html ) {
+			file_put_contents( $path, $out );
+			++$pages;
+		}
+	}
+	return array(
+		'pages'     => $pages,
+		'css_bytes' => strlen( $css ),
+	);
+}
+
+/**
  * Write a single exported file, creating any missing parent directories.
  *
  * @param string $out_dir The export output directory.
@@ -789,6 +866,24 @@ function cli_export_run( array $flags ): int {
 				$m['rel'],
 				$m['before'],
 				$m['after']
+			)
+		);
+	}
+
+	// Inline block-library.css into every HTML page (Issue #261).
+	//     After the minify above the on-disk file is at its smallest;
+	//     swapping the <link rel="stylesheet"> for an inline <style>
+	//     drops one render-blocking request from the critical path.
+	//     The on-disk file is kept so external consumers (RSS readers,
+	//     hand-typed bookmarks) still resolve.
+	$inlined = cli_export_inline_block_library( $out_dir );
+	if ( $inlined['pages'] > 0 ) {
+		fwrite(
+			STDOUT,
+			sprintf(
+				"  inlined: block-editor/assets/block-library.css into %d page(s), %d bytes each\n",
+				$inlined['pages'],
+				$inlined['css_bytes']
 			)
 		);
 	}
