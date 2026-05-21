@@ -138,4 +138,57 @@ final class WrapImgWithWebpPictureTest extends TestCase
         //     appended.
         $this->assertStringContainsString('<picture>', $out);
     }
+
+    public function testEmitsMultiUrlSrcsetWithSizesWhenVariantsExist(): void
+    {
+        // Issue #247: when 480 and 1024 width variants exist on disk
+        //     next to the full sibling, the wrapper emits a multi-URL
+        //     srcset (with the width descriptors) and adds the sizes
+        //     attribute. The full-width descriptor uses the width="..."
+        //     value the upstream add_image_dimensions() pass injected
+        //     on the <img>.
+        file_put_contents($this->tempRoot . '/' . $this->pngRel . '.480.webp', 'webp-480');
+        file_put_contents($this->tempRoot . '/' . $this->pngRel . '.1024.webp', 'webp-1024');
+
+        $content = '<img src="' . $this->pngRel . '" alt="" width="1346" height="742" />';
+        $out     = wrap_img_with_webp_picture($content);
+
+        $this->assertStringContainsString($this->pngRel . '.480.webp 480w', $out);
+        $this->assertStringContainsString($this->pngRel . '.1024.webp 1024w', $out);
+        $this->assertStringContainsString($this->pngRel . '.webp 1346w', $out);
+        $this->assertStringContainsString(' sizes="(max-width: 782px) 100vw, 600px"', $out);
+    }
+
+    public function testEmitsOnlyExistingVariants(): void
+    {
+        // 480 exists; 1024 does not -- the srcset must list 480w + full,
+        //     not 1024w. The sizes attribute is still added (multi-URL
+        //     srcset).
+        file_put_contents($this->tempRoot . '/' . $this->pngRel . '.480.webp', 'webp-480');
+
+        $content = '<img src="' . $this->pngRel . '" alt="" width="1346" height="742" />';
+        $out     = wrap_img_with_webp_picture($content);
+
+        $this->assertStringContainsString($this->pngRel . '.480.webp 480w', $out);
+        $this->assertStringNotContainsString('.1024.webp', $out);
+        $this->assertStringContainsString($this->pngRel . '.webp 1346w', $out);
+        $this->assertStringContainsString(' sizes=', $out);
+    }
+
+    public function testFallsBackToSingleUrlWhenNoVariants(): void
+    {
+        // without width variants on disk, the wrap stays in the pre-#247
+        //     single-URL form (no sizes, no width descriptor) -- a fresh
+        //     install whose CLI backfill has not run yet still gets the
+        //     basic <picture> wrap.
+        $content = '<img src="' . $this->pngRel . '" alt="" width="1346" height="742" />';
+        $out     = wrap_img_with_webp_picture($content);
+
+        $this->assertSame(
+            '<picture><source srcset="' . $this->pngRel . '.webp" type="image/webp" />'
+            . $content . '</picture>',
+            $out
+        );
+        $this->assertStringNotContainsString(' sizes=', $out);
+    }
 }

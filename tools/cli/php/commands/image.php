@@ -66,6 +66,11 @@ function cli_image_backfill_webp( array $flags ): int {
 	$skipped     = 0;
 	$failed      = array();
 	$source_exts = array( 'png', 'jpg', 'jpeg' );
+	// Responsive width variants to produce next to every PNG / JPG
+	//     (Issue #247). 480 w matches the phone column (full viewport
+	//     under the 782 px breakpoint); 1024 w matches a tablet / small
+	//     desktop. The full-width sibling is the original `.webp`.
+	$widths = array( 480, 1024 );
 
 	$iter = new RecursiveIteratorIterator(
 		new RecursiveDirectoryIterator( $uploads_dir, RecursiveDirectoryIterator::SKIP_DOTS )
@@ -79,16 +84,38 @@ function cli_image_backfill_webp( array $flags ): int {
 		if ( ! in_array( $ext, $source_exts, true ) ) {
 			continue;
 		}
+		$rel = substr( $path, strlen( $uploads_dir ) + 1 );
+		// full-width sibling.
 		$sibling = $path . '.webp';
 		if ( is_file( $sibling ) ) {
 			++$skipped;
-			continue;
-		}
-		if ( generate_webp_sibling( $path ) ) {
+		} elseif ( generate_webp_sibling( $path ) ) {
 			++$generated;
-			fwrite( STDOUT, '  generated: ' . substr( $path, strlen( $uploads_dir ) + 1 ) . ".webp\n" );
+			fwrite( STDOUT, "  generated: $rel.webp\n" );
 		} else {
-			$failed[] = $path;
+			$failed[] = $sibling;
+		}
+		// resized width variants.
+		foreach ( $widths as $w ) {
+			$variant = $path . '.' . $w . '.webp';
+			if ( is_file( $variant ) ) {
+				++$skipped;
+				continue;
+			}
+			if ( generate_webp_resized( $path, $w ) ) {
+				++$generated;
+				fwrite( STDOUT, "  generated: $rel.$w.webp\n" );
+			} else {
+				// generate_webp_resized() returns false when the source is
+				//     narrower than the target -- a legitimate no-op, not a
+				//     failure. Probe the source width once and skip when so.
+				$info = @getimagesize( $path );
+				if ( is_array( $info ) && isset( $info[0] ) && (int) $info[0] <= $w ) {
+					++$skipped;
+				} else {
+					$failed[] = $variant;
+				}
+			}
 		}
 	}
 
