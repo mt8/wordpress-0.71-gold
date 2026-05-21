@@ -12,6 +12,20 @@ FROM php:${PHP_VERSION}-apache
 #     target. The base image ships with neither extension.
 RUN docker-php-ext-install mysqli
 
+# Install GD with WebP support so the front end can serve a WebP variant
+#     next to every uploaded PNG / JPG (Issue #245). The php:8.3-apache base
+#     image ships no GD; building it with --with-webp pulls in the libwebp
+#     codec that imagewebp() needs. libpng / libjpeg are the dependencies
+#     GD always needs; libwebp-dev is the WebP-specific addition. Without
+#     this the CLI backfill (071 image backfill-webp) cannot encode WebPs
+#     and the front-end <picture> wrapper has nothing to point at.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends \
+		libpng-dev libjpeg-dev libwebp-dev \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& docker-php-ext-configure gd --with-jpeg --with-webp \
+	&& docker-php-ext-install gd
+
 # Raise PHP's upload limits. The php:8.3-apache defaults
 #     (upload_max_filesize 2M, post_max_size 8M) are too small for the block
 #     editor's image uploads; WordPress 0.71's own $fileupload_maxk is raised
