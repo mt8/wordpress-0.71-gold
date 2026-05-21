@@ -452,9 +452,25 @@ function cli_export_minify_css( string $css ): string {
 	// Collapse whitespace around CSS punctuation. The set covers
 	//     block braces, statement terminators, the colon between
 	//     property and value, comma separators, combinator selectors
-	//     and the parens around function arguments / @-rule preludes
-	//     like `@media (max-width:782px)`.
-	$css = (string) preg_replace( '#\s*([{};:,>+~()])\s*#', '$1', $css );
+	//     `>` / `~` and the opening paren of @-rule preludes / function
+	//     calls (so `@media ( min-width: 800px )` -> `@media(min-width:`).
+	//
+	//     `+` and the closing paren `)` are deliberately NOT in the set
+	//     (Issue #265):
+	//       - The CSS calc() spec requires whitespace on both sides of
+	//         `+` and `-`. Stripping it broke
+	//         `padding: calc(0.667em + 2px) calc(1.333em + 2px)` into
+	//         the unparseable `padding:calc(0.667em+2px)calc(1.333em+2px)`,
+	//         dropping the declaration on the static-export side. `h1 + p`
+	//         selectors still minify acceptably with a single retained
+	//         space (a couple of bytes vs a broken padding rule).
+	//       - For `)`, only the **leading** whitespace is collapsed
+	//         (`calc( 1em )` -> `calc(1em)`); the trailing whitespace
+	//         survives so two adjacent function-call values such as
+	//         `calc(...) calc(...)` keep their separator and the
+	//         shorthand parses correctly.
+	$css = (string) preg_replace( '#\s*([{};:,>~(])\s*#', '$1', $css );
+	$css = (string) preg_replace( '#\s+\)#', ')', $css );
 	// Drop the optional ; before }.
 	$css = str_replace( ';}', '}', $css );
 	// Collapse remaining whitespace.
