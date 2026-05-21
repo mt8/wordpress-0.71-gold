@@ -535,6 +535,13 @@ export function Editor( { config } ) {
 			//     supplied here too -- otherwise the Highlight popover
 			//     shows no colours.
 			colors: WP_DEFAULT_COLOR_PALETTE,
+			// Enable the Wide / Full toolbar buttons on blocks that
+			//     support them (Image, Group, Cover, ...). The block
+			//     editor's useAvailableAlignments reads this top-level
+			//     `alignWide` flag (settings.alignWide ?? false); without
+			//     it the wide / full controls are filtered out even when
+			//     a layout with contentSize / wideSize is configured.
+			alignWide: true,
 		} ),
 		[]
 	);
@@ -812,7 +819,26 @@ export function Editor( { config } ) {
 								<BlockTools className="be-block-tools">
 									<WritingFlow>
 										<ObserveTyping>
-											<BlockList />
+											{ /* The root BlockList layout. With no
+											       `layout` prop it falls back to the
+											       default flow layout and top-level blocks
+											       fill the canvas full width, with no
+											       wide / full visual feedback. A constrained
+											       root layout centres top-level blocks at
+											       contentSize and lets a wide / full pick
+											       visibly break out, matching the modern
+											       editor canvas. The values come from the
+											       same single source of truth the inspector
+											       controls use (WP_DEFAULT_LAYOUT). */ }
+											<BlockList
+												layout={ {
+													type: 'constrained',
+													contentSize:
+														WP_DEFAULT_LAYOUT.contentSize,
+													wideSize:
+														WP_DEFAULT_LAYOUT.wideSize,
+												} }
+											/>
 										</ObserveTyping>
 									</WritingFlow>
 								</BlockTools>
