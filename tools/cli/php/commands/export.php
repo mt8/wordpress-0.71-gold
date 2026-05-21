@@ -192,6 +192,42 @@ function cli_export_rewrite( string $body, string $blog_url ): string {
 }
 
 /**
+ * Absolutify the og:image URL in a page body against the publish URL.
+ *
+ * cli_export_rewrite() strips the blog URL prefix from every absolute
+ *     URL in the body, so an og:image emitted as
+ *     "http://localhost:8080/wp-content/.../img.png" by the front-end
+ *     ends up as the bare "wp-content/.../img.png". OGP scrapers
+ *     (Facebook, Twitter, Slack) expect a full URL there, so this step
+ *     re-prepends the public publish URL when one is supplied via
+ *     --publish (Issue #231). A no-op when $publish_url is '' (the
+ *     pre-flag behaviour) or when the og:image value is already
+ *     absolute (http(s)://...) or protocol-relative (//host/...).
+ * @param string $body        The rewritten page body.
+ * @param string $publish_url The publish base URL, without a trailing
+ *                            slash (e.g. "https://071.mt8.biz"), or ''.
+ * @return string The body with og:image absolutified, when applicable.
+ */
+function cli_export_absolutify_ogp( string $body, string $publish_url ): string {
+	if ( '' === $publish_url ) {
+		return $body;
+	}
+	$base = rtrim( $publish_url, '/' );
+	return (string) preg_replace_callback(
+		'~(<meta\s+property="og:image"\s+content=")([^"]*)("\s*/?>)~i',
+		static function ( array $m ) use ( $base ): string {
+			$url = $m[2];
+			// already a full URL (http/https) or protocol-relative -- leave alone.
+			if ( '' === $url || preg_match( '~^(?:https?:)?//~i', $url ) ) {
+				return $m[0];
+			}
+			return $m[1] . $base . '/' . ltrim( $url, '/' ) . $m[3];
+		},
+		$body
+	);
+}
+
+/**
  * Write a single exported file, creating any missing parent directories.
  *
  * @param string $out_dir The export output directory.
@@ -230,6 +266,33 @@ function cli_export_blog_url( array $flags ): string {
 }
 
 /**
+ * Resolve the public URL the export will be published under (Issue #231).
+ *
+ * Used to absolutify a small set of meta tags whose value MUST be a full
+ *     URL for off-site consumers -- og:image in particular: a social-card
+ *     scraper that resolves a relative og:image against the page URL is
+ *     not guaranteed across networks, so the safe form is the absolute
+ *     URL on the published site. The --publish flag wins; otherwise the
+ *     EXPORT_PUBLISH_URL environment variable; otherwise '' (no
+ *     absolutification, the static export keeps the relative URLs the
+ *     rewriter produced -- the pre-Issue-231 behaviour).
+ * @param array<string, string|bool> $flags Parsed global flags.
+ * @return string The publish base URL, without a trailing slash, or ''.
+ */
+function cli_export_publish_url( array $flags ): string {
+	if ( isset( $flags['publish'] ) && is_string( $flags['publish'] ) && '' !== $flags['publish'] ) {
+		return rtrim( $flags['publish'], '/' );
+	}
+
+	$env = getenv( 'EXPORT_PUBLISH_URL' );
+	if ( false !== $env && '' !== $env ) {
+		return rtrim( $env, '/' );
+	}
+
+	return '';
+}
+
+/**
  * Resolve the export output directory from the flags or the environment.
  *
  * The --out-dir flag wins; otherwise the EXPORT_OUT_DIR environment
@@ -261,14 +324,19 @@ function cli_export_out_dir( array $flags ): string {
  * @return int Process exit code.
  */
 function cli_export_run( array $flags ): int {
-	$blog_url = cli_export_blog_url( $flags );
-	$out_dir  = cli_export_out_dir( $flags );
+	$blog_url    = cli_export_blog_url( $flags );
+	$out_dir     = cli_export_out_dir( $flags );
+	$publish_url = cli_export_publish_url( $flags );
 
 	$asset_extensions = array( 'css', 'js', 'gif', 'png', 'jpg', 'jpeg', 'ico', 'svg' );
 
 	fwrite( STDOUT, "Static export / 静的書き出し\n" );
 	fwrite( STDOUT, "  blog   : $blog_url\n" );
-	fwrite( STDOUT, "  output : $out_dir\n\n" );
+	fwrite( STDOUT, "  output : $out_dir\n" );
+	if ( '' !== $publish_url ) {
+		fwrite( STDOUT, "  publish: $publish_url (og:image absolutified)\n" );
+	}
+	fwrite( STDOUT, "\n" );
 
 	// confirm the blog is reachable before doing anything.
 	if ( null === cli_export_fetch( $blog_url . '/' ) ) {
@@ -341,7 +409,9 @@ function cli_export_run( array $flags ): int {
 	}
 
 	foreach ( $pages as $target => $body ) {
-		cli_export_write_file( $out_dir, (string) $target, cli_export_rewrite( $body, $blog_url ) );
+		$rewritten = cli_export_rewrite( $body, $blog_url );
+		$rewritten = cli_export_absolutify_ogp( $rewritten, $publish_url );
+		cli_export_write_file( $out_dir, (string) $target, $rewritten );
 	}
 	foreach ( $assets as $target => $body ) {
 		cli_export_write_file( $out_dir, (string) $target, $body );
@@ -382,7 +452,9 @@ function cli_cmd_export( string $verb, array $args, array $flags ): int {
 			fwrite( STDOUT, "071 export [run]\n" );
 			fwrite( STDOUT, "  Export the running blog to a static HTML site under static-export/.\n" );
 			fwrite( STDOUT, "  Flags: --blog-url=<url> (default http://localhost:8080)\n" );
-			fwrite( STDOUT, "         --out-dir=<dir> (default ./static-export)\n" );
+			fwrite( STDOUT, "         --out-dir=<dir>  (default ./static-export)\n" );
+			fwrite( STDOUT, "         --publish=<url>  (absolutify og:image against this URL,\n" );
+			fwrite( STDOUT, "                           e.g. https://071.mt8.biz)\n" );
 			return 0;
 
 		default:
