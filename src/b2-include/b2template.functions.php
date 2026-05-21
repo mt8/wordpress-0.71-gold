@@ -616,6 +616,53 @@ function add_image_dimensions( $content ) {
 	);
 }
 
+/*
+ * Add browser loading hints to every <img> in $content (Issue #237).
+ *
+ * The first <img> is the most likely LCP candidate, so it gets only
+ * `decoding="async"` -- `loading="lazy"` on the LCP image pushes LCP
+ * later. Every other <img> gets both `loading="lazy"` and
+ * `decoding="async"` so the browser defers the fetch and decode until
+ * the image scrolls into view, which is exactly the gain PageSpeed's
+ * "Defer offscreen images" audit measures. `decoding="async"` is safe
+ * on every tag (it only asks for off-main-thread decode and does not
+ * delay the fetch), so adding it on the first image too is a net win.
+ *
+ * Each attribute is only added when missing -- a manually authored
+ * `loading="eager"` or `decoding="auto"` is preserved verbatim.
+ *
+ * @param string $content The post content.
+ * @return string The content with loading / decoding hints injected.
+ */
+function add_image_loading_hints( $content ) {
+	if ( ! is_string( $content ) || false === stripos( $content, '<img' ) ) {
+		return (string) $content;
+	}
+	$is_first = true;
+	return (string) preg_replace_callback(
+		'~<img\b[^>]*>~i',
+		static function ( array $m ) use ( &$is_first ) {
+			$tag        = $m[0];
+			$first      = $is_first;
+			$is_first   = false;
+			$needs_lazy = ! $first && ! preg_match( '~\bloading\s*=~i', $tag );
+			$needs_dec  = ! preg_match( '~\bdecoding\s*=~i', $tag );
+			if ( ! $needs_lazy && ! $needs_dec ) {
+				return $tag;
+			}
+			$inject = '';
+			if ( $needs_lazy ) {
+				$inject .= ' loading="lazy"';
+			}
+			if ( $needs_dec ) {
+				$inject .= ' decoding="async"';
+			}
+			return (string) preg_replace( '~\s*/?>$~', $inject . '$0', $tag, 1 );
+		},
+		$content
+	);
+}
+
 function b2_strip_block_delimiters( $content ) {
 	// An opening or void block delimiter -- `<!-- wp:name ... -->` or
 	//     `<!-- wp:name ... /-->` -- and the newline that ends its line.
@@ -686,6 +733,11 @@ function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more
 	//     explicit width and height" audit measures exactly that early-paint
 	//     CLS, and the block editor saves only style="aspect-ratio:...".
 	$output = add_image_dimensions( $output );
+	// Add browser loading hints to every <img>: decoding="async" on every
+	//     tag, loading="lazy" on every tag except the first (the most
+	//     likely LCP candidate; lazy on LCP pushes LCP later). Targets
+	//     PageSpeed's "Defer offscreen images" audit -- Issue #237.
+	$output = add_image_loading_hints( $output );
 	return( $output );
 }
 
