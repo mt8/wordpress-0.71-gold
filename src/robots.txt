@@ -1,0 +1,28 @@
+# robots.txt for the WordPress 0.71-gold static site (Issue #253).
+#
+# The published tree is the public blog and has no admin / login /
+# private paths, so the default is "allow all crawlers everywhere".
+# This file spells out the implicit default so the SEO audits stop
+# flagging a missing /robots.txt and crawlers get an explicit signal.
+
+User-agent: *
+Allow: /
+
+# Opt-out template for AI training crawlers.
+# Uncomment any block below to deny that bot. Left commented because
+# the choice is editorial; the operator decides per-bot.
+#
+# User-agent: GPTBot
+# Disallow: /
+#
+# User-agent: ClaudeBot
+# Disallow: /
+#
+# User-agent: CCBot
+# Disallow: /
+#
+# User-agent: Google-Extended
+# Disallow: /
+#
+# User-agent: PerplexityBot
+# Disallow: /
