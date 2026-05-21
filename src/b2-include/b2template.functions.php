@@ -89,6 +89,47 @@ function first_image_url( $content ) {
 	return '';
 }
 
+/*
+ * Build a clean plain-text excerpt for the og:description meta tag
+ * (Issue #231). The post's post_excerpt wins when non-empty; otherwise
+ * the helper falls back to post_content stripped down to plain text.
+ *
+ * Stripping order matters: block-editor markers like
+ * `<!-- wp:paragraph -->` are HTML comments that strip_tags() does not
+ * remove, so comments are stripped first; then tags; then HTML
+ * entities are decoded so the truncated string contains real
+ * characters (not `&amp;`); then whitespace is collapsed to single
+ * spaces. mb_strlen / mb_substr are used so multibyte content
+ * (the 071 blog runs Japanese posts) is counted by character, not
+ * byte. The truncated form ends with U+2026 HORIZONTAL ELLIPSIS.
+ *
+ * Callers HTML-escape for the attribute value at the point of output;
+ * this function returns plain text.
+ *
+ * @param string $excerpt The post's post_excerpt field.
+ * @param string $content The post's post_content field.
+ * @param int    $max_len Maximum character length (default 200).
+ * @return string The description text, or '' when no usable text
+ *                was found in either field.
+ */
+function post_excerpt_for_ogp( $excerpt, $content, $max_len = 200 ) {
+	$source = stripslashes( (string) $excerpt );
+	if ( '' === trim( $source ) ) {
+		$source = stripslashes( (string) $content );
+	}
+	$source = preg_replace( '/<!--.*?-->/s', '', $source );
+	$source = strip_tags( (string) $source );
+	$source = html_entity_decode( $source, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+	$source = trim( (string) preg_replace( '/\s+/', ' ', $source ) );
+	if ( '' === $source ) {
+		return '';
+	}
+	if ( mb_strlen( $source, 'UTF-8' ) > $max_len ) {
+		$source = rtrim( mb_substr( $source, 0, $max_len - 1, 'UTF-8' ) ) . "\u{2026}";
+	}
+	return $source;
+}
+
 function single_post_title( $prefix = '', $display = true ) {
 	global $p;
 	if ( intval( $p ) ) {
