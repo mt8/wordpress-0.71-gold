@@ -290,3 +290,29 @@ p, li {
 	max-width: 100%;
 	height: auto;
 }
+
+/*
+ * Caption text-alignment classes for the core/image block (Issue #263).
+ *
+ *     The block-editor extension (tools/block-editor/src/image-caption-align.jsx)
+ *     adds a `has-caption-align-<value>` class on the figure when the
+ *     user picks an alignment from the image block toolbar. The block-
+ *     library default puts captions at the figure's natural width, so on
+ *     a small alignleft image the caption wraps in a thin column on the
+ *     left -- this rule lets the author centre or right-align it from
+ *     the toolbar instead.
+ *
+ *     `:where(...)` keeps specificity at zero so a theme-level rule
+ *     could still override later.
+ */
+.storycontent .wp-block-image.has-caption-align-left :where( figcaption ) {
+	text-align: left;
+}
+
+.storycontent .wp-block-image.has-caption-align-center :where( figcaption ) {
+	text-align: center;
+}
+
+.storycontent .wp-block-image.has-caption-align-right :where( figcaption ) {
+	text-align: right;
+}

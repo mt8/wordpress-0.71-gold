@@ -208,6 +208,32 @@
 }
 
 /*
+ * Caption text-alignment classes for the core/image block (Issue #263).
+ *
+ *     The image-caption-align extension adds a `has-caption-align-<value>`
+ *     class to the figure when the user picks an alignment from the
+ *     toolbar. These rules render that pick on the figcaption inside
+ *     the editor canvas. The matching rules in src/layout2b.css cover
+ *     the published page; both stylesheets are loaded into the editor
+ *     canvas (layout2b.css is imported by main.jsx), so the editor
+ *     preview and the front end agree.
+ *
+ *     `:where(...)` keeps the specificity at zero so a future
+ *     theme-level rule can still override.
+ */
+.wp-block-image.has-caption-align-left :where( figcaption ) {
+	text-align: left;
+}
+
+.wp-block-image.has-caption-align-center :where( figcaption ) {
+	text-align: center;
+}
+
+.wp-block-image.has-caption-align-right :where( figcaption ) {
+	text-align: right;
+}
+
+/*
  * The block breadcrumb. It is a sibling of .be-body (rendered after it),
  *     so it is a full-width bar pinned at the very bottom of the editor,
  *     spanning the Document Overview / canvas / settings columns. .be-app is a

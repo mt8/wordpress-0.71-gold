@@ -28,6 +28,11 @@ import '../../../src/layout2b.css';
 
 import { Editor } from './Editor.jsx';
 import './app.css';
+// Register block-filter extensions before registerCoreBlocks runs so the
+//     filters see the registration call. The module side-effects do the
+//     work; there are no exports to consume here. Caption text-alignment
+//     toolbar for the core/image block (Issue #263).
+import './image-caption-align.jsx';
 
 // The core static blocks (paragraph, heading, list, image, quote, ...)
 //     register themselves client-side -- no server-side register_block_type()
