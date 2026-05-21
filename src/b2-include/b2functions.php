@@ -747,6 +747,40 @@ function make_url_footnote( $content ) {
 }
 
 /*
+ * Read a project-relative file from $abspath and return its contents
+ * verbatim (Issue #251), or '' when the file is missing / unreadable.
+ *
+ * Used to inline small stylesheets into <style> blocks in the front-end
+ * head: layout2b.css is the main theme stylesheet (~4 KB) and inlining
+ * it eliminates one render-blocking round trip. A missing file falls
+ * back to '' so a stripped install still renders -- the caller decides
+ * whether to fall back to an external <link> in that case.
+ *
+ * Pure read; no transformation, no escaping. Callers wrap the contents
+ * in a <style> tag, which has no special-character escaping rules that
+ * apply inside CSS bytes (the CSS bytes never contain the literal
+ * "</style>" sequence; if a future stylesheet does, the file format
+ * itself would already be a problem).
+ *
+ * @param string $rel Project-relative path (e.g. "layout2b.css").
+ * @return string The file contents, or '' on a missing / unreadable file.
+ */
+function inline_local_css( $rel ) {
+	global $abspath;
+	$rel  = ltrim( (string) $rel, '/' );
+	$root = isset( $abspath ) ? rtrim( (string) $abspath, '/' ) . '/' : '';
+	if ( '' === $root || '' === $rel ) {
+		return '';
+	}
+	$abs = $root . $rel;
+	if ( ! is_readable( $abs ) || ! is_file( $abs ) ) {
+		return '';
+	}
+	$body = @file_get_contents( $abs );
+	return ( false === $body ) ? '' : (string) $body;
+}
+
+/*
  * Encode a WebP copy of $source next to it (Issue #245).
  *
  * Loads the source through GD's PNG / JPEG reader, then writes

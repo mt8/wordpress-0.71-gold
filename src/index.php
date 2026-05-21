@@ -48,14 +48,21 @@ if ( $ogp_p > 0 ) {
 }
 ?>
 
-	<?php /* layout2b.css is the main theme stylesheet (Issue #233 dropped the original <style>@import</style> wrapper -- the @import inside an inline <style> hides the URL behind an extra parse step and costs an extra round trip before render). */ ?>
+	<?php /* layout2b.css is the main theme stylesheet (~4 KB). Inline it (Issue #251) so the baseline page styles apply before any external stylesheet downloads -- eliminates one render-blocking round trip on the FCP / LCP critical path. The on-disk file is still copied into the static export tree (it is fetched as an asset elsewhere on the site / via RSS readers), so an external <link> stays a valid fallback if the inline read fails. */ ?>
+	<?php $layout2b_inline = inline_local_css( 'layout2b.css' ); ?>
+	<?php if ( '' !== $layout2b_inline ) : ?>
+	<style type="text/css"><?php echo $layout2b_inline; ?></style>
+	<?php else : ?>
 	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/layout2b.css" />
+	<?php endif; ?>
 
-	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. */ ?>
-	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" />
+	<?php /* Block-library front-end CSS (Issue #94) so layout blocks (columns, group, ...) stored in post_content render consistently with the block editor. Deferred via the media="print" onload swap (Issue #251): the browser loads the file at low priority and applies it once it arrives, so it does not block FCP. The <noscript> fallback keeps the stylesheet functional when JavaScript is disabled. */ ?>
+	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" onload="this.media='all'" />
+	<noscript><link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-library.css" /></noscript>
 
-	<?php /* Preset colour CSS (Issue #181) -- the has-*-color classes and --wp--preset--color--* properties -- so a preset colour picked in the block editor renders on the front end, not only as a custom inline colour. */ ?>
-	<link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" />
+	<?php /* Preset colour CSS (Issue #181) -- the has-*-color classes and --wp--preset--color--* properties -- so a preset colour picked in the block editor renders on the front end, not only as a custom inline colour. Same defer pattern as block-library.css above (Issue #251). */ ?>
+	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" onload="this.media='all'" />
+	<noscript><link rel="stylesheet" type="text/css" media="screen" href="<?php echo $siteurl; ?>/block-editor/assets/block-presets.css" /></noscript>
 
 	<link rel="stylesheet" type="text/css" media="print" href="<?php echo $siteurl; ?>/print.css" />
 	<link rel="alternate" type="text/xml" title="RSS" href="<?php bloginfo( 'rss2_url' ); ?>" />
