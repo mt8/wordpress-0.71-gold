@@ -43,8 +43,52 @@ final class ExportMinifyTest extends TestCase
 
     public function testCssHandlesCombinatorSelectors(): void
     {
+        // The `+` adjacent-sibling combinator keeps the whitespace
+        //     around it (Issue #265): the same `+` carries semantic
+        //     meaning inside calc() where the spec requires whitespace
+        //     on both sides, and the minifier cannot tell selector
+        //     `+` from calc() `+` without a real parser. A couple of
+        //     bytes per selector is an acceptable price for not
+        //     dropping a calc()-driven declaration on the front end.
         $css = ".a > .b , .c + .d , .e ~ .f { display: block }";
-        $this->assertSame('.a>.b,.c+.d,.e~.f{display:block}', cli_export_minify_css($css));
+        $this->assertSame('.a>.b,.c + .d,.e~.f{display:block}', cli_export_minify_css($css));
+    }
+
+    public function testCssPreservesCalcOperatorSpaces(): void
+    {
+        // The CSS calc() spec requires whitespace on both sides of
+        //     `+` and `-`. Stripping it (Issue #265) made the entire
+        //     `padding` declaration unparseable on the static-export
+        //     side and the core/button block rendered with no
+        //     horizontal padding -- the text touched the rounded pill
+        //     edge. The minifier must leave a single space around
+        //     `+` (and `-`) inside calc().
+        $css = "a { padding: calc(0.667em + 2px) calc(1.333em + 2px); }";
+        $this->assertSame(
+            'a{padding:calc(0.667em + 2px) calc(1.333em + 2px)}',
+            cli_export_minify_css($css)
+        );
+    }
+
+    public function testCssKeepsAdjacentCalcValuesSeparated(): void
+    {
+        // Two adjacent function-call values in a shorthand must keep
+        //     a space between them; stripping the whitespace after a
+        //     closing `)` glued them together (Issue #265).
+        $css = "a { margin: calc(1em) calc(2em); }";
+        $this->assertSame(
+            'a{margin:calc(1em) calc(2em)}',
+            cli_export_minify_css($css)
+        );
+    }
+
+    public function testCssStripsLeadingWhitespaceBeforeClosingParen(): void
+    {
+        // Leading whitespace before `)` is still collapsed -- the
+        //     trailing whitespace is the only side that has to survive
+        //     (Issue #265).
+        $css = "a { width: calc( 1em ) }";
+        $this->assertSame('a{width:calc(1em)}', cli_export_minify_css($css));
     }
 
     public function testCssMinifyIsIdempotent(): void
