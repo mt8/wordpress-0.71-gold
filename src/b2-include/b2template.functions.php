@@ -538,6 +538,84 @@ function the_content_unicode( $more_link_text = '(more...)', $stripteaser = 0, $
  * @param string $content The raw post content.
  * @return string The content with the block delimiter comments removed.
  */
+/*
+ * Inject HTML width / height attributes on every <img> that lacks them
+ * (Issue #235). The block-editor Image block saves only
+ * `style="aspect-ratio:...;width:600px"`, no HTML attributes, so the
+ * parser cannot reserve the layout box before the stylesheet loads --
+ * which is exactly the early-paint CLS PageSpeed's "Image elements do
+ * not have explicit width and height" audit penalises.
+ *
+ * For each <img> the helper resolves the `src` URL against $siteurl,
+ * looks the file up on disk at $abspath . <rel>, and calls
+ * getimagesize() for the actual pixel dimensions. A per-request static
+ * cache keys on the resolved path so the same image used twice in a
+ * post is read once. A tag that already carries both HTML `width=` and
+ * `height=` attributes is left alone (a manually authored
+ * `<img width="320" height="200">` is preserved). A remote src
+ * (`http(s)://` to a non-$siteurl host) or an unreadable file leaves
+ * the tag untouched -- the helper is best-effort, never fatal, and
+ * never invents dimensions. The width / height check looks for
+ * `width=` / `height=` (the HTML attribute form) to avoid being fooled
+ * by `style="width:..."` (the CSS form, which uses `:`, not `=`).
+ *
+ * @param string $content The post content (already stripped of block
+ *                        delimiter comments).
+ * @return string The content with width / height attributes injected
+ *                where they were missing.
+ */
+function add_image_dimensions( $content ) {
+	global $siteurl, $abspath;
+	if ( ! is_string( $content ) || false === stripos( $content, '<img' ) ) {
+		return (string) $content;
+	}
+	$site  = isset( $siteurl ) ? (string) $siteurl : '';
+	$root  = isset( $abspath ) ? rtrim( (string) $abspath, '/' ) . '/' : '';
+	$cache = array();
+	return (string) preg_replace_callback(
+		'~<img\b[^>]*>~i',
+		static function ( array $m ) use ( $site, $root, &$cache ) {
+			$tag = $m[0];
+			// HTML attributes: `width="..."` uses `=`; CSS in style="..."
+			//     uses `:`. So `\bwidth\s*=\s*["\']\d` matches the HTML
+			//     attribute form, not `style="width:600px"`.
+			if (
+				preg_match( '~\bwidth\s*=\s*["\']\d~i', $tag )
+				&& preg_match( '~\bheight\s*=\s*["\']\d~i', $tag )
+			) {
+				return $tag;
+			}
+			if ( ! preg_match( '~\bsrc\s*=\s*(["\'])(.*?)\1~i', $tag, $src ) ) {
+				return $tag;
+			}
+			$url = $src[2];
+			$rel = $url;
+			if ( '' !== $site && str_starts_with( $url, $site ) ) {
+				$rel = substr( $url, strlen( $site ) );
+			} elseif ( preg_match( '~^https?://~i', $url ) ) {
+				// remote -- cannot read the file from disk.
+				return $tag;
+			}
+			$rel = ltrim( (string) $rel, '/' );
+			if ( '' === $root || '' === $rel ) {
+				return $tag;
+			}
+			$abs = $root . $rel;
+			if ( ! array_key_exists( $abs, $cache ) ) {
+				$cache[ $abs ] = @getimagesize( $abs );
+			}
+			$dim = $cache[ $abs ];
+			if ( ! is_array( $dim ) || ! isset( $dim[0], $dim[1] ) ) {
+				return $tag;
+			}
+			$inject = ' width="' . (int) $dim[0] . '" height="' . (int) $dim[1] . '"';
+			// Inject immediately before the closing `/>` or `>`.
+			return (string) preg_replace( '~\s*/?>$~', $inject . '$0', $tag, 1 );
+		},
+		$content
+	);
+}
+
 function b2_strip_block_delimiters( $content ) {
 	// An opening or void block delimiter -- `<!-- wp:name ... -->` or
 	//     `<!-- wp:name ... /-->` -- and the newline that ends its line.
@@ -602,6 +680,12 @@ function get_the_content( $more_link_text = '(more...)', $stripteaser = 0, $more
 	//     the_content_unicode() and the faked excerpt, so this covers them
 	//     all (Issue #215).
 	$output = b2_strip_block_delimiters( $output );
+	// Inject width / height HTML attributes on every <img> that lacks them
+	//     so the parser can reserve the correct layout box before the CSS
+	//     loads (Issue #235). PageSpeed's "Image elements do not have
+	//     explicit width and height" audit measures exactly that early-paint
+	//     CLS, and the block editor saves only style="aspect-ratio:...".
+	$output = add_image_dimensions( $output );
 	return( $output );
 }
 
