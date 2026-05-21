@@ -12,19 +12,24 @@ require $abspath . 'wp-links/links.php';
 
 	<meta name="generator" content="WordPress 0.71-gold" /> <!-- Issue #37 dropped the version for a live install; this site is published statically (no running PHP or database), so the 0.71-gold edition is named deliberately (Issue #218). -->
 
-	<?php /* OGP for social-card previews (Issue #231). Emit og:title / og:type / og:image only on a single-post page (?p=N) where the post body carries at least one image -- a social card without an image is not worth showing, so the whole block is suppressed in that case (the homepage and category / month archive views never emit OGP because they list many posts). */ ?>
+	<?php /* Single-post head metadata (Issues #231, #239, #241): SEO meta description, LCP image preload, and OGP for social cards. All three need the post body, so get_postdata() is called once and the derived values are shared. The meta description is gated on having usable text; the preload and OGP are gated on having an image -- the homepage and category / month archive views list many posts, so none of these emit there. */ ?>
 <?php
 $ogp_p = isset( $p ) ? intval( $p ) : 0;
 if ( $ogp_p > 0 ) {
 	$ogp_post = get_postdata( $ogp_p );
 	if ( is_array( $ogp_post ) && ! empty( $ogp_post['Content'] ) ) {
 		$ogp_image = first_image_url( $ogp_post['Content'] );
+		$ogp_desc  = post_excerpt_for_ogp(
+			isset( $ogp_post['Excerpt'] ) ? (string) $ogp_post['Excerpt'] : '',
+			(string) $ogp_post['Content']
+		);
+		if ( '' !== $ogp_desc ) {
+			?>
+	<meta name="description" content="<?php echo htmlspecialchars( $ogp_desc, ENT_QUOTES, 'UTF-8' ); ?>" />
+			<?php
+		}
 		if ( '' !== $ogp_image ) {
 			$ogp_title = strip_tags( stripslashes( (string) $ogp_post['Title'] ) );
-			$ogp_desc  = post_excerpt_for_ogp(
-				isset( $ogp_post['Excerpt'] ) ? (string) $ogp_post['Excerpt'] : '',
-				(string) $ogp_post['Content']
-			);
 			?>
 			<?php /* Preload the LCP candidate (Issue #239) -- same URL the og:image meta uses. The preload scanner kicks off the fetch from <head>, in parallel with the stylesheets, instead of waiting for the parser to reach the body <img>. */ ?>
 	<link rel="preload" as="image" href="<?php echo htmlspecialchars( $ogp_image, ENT_QUOTES, 'UTF-8' ); ?>" />
