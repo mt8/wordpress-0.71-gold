@@ -156,6 +156,84 @@
 }
 
 /*
+ * Constrained-canvas styling for the root block list (Issue #263).
+ *
+ *     With `alignWide: true` and a constrained root layout, top-level
+ *     blocks should centre at the content width and visibly break out
+ *     at .alignwide / .alignfull -- the same feedback the modern
+ *     WordPress editor gives. The block-editor's layout system only
+ *     auto-emits this CSS through a Group block's own LayoutStyle, so
+ *     for the root canvas the same rules are spelt out statically here
+ *     against the .be-canvas writing flow.
+ *
+ *     The widths match WP_DEFAULT_LAYOUT (presets.js); contentSize is
+ *     the centred column, wideSize the .alignwide break-out, and
+ *     .alignfull spans the canvas (the actual visible width on the 0.71
+ *     front end is limited by #content -- a deliberate match, per the
+ *     project's "alignfull = #content's 100%" decision).
+ *
+ *     The `:where(:not(.alignleft):not(.alignright))` guard keeps the
+ *     auto margins from hijacking a left- / right-floated block. A core
+ *     Image / Gallery / Quote at .alignleft floats next to surrounding
+ *     text; setting `margin-left: auto` on the same wrapper would
+ *     either fight the float or visibly centre the block, depending on
+ *     browser. Floated blocks must keep their natural float behaviour,
+ *     so they are excluded from the centring rule (they get their own
+ *     float / margin from @wordpress/block-library's stylesheet). The
+ *     `:where()` keeps the selector at zero specificity so a block's
+ *     own utility class still wins.
+ */
+.be-canvas
+	.block-editor-block-list__layout
+	> :where(:not(.alignleft):not(.alignright)) {
+	max-width: 840px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.be-canvas .block-editor-block-list__layout > .alignwide {
+	max-width: 1100px;
+}
+
+.be-canvas
+	.block-editor-block-list__layout
+	> .alignfull {
+	max-width: none;
+}
+
+.be-canvas .block-editor-block-list__layout > .aligncenter {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+/*
+ * Caption text-alignment classes for the core/image block (Issue #263).
+ *
+ *     The image-caption-align extension adds a `has-caption-align-<value>`
+ *     class to the figure when the user picks an alignment from the
+ *     toolbar. These rules render that pick on the figcaption inside
+ *     the editor canvas. The matching rules in src/layout2b.css cover
+ *     the published page; both stylesheets are loaded into the editor
+ *     canvas (layout2b.css is imported by main.jsx), so the editor
+ *     preview and the front end agree.
+ *
+ *     `:where(...)` keeps the specificity at zero so a future
+ *     theme-level rule can still override.
+ */
+.wp-block-image.has-caption-align-left :where( figcaption ) {
+	text-align: left;
+}
+
+.wp-block-image.has-caption-align-center :where( figcaption ) {
+	text-align: center;
+}
+
+.wp-block-image.has-caption-align-right :where( figcaption ) {
+	text-align: right;
+}
+
+/*
  * The block breadcrumb. It is a sibling of .be-body (rendered after it),
  *     so it is a full-width bar pinned at the very bottom of the editor,
  *     spanning the Document Overview / canvas / settings columns. .be-app is a

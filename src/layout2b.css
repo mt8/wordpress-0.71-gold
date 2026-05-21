@@ -243,3 +243,76 @@ p, li {
 		padding: 12px 10px;
 	}
 }
+
+/*
+ * Block-editor alignment classes for the front end (Issue #263).
+ *
+ *     The custom block editor (src/block-editor/) lets a block carry a
+ *     `.alignwide` / `.alignfull` / `.aligncenter` class, but the 2003
+ *     theme had no such classes. Without rules the saved alignment is
+ *     invisible on the published page.
+ *
+ *     The 0.71 layout is fluid -- #content has no fixed width and just
+ *     reserves a right margin for the menu rail -- so there is no
+ *     natural "wide" vs "full" distinction. Per project decision .alignfull
+ *     stays inside #content (the 2003 right-sidebar layout is preserved);
+ *     .alignwide takes the same 100% width so the user's intent of "wider
+ *     than default" still reads visibly compared to a default-width
+ *     element that may be narrower (an image at its natural size, a
+ *     constrained group). .aligncenter centres a block element.
+ */
+.storycontent .aligncenter {
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.storycontent .alignwide,
+.storycontent .alignfull {
+	display: block;
+	width: 100%;
+	max-width: none;
+	margin-left: 0;
+	margin-right: 0;
+}
+
+/*
+ * An image / figure inside the post keeps its intrinsic max width when
+ *     no alignment is chosen, but at .alignwide / .alignfull the image
+ *     itself must also fill the wrapper -- otherwise a small image stays
+ *     small inside a now-100% figure and the alignment has no visible
+ *     effect.
+ */
+.storycontent .alignwide img,
+.storycontent .alignfull img,
+.storycontent figure.alignwide,
+.storycontent figure.alignfull {
+	max-width: 100%;
+	height: auto;
+}
+
+/*
+ * Caption text-alignment classes for the core/image block (Issue #263).
+ *
+ *     The block-editor extension (tools/block-editor/src/image-caption-align.jsx)
+ *     adds a `has-caption-align-<value>` class on the figure when the
+ *     user picks an alignment from the image block toolbar. The block-
+ *     library default puts captions at the figure's natural width, so on
+ *     a small alignleft image the caption wraps in a thin column on the
+ *     left -- this rule lets the author centre or right-align it from
+ *     the toolbar instead.
+ *
+ *     `:where(...)` keeps specificity at zero so a theme-level rule
+ *     could still override later.
+ */
+.storycontent .wp-block-image.has-caption-align-left :where( figcaption ) {
+	text-align: left;
+}
+
+.storycontent .wp-block-image.has-caption-align-center :where( figcaption ) {
+	text-align: center;
+}
+
+.storycontent .wp-block-image.has-caption-align-right :where( figcaption ) {
+	text-align: right;
+}
