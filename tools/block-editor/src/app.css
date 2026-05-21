@@ -171,8 +171,21 @@
  *     .alignfull spans the canvas (the actual visible width on the 0.71
  *     front end is limited by #content -- a deliberate match, per the
  *     project's "alignfull = #content's 100%" decision).
+ *
+ *     The `:where(:not(.alignleft):not(.alignright))` guard keeps the
+ *     auto margins from hijacking a left- / right-floated block. A core
+ *     Image / Gallery / Quote at .alignleft floats next to surrounding
+ *     text; setting `margin-left: auto` on the same wrapper would
+ *     either fight the float or visibly centre the block, depending on
+ *     browser. Floated blocks must keep their natural float behaviour,
+ *     so they are excluded from the centring rule (they get their own
+ *     float / margin from @wordpress/block-library's stylesheet). The
+ *     `:where()` keeps the selector at zero specificity so a block's
+ *     own utility class still wins.
  */
-.be-canvas .block-editor-block-list__layout > * {
+.be-canvas
+	.block-editor-block-list__layout
+	> :where(:not(.alignleft):not(.alignright)) {
 	max-width: 840px;
 	margin-left: auto;
 	margin-right: auto;
