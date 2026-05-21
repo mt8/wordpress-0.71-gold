@@ -12,6 +12,9 @@ require $abspath . 'wp-links/links.php';
 
 	<meta name="generator" content="WordPress 0.71-gold" /> <!-- Issue #37 dropped the version for a live install; this site is published statically (no running PHP or database), so the 0.71-gold edition is named deliberately (Issue #218). -->
 
+	<?php /* SVG favicon (Issue #243) -- one scalable asset covers every browser pixel density (16/32/180...), so the tab carries an icon and PageSpeed's "Does not have a <link rel=icon>" audit stops firing. */ ?>
+	<link rel="icon" type="image/svg+xml" href="<?php echo $siteurl; ?>/favicon.svg" />
+
 	<?php /* Single-post head metadata (Issues #231, #239, #241): SEO meta description, LCP image preload, and OGP for social cards. All three need the post body, so get_postdata() is called once and the derived values are shared. The meta description is gated on having usable text; the preload and OGP are gated on having an image -- the homepage and category / month archive views list many posts, so none of these emit there. */ ?>
 <?php
 $ogp_p = isset( $p ) ? intval( $p ) : 0;
