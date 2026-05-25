@@ -1379,8 +1379,11 @@ async function boot() {
 	};
 
 	if ( frontPage.httpStatusCode === 200 ) {
+		// User-facing brand line on a successful boot (Issue #277). The
+		//     persistence backend stays available for diagnostics via
+		//     window.__071now.persistenceBackend.
 		setStatus(
-			`ready — database and uploads persist via ${ persistence.backend }.`,
+			'WordPress 0.71-gold is running entirely in your browser.',
 			'ok'
 		);
 	}
