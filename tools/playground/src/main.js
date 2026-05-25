@@ -133,7 +133,11 @@ const CONTINUE_ANYWAY_FLAG = '071-now-continue';
  * @param {string} [kind]  '', 'ok' or 'err'.
  */
 function setStatus( message, kind = '' ) {
-	statusEl.textContent = `071-now: ${ message }`;
+	// The "071-now" brand is shown right above this line in #chrome,
+	//     so the message is written bare -- avoids a redundant prefix
+	//     and keeps the boot-success line on one row on phones (Issue
+	//     #279).
+	statusEl.textContent = message;
 	// The ok / err colours live on the toolbar so the reset button
 	//     shares the status background.
 	statusEl.parentElement.className = kind;
