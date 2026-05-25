@@ -14,8 +14,9 @@ leaving the 2003 code itself untouched.
 
 ## Try it in your browser
 
-[**▶ Launch the 071-now playground**](https://mt8.github.io/wordpress-0.71-gold/)
-— run WordPress 0.71 (2003) entirely in your browser, no install. PHP 8.3
+[![Launch the 071-now playground in your browser](https://img.shields.io/badge/071--now-%E2%96%B6%20Launch%20in%20your%20browser-2271b1?style=for-the-badge)](https://mt8.github.io/wordpress-0.71-gold/)
+
+Run WordPress 0.71 (2003) entirely in your browser, no install. PHP 8.3
 is compiled to WebAssembly and the database is in-browser SQLite, so nothing
 runs on a server. Deployed to GitHub Pages from `tools/playground/`; see the
 [`071-now`](tools/playground/README.md) package.
@@ -243,8 +244,9 @@ playground ツール群)をマージする実験プロジェクト。2003 年の
 
 ## ブラウザで試す
 
-[**▶ 071-now playground を起動**](https://mt8.github.io/wordpress-0.71-gold/)
-— WordPress 0.71(2003 年)をブラウザ内で完全に動かす。インストール不要。
+[![071-now playground をブラウザで起動](https://img.shields.io/badge/071--now-%E2%96%B6%20%E3%83%96%E3%83%A9%E3%82%A6%E3%82%B6%E3%81%A7%E8%B5%B7%E5%8B%95-2271b1?style=for-the-badge)](https://mt8.github.io/wordpress-0.71-gold/)
+
+WordPress 0.71(2003 年)をブラウザ内で完全に動かす。インストール不要。
 PHP 8.3 を WebAssembly へコンパイルし、データベースはブラウザ内 SQLite で
 あるため、サーバー側では何も動かない。`tools/playground/` から GitHub Pages
 へデプロイされている。詳細は [`071-now`](tools/playground/README.md)
