@@ -130,11 +130,6 @@
 				font-size: 14px; line-height: 1.6; color: #50575e;
 				max-width: 32em;
 			}
-			#inapp-notice .steps {
-				font-size: 14px; line-height: 1.6; color: #50575e;
-				max-width: 32em; text-align: left;
-				margin: 0; padding-left: 1.4em;
-			}
 			#inapp-notice .url-box {
 				width: 100%; max-width: 32em; box-sizing: border-box;
 				padding: 10px 12px;
@@ -231,38 +226,21 @@
 			      X/Twitter, Facebook, Instagram or LINE -- src/main.js
 			      reveals this instead of booting php-wasm, because such
 			      WebViews often lack the cross-origin isolation and
-			      reliable service worker the playground needs. It tells
-			      the visitor to reopen the page in a standard browser
-			      (Safari / Chrome), shows the page URL so they can copy
-			      it, and -- in case of a false positive -- offers a
-			      "continue anyway" escape hatch that boots the playground.
+			      reliable service worker the playground needs. The copy
+			      mirrors the official WordPress Playground's WKWebView
+			      notice -- a single line directing the visitor to a
+			      standard browser (Safari / Chrome) -- with the page
+			      URL and a "continue anyway" escape hatch in case of a
+			      false positive.
 			-->
 			<div id="inapp-notice" role="dialog" aria-labelledby="inapp-mark">
 				<div class="mark" id="inapp-mark">
-					Please open this in your browser
+					Open in your browser
 				</div>
 				<p class="body">
-					You appear to be viewing 071-now inside an app's
-					built-in browser. The playground runs PHP 8.3 as
-					WebAssembly, which needs features that in-app browsers
-					often lack &mdash; so it would not start reliably here.
-					Open this page in your device's standard browser
-					(Safari or Chrome) instead.
-				</p>
-				<ol class="steps">
-					<li>
-						Tap the menu (&hellip; or &#9776;) in this in-app
-						browser.
-					</li>
-					<li>
-						Choose <strong>Open in browser</strong> (or
-						<strong>Open in Safari</strong> /
-						<strong>Open in Chrome</strong>).
-					</li>
-				</ol>
-				<p class="body">
-					If your in-app browser has no such option, copy this
-					address and paste it into Safari or Chrome:
+					071-now needs features that in-app browsers do not
+					support. Please open this page in a standard browser
+					such as Safari or Chrome.
 				</p>
 				<div class="url-box" id="inapp-url"></div>
 				<button id="inapp-copy" type="button">Copy address</button>
