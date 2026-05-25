@@ -58,15 +58,62 @@
 			#toolbar.err #status { color: #ffb3b3; }
 			#toolbar.ok { background: #00450c; }
 			#toolbar.err { background: #5c0000; }
-			#toolbar button {
+			#toolbar button,
+			#toolbar #tools-menu summary {
 				margin: 4px 0; padding: 3px 12px; cursor: pointer;
 				font: 12px/1.5 system-ui, sans-serif;
 				background: #2271b1; color: #fff;
 				border: 0; border-radius: 3px;
+				display: inline-block;
 			}
-			#reset { margin-right: 12px; }
-			#toolbar button:hover:not(:disabled) { background: #135e96; }
+			#toolbar button:hover:not(:disabled),
+			#toolbar #tools-menu summary:hover { background: #135e96; }
 			#toolbar button:disabled { opacity: 0.5; cursor: default; }
+
+			/*
+			 * The Tools dropdown (Issue #269). <details> drives the open
+			 *     state, the <summary> is styled as a toolbar button, and
+			 *     the menu is absolutely positioned below it so it drops
+			 *     down over the iframe stage rather than reflowing the
+			 *     toolbar. main.js closes it on item click and outside
+			 *     click; the native disclosure marker is hidden so it
+			 *     reads as a button.
+			 */
+			#tools-menu { position: relative; }
+			#tools-menu summary { list-style: none; }
+			#tools-menu summary::-webkit-details-marker { display: none; }
+			#tools-menu[open] summary { background: #135e96; }
+			#tools-menu .menu-list {
+				position: absolute; top: calc(100% + 2px); right: 0;
+				display: flex; flex-direction: column;
+				min-width: 160px;
+				background: #fff; color: #1d2327;
+				border: 1px solid #c3c4c7; border-radius: 3px;
+				box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+				z-index: 10;
+			}
+			#tools-menu .menu-list button {
+				margin: 0; padding: 6px 12px; text-align: left;
+				background: transparent; color: #1d2327;
+				border-radius: 0;
+			}
+			#tools-menu .menu-list button:hover:not(:disabled) {
+				background: #f0f0f1;
+			}
+
+			/*
+			 * Reset is a destructive, full-environment wipe (Issue #144),
+			 *     so it is recoloured to WP-admin red to set it apart
+			 *     from the data-shuffling Tools menu (Issue #269). The
+			 *     `#toolbar #reset` selector matches the specificity of
+			 *     the shared `#toolbar button` rule above so the red
+			 *     wins over the default blue.
+			 */
+			#toolbar #reset {
+				margin-right: 12px;
+				background: #b32d2e;
+			}
+			#toolbar #reset:hover:not(:disabled) { background: #8a1f1f; }
 
 			/*
 			 * #stage holds the blog iframe and the loading splash; the
@@ -184,12 +231,23 @@
 		-->
 		<div id="toolbar">
 			<div id="status">071-now: booting php-wasm&hellip;</div>
-			<button id="export" type="button" title="Download the environment (database and uploaded media) as a file">
-				Export
-			</button>
-			<button id="import" type="button" title="Replace the environment from an exported file">
-				Import
-			</button>
+			<details id="tools-menu">
+				<summary
+					role="button"
+					aria-haspopup="menu"
+					title="Environment tools (Export / Import)"
+				>
+					Tools &#9662;
+				</summary>
+				<div class="menu-list" role="menu">
+					<button id="export" type="button" role="menuitem" title="Download the environment (database and uploaded media) as a file">
+						Export
+					</button>
+					<button id="import" type="button" role="menuitem" title="Replace the environment from an exported file">
+						Import
+					</button>
+				</div>
+			</details>
 			<button id="reset" type="button" title="Clear all playground state and reload as a brand-new first visit">
 				Reset
 			</button>

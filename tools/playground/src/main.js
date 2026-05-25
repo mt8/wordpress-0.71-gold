@@ -107,6 +107,7 @@ const resetButtonEl = document.getElementById( 'reset' );
 const exportButtonEl = document.getElementById( 'export' );
 const importButtonEl = document.getElementById( 'import' );
 const importFileEl = document.getElementById( 'import-file' );
+const toolsMenuEl = document.getElementById( 'tools-menu' );
 const splashEl = document.getElementById( 'splash' );
 const splashPhaseEl = document.getElementById( 'splash-phase' );
 const inAppNoticeEl = document.getElementById( 'inapp-notice' );
@@ -1068,7 +1069,34 @@ async function boot() {
 		} );
 	} );
 
+	// Close the Tools dropdown (Issue #269). The Export/Import buttons
+	//     live inside a <details> dropdown; collapse it after a click
+	//     and on outside / Escape interaction so it does not linger
+	//     over the stage. main.js owns this rather than the template so
+	//     the close-on-outside-click handler is wired once.
+	function closeToolsMenu() {
+		if ( toolsMenuEl ) {
+			toolsMenuEl.open = false;
+		}
+	}
+	if ( toolsMenuEl ) {
+		document.addEventListener( 'click', ( event ) => {
+			if (
+				toolsMenuEl.open &&
+				! toolsMenuEl.contains( /** @type {Node} */ ( event.target ) )
+			) {
+				closeToolsMenu();
+			}
+		} );
+		document.addEventListener( 'keydown', ( event ) => {
+			if ( event.key === 'Escape' && toolsMenuEl.open ) {
+				closeToolsMenu();
+			}
+		} );
+	}
+
 	exportButtonEl.addEventListener( 'click', () => {
+		closeToolsMenu();
 		exportButtonEl.disabled = true;
 		setStatus( 'exporting the environment…' );
 		exportEnvironment()
@@ -1094,6 +1122,7 @@ async function boot() {
 	// Import opens the hidden file picker; its change event does the
 	//     work. importEnvironment() reloads the page on success.
 	importButtonEl.addEventListener( 'click', () => {
+		closeToolsMenu();
 		importFileEl.click();
 	} );
 	importFileEl.addEventListener( 'change', () => {
