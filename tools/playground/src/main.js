@@ -156,6 +156,171 @@ function hideSplash() {
 	}
 }
 
+/**
+ * Keep internal (same-origin) links inside the #blog iframe (Issue
+ * #273).
+ *
+ * Several pages served through the playground -- the block editor's
+ * "View on 0.71 front end" link, the WordPress 0.71 admin's link
+ * popups, the textile helper, etc. -- open same-origin destinations in
+ * a fresh browser tab via `target="_blank"` or `window.open()`. Inside
+ * the playground that punches the visitor out of the host page and the
+ * service-worker-served chrome entirely, breaking the experience. The
+ * underlying source files are shared with the Docker mode, where a new
+ * tab is the right UX, so the rewrite happens here instead -- a
+ * playground-only runtime fix that leaves the source unchanged.
+ *
+ * The hook fires on every iframe `load` (each navigation rebuilds the
+ * document, so an initial sweep is reapplied each time):
+ *
+ * 1. Strip `target="_blank"` from anchors whose href resolves to the
+ *    playground's own origin.
+ * 2. Install a capture-phase click handler so anchors injected later by
+ *    page scripts get the same treatment.
+ * 3. Wrap the iframe's `window.open` so a same-origin URL navigates the
+ *    iframe; cross-origin URLs fall through to the native call so true
+ *    external links keep escaping the iframe as intended.
+ *
+ * Every access to the iframe's contentDocument / contentWindow is
+ * defensive -- a navigation to a foreign origin would make that access
+ * throw, and the rewriter must never crash main.js.
+ */
+function keepInternalLinksInIframe() {
+	let doc;
+	let win;
+	try {
+		doc = blogEl.contentDocument;
+		win = blogEl.contentWindow;
+	} catch {
+		return;
+	}
+	if ( ! doc || ! win ) {
+		return;
+	}
+
+	const ownOrigin = location.origin;
+	const isInternalHref = ( href ) => {
+		if ( ! href ) {
+			return false;
+		}
+		try {
+			return new URL( href, doc.baseURI ).origin === ownOrigin;
+		} catch {
+			return false;
+		}
+	};
+
+	const stripTargetFrom = ( anchor ) => {
+		if ( ! anchor || anchor.tagName !== 'A' ) {
+			return;
+		}
+		if ( anchor.getAttribute( 'target' ) !== '_blank' ) {
+			return;
+		}
+		if ( isInternalHref( anchor.getAttribute( 'href' ) ) ) {
+			anchor.removeAttribute( 'target' );
+		}
+	};
+
+	const sweepAnchors = ( root ) => {
+		if ( ! root || ! root.querySelectorAll ) {
+			return;
+		}
+		root.querySelectorAll( 'a[target="_blank"]' ).forEach(
+			stripTargetFrom
+		);
+	};
+
+	try {
+		// Initial pass for anchors already in the document.
+		sweepAnchors( doc );
+	} catch {
+		// Sweep failure (cross-origin navigation, hostile DOM) is
+		//     non-fatal; the observer / click handler still cover later
+		//     mutations on an accessible document.
+	}
+
+	try {
+		// React-driven pages (the block editor) mount their anchors
+		//     after the iframe's load event has already fired, and
+		//     classic admin pages can rebuild link lists at runtime. A
+		//     MutationObserver catches both, plus any attribute change
+		//     that adds target="_blank" later on.
+		const ObserverCtor = win.MutationObserver || MutationObserver;
+		const observer = new ObserverCtor( ( records ) => {
+			for ( const record of records ) {
+				if ( record.type === 'childList' ) {
+					record.addedNodes.forEach( ( node ) => {
+						if ( node.nodeType !== 1 ) {
+							return;
+						}
+						stripTargetFrom( node );
+						sweepAnchors( node );
+					} );
+				} else if (
+					record.type === 'attributes' &&
+					( record.attributeName === 'target' ||
+						record.attributeName === 'href' )
+				) {
+					stripTargetFrom( record.target );
+				}
+			}
+		} );
+		observer.observe( doc.documentElement || doc.body || doc, {
+			childList: true,
+			subtree: true,
+			attributes: true,
+			attributeFilter: [ 'target', 'href' ],
+		} );
+	} catch {
+		// see above
+	}
+
+	try {
+		// Capture-phase click handler as a last-resort safety net for
+		//     anchors the sweep / observer somehow missed -- e.g. an
+		//     anchor that scripted itself into the DOM and was clicked
+		//     synchronously in the same tick.
+		doc.addEventListener(
+			'click',
+			( event ) => {
+				const target = event.target;
+				const anchor =
+					target && target.closest
+						? target.closest( 'a[target]' )
+						: null;
+				stripTargetFrom( anchor );
+			},
+			true
+		);
+	} catch {
+		// see above
+	}
+
+	try {
+		const nativeOpen = win.open;
+		if ( nativeOpen && ! win.__071nowOpenWrapped ) {
+			win.open = function ( url, target, features ) {
+				if ( isInternalHref( url ) ) {
+					try {
+						win.location.href = new URL(
+							url,
+							doc.baseURI
+						).toString();
+						return win;
+					} catch {
+						// Fall through to the native call.
+					}
+				}
+				return nativeOpen.call( win, url, target, features );
+			};
+			win.__071nowOpenWrapped = true;
+		}
+	} catch {
+		// see above
+	}
+}
+
 // sessionStorage key guarding the one-time cross-origin isolation
 //     reload below, so the reload happens at most once per tab session
 //     and a tab that never becomes isolated does not reload forever.
@@ -958,6 +1123,13 @@ async function boot() {
 	//     rendered blog.
 	const frontPageUrl = SCOPE_PREFIX + landingPage;
 	blogEl.addEventListener( 'load', hideSplash, { once: true } );
+	// Keep internal links inside the iframe on every navigation (Issue
+	//     #273) -- the block editor's "View on 0.71 front end" link, the
+	//     0.71 admin link popups and similar same-origin destinations
+	//     should not punch out into a fresh browser tab and lose the
+	//     playground chrome. The hook is reapplied on each load because
+	//     the iframe's document is rebuilt by each navigation.
+	blogEl.addEventListener( 'load', keepInternalLinksInIframe );
 	setTimeout( hideSplash, 4000 );
 	blogEl.src = frontPageUrl;
 

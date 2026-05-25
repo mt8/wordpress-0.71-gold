@@ -135,6 +135,77 @@ test.describe( 'Playground block editor', () => {
 		);
 	} );
 
+	test( 'the "View on 0.71 front end" link stays inside the iframe (Issue #273)', async ( {
+		page,
+		context,
+	} ) => {
+		// The playground's runtime hook (main.js:keepInternalLinksInIframe)
+		//     strips `target="_blank"` from same-origin anchors so the
+		//     block editor's preview link navigates the #blog iframe rather
+		//     than opening a fresh browser tab and stranding the visitor
+		//     outside the playground chrome.
+		await openPlayground( page );
+
+		const adminFrame = await gotoBlog( page, '/wp-admin/b2edit.php' );
+		await adminFrame.waitForSelector(
+			'a[href*="block-editor/api/editor.php?post="]',
+			{ timeout: 15000 }
+		);
+		const editorHref = await adminFrame
+			.locator( 'a[href*="block-editor/api/editor.php?post="]' )
+			.first()
+			.getAttribute( 'href' );
+		const postId = Number(
+			( editorHref || '' ).match( /post=(\d+)/ )?.[ 1 ]
+		);
+		expect(
+			Number.isInteger( postId ) && postId > 0,
+			`a block-editor post id should be found (saw "${ editorHref }")`
+		).toBe( true );
+
+		const editorFrame = await openBlockEditor( page, postId );
+
+		// The "View on 0.71 front end" link is rendered on an existing
+		// post; once the hook has run it carries no target="_blank".
+		const viewLink = editorFrame.locator( 'a.be-link', {
+			hasText: 'View on 0.71 front end',
+		} );
+		await expect( viewLink ).toHaveCount( 1 );
+		await expect( viewLink ).not.toHaveAttribute(
+			'target',
+			'_blank',
+			{ timeout: 5000 }
+		);
+
+		// Clicking the link must navigate the #blog iframe to the
+		// front-page post and must not open a new page in the browser
+		// context (which the user would never see because the host page
+		// is gone).
+		const pagesBefore = context.pages().length;
+		await viewLink.click();
+		await page.waitForFunction(
+			( id ) => {
+				const blog =
+					/** @type {HTMLIFrameElement|null} */ (
+						document.querySelector( '#blog' )
+					);
+				return Boolean(
+					blog &&
+						blog.contentWindow &&
+						blog.contentWindow.location.href.includes(
+							`/index.php?p=${ id }`
+						)
+				);
+			},
+			postId,
+			{ timeout: 15000 }
+		);
+		expect(
+			context.pages().length,
+			'clicking the preview link must not open a new browser tab'
+		).toBe( pagesBefore );
+	} );
+
 	test( 'a paragraph block renders colour and font size presets (Issues #181, #183)', async ( {
 		page,
 	} ) => {
