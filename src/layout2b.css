@@ -196,47 +196,50 @@ p, li {
 }
 
 /*
- * Phone layout for the front-end menu sidebar (Issue #226).
+ * Phone layout for the front-end menu sidebar (Issue #226, relocated
+ * to a top-nav in Issue #275).
  *
  *     The desktop layout puts #menu in an absolute 150px right rail
  *     and reserves 160px of right margin on #content for it. On a
  *     390px-wide phone that leaves the post text barely 70px wide --
- *     one word per line. Below the 782px breakpoint (the same
- *     breakpoint the block editor already uses) the menu becomes a
- *     full-width band pinned to the bottom of the viewport so it is
- *     always reachable without scrolling -- a bottom-nav pattern.
- *     #content's right margin is reset (the post gets the full
- *     viewport) and a padding-bottom is reserved so the last line of
- *     the post is not permanently covered by the fixed band.
- *     Inside the band, <details> is a column-reverse flex container
- *     so the <summary> stays anchored to the very bottom edge (the
- *     tap target) and the menu list, when expanded, opens upward
- *     above it; max-height + overflow-y keep a long list from
- *     swallowing the whole page.
+ *     one word per line. Below the 782px breakpoint (the same one
+ *     the block editor already uses) the menu becomes a full-width
+ *     band pinned to the top of the viewport so it is always
+ *     reachable -- a top-nav pattern. The original bottom-nav
+ *     placement (Issue #226) was easy to miss: it sat against the
+ *     device's home indicator / browser chrome and visitors did not
+ *     realise the categories / archives / login links were there.
+ *
+ *     body gets a padding-top equal to the collapsed band's height so
+ *     the existing #header / #content shift down by exactly that much
+ *     and the band does not cover them. #content's old
+ *     padding-bottom (which reserved room for the bottom band) is
+ *     dropped. Inside the band the <details> renders in normal
+ *     document order -- summary on top, list below -- so the menu
+ *     expands downward; max-height + overflow-y keep a long list
+ *     from swallowing the whole page.
  */
 @media ( max-width: 782px ) {
+	body {
+		padding-top: 48px;
+	}
+
 	#content {
 		margin: 0 10px;
-		padding-bottom: 64px;
 	}
 
 	#menu {
 		position: fixed;
-		top: auto;
-		bottom: 0;
+		top: 0;
+		bottom: auto;
 		left: 0;
 		right: 0;
 		width: auto;
 		padding-bottom: 0;
 		border-left: 0;
-		border-top: 3px solid #666;
+		border-bottom: 3px solid #666;
 		max-height: 70vh;
 		overflow-y: auto;
-	}
-
-	#menu details {
-		display: flex;
-		flex-direction: column-reverse;
 	}
 
 	#menu summary {
